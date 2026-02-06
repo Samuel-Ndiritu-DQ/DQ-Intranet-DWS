@@ -7,7 +7,10 @@ import { fetchQuizByCourseId } from '../../services/lmsService';
 import type { LmsQuizRow } from '../../types/lmsSupabase';
 import { CheckCircle2, X, Award, MessageSquare, ChevronRight } from 'lucide-react';
 import { CourseReviewForm } from '../../components/lms/CourseReviewForm';
-import { useCreateCourseReview } from '../../hooks/useCourseReviews';
+import { useCreateCourseReview, useUpdateCourseReview, useUserCourseReview } from '../../hooks/useCourseReviews';
+import { useMarkLessonCompleted, useSaveQuizSubmission } from '../../hooks/useCourseProgress';
+import { useAuth } from '../../components/Header';
+import { Edit3 } from 'lucide-react';
 
 const QUIZ_PASSING_SCORE = 80;
 
@@ -34,8 +37,16 @@ export default function LmsCourseAssessmentPage() {
     // Stage management for the flow: quiz -> passed/failed -> review -> complete
     const [stage, setStage] = useState<AssessmentStage>('quiz');
 
-    // Review mutation
+    // Review mutations and queries
     const createReviewMutation = useCreateCourseReview();
+    const updateReviewMutation = useUpdateCourseReview();
+    const { data: existingUserReview } = useUserCourseReview(course?.id || '');
+    const hasExistingReview = !!existingUserReview;
+
+    // Progress hooks
+    const { user } = useAuth();
+    const markCompletedMutation = useMarkLessonCompleted();
+    const saveSubmissionMutation = useSaveQuizSubmission();
 
     useEffect(() => {
         if (course?.id) {
@@ -89,8 +100,34 @@ export default function LmsCourseAssessmentPage() {
         });
 
         const passed = (correctCount / quiz.questions.length) * 100 >= QUIZ_PASSING_SCORE;
+        const scorePercentage = (correctCount / quiz.questions.length) * 100;
         setScore({ score: correctCount, total: quiz.questions.length });
         setStage(passed ? 'passed' : 'failed');
+
+        // Sync to Supabase if passed
+        if (passed && user && course?.id) {
+            markCompletedMutation.mutate({
+                lessonId: `assessment_${course.id}`, // or whatever convention is used for final assessments
+                courseId: course.id,
+                courseSlug: slug || '',
+                quizPassed: true,
+                quizScore: scorePercentage,
+            });
+        }
+
+        // Save quiz submission record
+        if (user && course?.id && quiz) {
+            saveSubmissionMutation.mutate({
+                quiz_id: quiz.id,
+                lesson_id: `assessment_${course.id}`,
+                course_id: course.id,
+                score_achieved: correctCount,
+                total_questions: quiz.questions.length,
+                score_percentage: scorePercentage,
+                passed: passed,
+                answers: quizAnswers,
+            });
+        }
     };
 
     const handleRetake = () => {
@@ -242,18 +279,20 @@ export default function LmsCourseAssessmentPage() {
                                 </div>
 
                                 <div className="bg-blue-50 rounded-xl p-6 mb-6">
-                                    <MessageSquare className="w-8 h-8 text-blue-600 mx-auto mb-3" />
+                                    {hasExistingReview ? <Edit3 className="w-8 h-8 text-blue-600 mx-auto mb-3" /> : <MessageSquare className="w-8 h-8 text-blue-600 mx-auto mb-3" />}
                                     <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                                        Share Your Learning Experience
+                                        {hasExistingReview ? 'Update Your Review' : 'Share Your Learning Experience'}
                                     </h3>
                                     <p className="text-gray-600 text-sm mb-4">
-                                        Your feedback helps us improve courses for future learners. Take a moment to review this course.
+                                        {hasExistingReview
+                                            ? 'You\'ve already left a review. Would you like to update it based on your final assessment?'
+                                            : 'Your feedback helps us improve courses for future learners. Take a moment to review this course.'}
                                     </p>
                                     <button
                                         onClick={handleProceedToReview}
                                         className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-[#030F35] to-[#0A2463] text-white font-semibold rounded-xl hover:shadow-lg transition-all"
                                     >
-                                        Leave a Review
+                                        {hasExistingReview ? 'Edit Review' : 'Leave a Review'}
                                         <ChevronRight size={18} />
                                     </button>
                                 </div>
@@ -304,9 +343,18 @@ export default function LmsCourseAssessmentPage() {
                             courseId={course.id}
                             courseSlug={slug || ''}
                             courseTitle={course.title}
-                            isSubmitting={createReviewMutation.isPending}
+                            mode={hasExistingReview ? 'edit' : 'create'}
+                            existingReview={existingUserReview}
+                            isSubmitting={hasExistingReview ? updateReviewMutation.isPending : createReviewMutation.isPending}
                             onSubmit={async (input) => {
-                                await createReviewMutation.mutateAsync(input);
+                                if (hasExistingReview && existingUserReview) {
+                                    await updateReviewMutation.mutateAsync({
+                                        reviewId: existingUserReview.id,
+                                        input,
+                                    });
+                                } else {
+                                    await createReviewMutation.mutateAsync(input);
+                                }
                                 handleReviewSubmitted();
                             }}
                             onSkip={handleSkipReview}

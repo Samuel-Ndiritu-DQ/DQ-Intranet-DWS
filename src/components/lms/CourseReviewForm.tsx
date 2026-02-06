@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { Star, Video, FileText, HelpCircle, Monitor, CheckCircle, Loader2 } from 'lucide-react';
-import type { EngagingPart, CreateReviewInput } from '../../types/lmsCourseReview';
+import { Star, Video, FileText, HelpCircle, Monitor, CheckCircle, Loader2, Edit3 } from 'lucide-react';
+import type { EngagingPart, CreateReviewInput, LmsCourseReview } from '../../types/lmsCourseReview';
 
 interface CourseReviewFormProps {
     courseId: string;
@@ -9,12 +9,15 @@ interface CourseReviewFormProps {
     onSubmit: (input: CreateReviewInput) => Promise<void>;
     onSkip?: () => void;
     isSubmitting?: boolean;
-    existingReview?: {
+    /** Mode: 'create' for new review, 'edit' for updating existing */
+    mode?: 'create' | 'edit';
+    /** Existing review data for edit mode */
+    existingReview?: LmsCourseReview | {
         star_rating: number;
         key_learning: string;
         engaging_part: EngagingPart;
         general_feedback: string;
-    };
+    } | null;
 }
 
 const ENGAGING_OPTIONS: { value: EngagingPart; label: string; icon: React.ReactNode }[] = [
@@ -31,6 +34,7 @@ export const CourseReviewForm: React.FC<CourseReviewFormProps> = ({
     onSubmit,
     onSkip,
     isSubmitting = false,
+    mode = 'create',
     existingReview,
 }) => {
     const [starRating, setStarRating] = useState(existingReview?.star_rating || 0);
@@ -42,6 +46,7 @@ export const CourseReviewForm: React.FC<CourseReviewFormProps> = ({
     const [error, setError] = useState<string | null>(null);
 
     const isValid = starRating > 0 && keyLearning.trim() && engagingPart && generalFeedback.trim();
+    const isEditMode = mode === 'edit';
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -69,12 +74,17 @@ export const CourseReviewForm: React.FC<CourseReviewFormProps> = ({
                 <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
                     <CheckCircle className="w-8 h-8 text-green-600" />
                 </div>
-                <h3 className="text-2xl font-bold text-gray-900 mb-2">Thank You!</h3>
+                <h3 className="text-2xl font-bold text-gray-900 mb-2">
+                    {isEditMode ? 'Review Updated!' : 'Thank You!'}
+                </h3>
                 <p className="text-gray-600 mb-4">
-                    Your feedback helps us improve the learning experience for everyone.
+                    {isEditMode
+                        ? 'Your review has been successfully updated.'
+                        : 'Your feedback helps us improve the learning experience for everyone.'
+                    }
                 </p>
                 <p className="text-sm text-gray-500">
-                    Your review for <span className="font-medium">{courseTitle}</span> has been submitted.
+                    Your review for <span className="font-medium">{courseTitle}</span> has been {isEditMode ? 'updated' : 'submitted'}.
                 </p>
             </div>
         );
@@ -84,9 +94,17 @@ export const CourseReviewForm: React.FC<CourseReviewFormProps> = ({
         <div className="bg-gradient-to-br from-blue-50 via-white to-purple-50 rounded-2xl border border-gray-200 shadow-lg overflow-hidden">
             {/* Header */}
             <div className="bg-gradient-to-r from-[#030F35] to-[#0A2463] px-6 py-6 text-white">
-                <h3 className="text-xl font-bold mb-1">Share Your Learning Experience</h3>
+                <div className="flex items-center gap-3 mb-1">
+                    {isEditMode && <Edit3 className="w-5 h-5 text-blue-200" />}
+                    <h3 className="text-xl font-bold">
+                        {isEditMode ? 'Edit Your Review' : 'Share Your Learning Experience'}
+                    </h3>
+                </div>
                 <p className="text-blue-200 text-sm">
-                    Congratulations on completing the course! Your feedback helps improve future courses.
+                    {isEditMode
+                        ? 'Update your feedback to better reflect your learning experience.'
+                        : 'Congratulations on completing the course! Your feedback helps improve future courses.'
+                    }
                 </p>
             </div>
 
@@ -109,8 +127,8 @@ export const CourseReviewForm: React.FC<CourseReviewFormProps> = ({
                                 <Star
                                     size={32}
                                     className={`transition-colors ${rating <= (hoverRating || starRating)
-                                            ? 'text-yellow-400 fill-yellow-400'
-                                            : 'text-gray-300'
+                                        ? 'text-yellow-400 fill-yellow-400'
+                                        : 'text-gray-300'
                                         }`}
                                 />
                             </button>
@@ -153,8 +171,8 @@ export const CourseReviewForm: React.FC<CourseReviewFormProps> = ({
                                 type="button"
                                 onClick={() => setEngagingPart(option.value)}
                                 className={`flex flex-col items-center justify-center p-4 rounded-xl border-2 transition-all ${engagingPart === option.value
-                                        ? 'border-blue-500 bg-blue-50 text-blue-700'
-                                        : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300 hover:bg-gray-50'
+                                    ? 'border-blue-500 bg-blue-50 text-blue-700'
+                                    : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300 hover:bg-gray-50'
                                     }`}
                             >
                                 <span className={engagingPart === option.value ? 'text-blue-600' : 'text-gray-400'}>
@@ -198,24 +216,27 @@ export const CourseReviewForm: React.FC<CourseReviewFormProps> = ({
                             onClick={onSkip}
                             className="text-gray-500 hover:text-gray-700 text-sm font-medium transition-colors"
                         >
-                            Skip for now
+                            {isEditMode ? 'Cancel' : 'Skip for now'}
                         </button>
                     )}
                     <button
                         type="submit"
                         disabled={!isValid || isSubmitting}
-                        className={`ml-auto px-6 py-3 rounded-xl font-semibold text-white transition-all ${isValid && !isSubmitting
-                                ? 'bg-gradient-to-r from-[#030F35] to-[#0A2463] hover:shadow-lg hover:-translate-y-0.5'
-                                : 'bg-gray-300 cursor-not-allowed'
+                        className={`ml-auto px-6 py-3 rounded-xl font-semibold text-white transition-all flex items-center gap-2 ${isValid && !isSubmitting
+                            ? 'bg-gradient-to-r from-[#030F35] to-[#0A2463] hover:shadow-lg hover:-translate-y-0.5'
+                            : 'bg-gray-300 cursor-not-allowed'
                             }`}
                     >
                         {isSubmitting ? (
-                            <span className="flex items-center gap-2">
+                            <>
                                 <Loader2 className="w-4 h-4 animate-spin" />
-                                Submitting...
-                            </span>
+                                {isEditMode ? 'Updating...' : 'Submitting...'}
+                            </>
                         ) : (
-                            'Submit Review'
+                            <>
+                                {isEditMode && <Edit3 className="w-4 h-4" />}
+                                {isEditMode ? 'Update Review' : 'Submit Review'}
+                            </>
                         )}
                     </button>
                 </div>
@@ -225,3 +246,4 @@ export const CourseReviewForm: React.FC<CourseReviewFormProps> = ({
 };
 
 export default CourseReviewForm;
+

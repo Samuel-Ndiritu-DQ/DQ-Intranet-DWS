@@ -17,7 +17,9 @@ import {
 import { Header } from '../../components/Header';
 import { Footer } from '../../components/Footer';
 import { useLmsCourseDetails } from '../../hooks/useLmsCourses';
+import { useUserCoursesProgress, useUserProgressStats } from '../../hooks/useCourseProgress';
 import type { LmsDetail } from '../../data/lmsCourseDetails';
+import { useAuth } from '../../components/Header';
 
 // Storage keys
 const PROGRESS_STORAGE_PREFIX = 'lms_lesson_progress_';
@@ -56,7 +58,7 @@ function getQuizSubmissions(): Array<{
     submittedAt: string;
     passed?: boolean;
   }> = [];
-  
+
   for (let i = 0; i < localStorage.length; i++) {
     const key = localStorage.key(i);
     if (key?.startsWith(QUIZ_STORAGE_PREFIX)) {
@@ -68,8 +70,8 @@ function getQuizSubmissions(): Array<{
       }
     }
   }
-  
-  return submissions.sort((a, b) => 
+
+  return submissions.sort((a, b) =>
     new Date(b.submittedAt).getTime() - new Date(a.submittedAt).getTime()
   );
 }
@@ -120,54 +122,72 @@ function calculateCourseProgress(course: LmsDetail): number {
 export const MyLearningDashboard: React.FC = () => {
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const { user } = useAuth();
+
   const { data: allCourses } = useLmsCourseDetails();
+  const { data: dbCoursesProgress, isLoading: progressLoading } = useUserCoursesProgress();
+  const { data: dbProgressStats } = useUserProgressStats();
+
   const quizSubmissions = useMemo(() => getQuizSubmissions(), []);
-  const startedCourseSlugs = useMemo(() => getStartedCourses(), []);
 
-  // Get courses that user has started
+  // Merge DB progress with course details
   const startedCourses = useMemo(() => {
-    if (!allCourses) return [];
-    return allCourses.filter(course => startedCourseSlugs.includes(course.slug));
-  }, [allCourses, startedCourseSlugs]);
+    if (!allCourses || !dbCoursesProgress) return [];
 
-  // Calculate statistics
+    return dbCoursesProgress.map(progress => {
+      const details = allCourses.find(c => c.id === progress.course_id || c.slug === progress.course_slug);
+      return {
+        ...details,
+        progress_percentage: progress.progress_percentage,
+        lessons_completed: progress.lessons_completed,
+        total_lessons: progress.total_lessons,
+        status: progress.status,
+        slug: progress.course_slug,
+        id: progress.course_id,
+        title: details?.title || progress.course_slug,
+        summary: details?.summary || '',
+      };
+    });
+  }, [allCourses, dbCoursesProgress]);
+
+  // Statistics
   const stats = useMemo(() => {
+    if (dbProgressStats) {
+      return {
+        coursesCompleted: dbProgressStats.coursesCompleted,
+        totalCourses: dbProgressStats.coursesStarted,
+        completedLessons: dbProgressStats.lessonsCompleted,
+        totalLessons: startedCourses.reduce((sum, c) => sum + (c.total_lessons || 0), 0),
+        totalQuizzes: quizSubmissions.length,
+        averageQuizScore: dbProgressStats.averageProgress, // Using average progress as a proxy or just keep local quiz stats
+        coursesInProgress: startedCourses.filter(c => c.status === 'in_progress').length,
+      };
+    }
+
+    // Fallback to local stats calculation if DB stats not available
     const totalLessons = startedCourses.reduce((sum, course) => {
-      return sum + getAllLessonIds(course).length;
+      return sum + (course.total_lessons || getAllLessonIds(course as any).length);
     }, 0);
 
     const completedLessons = startedCourses.reduce((sum, course) => {
-      const lessonIds = getAllLessonIds(course);
-      return sum + lessonIds.filter(id => isLessonCompleted(id)).length;
+      return sum + (course.lessons_completed || 0);
     }, 0);
-
-    const totalQuizzes = quizSubmissions.length;
-    const averageQuizScore = quizSubmissions.length > 0
-      ? Math.round(
-          quizSubmissions.reduce((sum, q) => sum + (q.score / q.totalQuestions) * 100, 0) /
-          quizSubmissions.length
-        )
-      : 0;
-
-    const coursesInProgress = startedCourses.filter(course => {
-      const progress = calculateCourseProgress(course);
-      return progress > 0 && progress < 100;
-    }).length;
-
-    const coursesCompleted = startedCourses.filter(course => {
-      return calculateCourseProgress(course) === 100;
-    }).length;
 
     return {
       totalLessons,
       completedLessons,
-      totalQuizzes,
-      averageQuizScore,
-      coursesInProgress,
-      coursesCompleted,
+      totalQuizzes: quizSubmissions.length,
+      averageQuizScore: quizSubmissions.length > 0
+        ? Math.round(
+          quizSubmissions.reduce((sum, q) => sum + (q.score / q.totalQuestions) * 100, 0) /
+          quizSubmissions.length
+        )
+        : 0,
+      coursesInProgress: startedCourses.filter(c => c.status === 'in_progress').length,
+      coursesCompleted: startedCourses.filter(c => c.status === 'completed').length,
       totalCourses: startedCourses.length,
     };
-  }, [startedCourses, quizSubmissions]);
+  }, [startedCourses, quizSubmissions, dbProgressStats]);
 
   // Get recent activity (last 5 quiz submissions)
   const recentActivity = useMemo(() => {
@@ -177,7 +197,7 @@ export const MyLearningDashboard: React.FC = () => {
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
       <Header toggleSidebar={() => setSidebarOpen(!sidebarOpen)} sidebarOpen={sidebarOpen} />
-      
+
       <main className="flex-grow">
         {/* Header Section */}
         <div className="bg-white border-b border-gray-200">
@@ -262,9 +282,9 @@ export const MyLearningDashboard: React.FC = () => {
                 ) : (
                   <div className="space-y-4">
                     {startedCourses.map((course) => {
-                      const progress = calculateCourseProgress(course);
-                      const lessonIds = getAllLessonIds(course);
-                      const completedCount = lessonIds.filter(id => isLessonCompleted(id)).length;
+                      const progress = course.progress_percentage || 0;
+                      const completedCount = course.lessons_completed || 0;
+                      const totalLessons = course.total_lessons || 0;
 
                       return (
                         <div
@@ -287,9 +307,9 @@ export const MyLearningDashboard: React.FC = () => {
                           <div className="space-y-2">
                             <div className="flex items-center justify-between text-sm">
                               <span className="text-gray-600">
-                                {completedCount} of {lessonIds.length} lessons completed
+                                {completedCount} of {totalLessons} lessons completed
                               </span>
-                              <span className="font-medium text-gray-900">{progress}%</span>
+                              <span className="font-medium text-gray-900">{Math.round(progress)}%</span>
                             </div>
                             <div className="w-full bg-gray-200 rounded-full h-2">
                               <div
@@ -338,9 +358,8 @@ export const MyLearningDashboard: React.FC = () => {
                       );
                       const passed = activity.passed !== undefined ? activity.passed : scorePercentage >= 80;
                       return (
-                        <div key={index} className={`flex items-start gap-3 p-3 rounded-lg ${
-                          passed ? 'bg-green-50' : 'bg-red-50'
-                        }`}>
+                        <div key={index} className={`flex items-start gap-3 p-3 rounded-lg ${passed ? 'bg-green-50' : 'bg-red-50'
+                          }`}>
                           <div className="flex-shrink-0 mt-0.5">
                             {passed ? (
                               <CheckCircle2 className="text-green-600" size={18} />
@@ -349,18 +368,16 @@ export const MyLearningDashboard: React.FC = () => {
                             )}
                           </div>
                           <div className="flex-1 min-w-0">
-                            <p className={`text-sm font-medium truncate ${
-                              passed ? 'text-green-900' : 'text-red-900'
-                            }`}>
+                            <p className={`text-sm font-medium truncate ${passed ? 'text-green-900' : 'text-red-900'
+                              }`}>
                               Quiz {passed ? 'Passed' : 'Failed'}
                             </p>
                             <div className="flex items-center gap-2 mt-1">
                               <span className="text-xs text-gray-600">
                                 {new Date(activity.submittedAt).toLocaleDateString()}
                               </span>
-                              <span className={`text-xs font-medium ${
-                                passed ? 'text-green-700' : 'text-red-700'
-                              }`}>
+                              <span className={`text-xs font-medium ${passed ? 'text-green-700' : 'text-red-700'
+                                }`}>
                                 {scorePercentage}%
                               </span>
                             </div>
@@ -390,11 +407,10 @@ export const MyLearningDashboard: React.FC = () => {
                       <div
                         className="bg-green-600 h-3 rounded-full transition-all"
                         style={{
-                          width: `${
-                            stats.totalLessons > 0
+                          width: `${stats.totalLessons > 0
                               ? (stats.completedLessons / stats.totalLessons) * 100
                               : 0
-                          }%`,
+                            }%`,
                         }}
                       />
                     </div>

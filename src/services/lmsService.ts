@@ -896,3 +896,474 @@ async function updateCourseReviewStats(courseId: string): Promise<void> {
     console.error('Error updating course review stats:', error);
   }
 }
+
+// ============================================
+// Course Progress Functions
+// ============================================
+
+import type {
+  LmsLessonProgress,
+  LmsCourseProgress,
+  UpsertLessonProgressInput,
+  UpsertCourseProgressInput,
+  UserProgressStats,
+  LmsQuizSubmission,
+  SaveQuizSubmissionInput,
+} from '../types/lmsCourseProgress';
+
+/**
+ * Upsert lesson progress (insert or update)
+ */
+export async function upsertLessonProgress(
+  userId: string,
+  input: UpsertLessonProgressInput
+): Promise<LmsLessonProgress> {
+  const now = new Date().toISOString();
+
+  const upsertData: any = {
+    user_id: userId,
+    lesson_id: input.lesson_id,
+    course_id: input.course_id,
+    course_slug: input.course_slug,
+    last_accessed_at: now,
+    updated_at: now,
+  };
+
+  // Set optional fields if provided
+  if (input.status !== undefined) {
+    upsertData.status = input.status;
+    if (input.status === 'in_progress' && !upsertData.started_at) {
+      upsertData.started_at = now;
+    }
+    if (input.status === 'completed') {
+      upsertData.completed_at = now;
+    }
+  }
+  if (input.progress_percentage !== undefined) {
+    upsertData.progress_percentage = input.progress_percentage;
+  }
+  if (input.quiz_passed !== undefined) {
+    upsertData.quiz_passed = input.quiz_passed;
+  }
+  if (input.quiz_score !== undefined) {
+    upsertData.quiz_score = input.quiz_score;
+  }
+  if (input.time_spent_seconds !== undefined) {
+    upsertData.time_spent_seconds = input.time_spent_seconds;
+  }
+
+  const { data, error } = await lmsSupabaseClient
+    .from('lms_lesson_progress')
+    .upsert(upsertData, {
+      onConflict: 'user_id,lesson_id',
+    })
+    .select()
+    .single();
+
+  if (error) {
+    console.error('Error upserting lesson progress:', error);
+    throw error;
+  }
+
+  // Recalculate course progress
+  await recalculateCourseProgress(userId, input.course_id, input.course_slug);
+
+  return data;
+}
+
+/**
+ * Get lesson progress for a user
+ */
+export async function getLessonProgress(
+  userId: string,
+  lessonId: string
+): Promise<LmsLessonProgress | null> {
+  const { data, error } = await lmsSupabaseClient
+    .from('lms_lesson_progress')
+    .select('*')
+    .eq('user_id', userId)
+    .eq('lesson_id', lessonId)
+    .single();
+
+  if (error) {
+    if (error.code === 'PGRST116') {
+      return null;
+    }
+    console.error('Error fetching lesson progress:', error);
+    throw error;
+  }
+
+  return data;
+}
+
+/**
+ * Get all lesson progress for a user in a course
+ */
+export async function getCourseLessonsProgress(
+  userId: string,
+  courseId: string
+): Promise<LmsLessonProgress[]> {
+  const { data, error } = await lmsSupabaseClient
+    .from('lms_lesson_progress')
+    .select('*')
+    .eq('user_id', userId)
+    .eq('course_id', courseId)
+    .order('last_accessed_at', { ascending: false });
+
+  if (error) {
+    console.error('Error fetching course lessons progress:', error);
+    throw error;
+  }
+
+  return data || [];
+}
+
+/**
+ * Upsert course progress
+ */
+export async function upsertCourseProgress(
+  userId: string,
+  input: UpsertCourseProgressInput
+): Promise<LmsCourseProgress> {
+  const now = new Date().toISOString();
+
+  const upsertData: any = {
+    user_id: userId,
+    course_id: input.course_id,
+    course_slug: input.course_slug,
+    last_accessed_at: now,
+    updated_at: now,
+  };
+
+  // Set optional fields if provided
+  if (input.status !== undefined) {
+    upsertData.status = input.status;
+    if (input.status === 'in_progress' && !upsertData.started_at) {
+      upsertData.started_at = now;
+    }
+    if (input.status === 'completed') {
+      upsertData.completed_at = now;
+    }
+  }
+  if (input.progress_percentage !== undefined) {
+    upsertData.progress_percentage = input.progress_percentage;
+  }
+  if (input.lessons_completed !== undefined) {
+    upsertData.lessons_completed = input.lessons_completed;
+  }
+  if (input.total_lessons !== undefined) {
+    upsertData.total_lessons = input.total_lessons;
+  }
+  if (input.certificate_earned !== undefined) {
+    upsertData.certificate_earned = input.certificate_earned;
+    if (input.certificate_earned) {
+      upsertData.certificate_earned_at = now;
+    }
+  }
+
+  const { data, error } = await lmsSupabaseClient
+    .from('lms_course_progress')
+    .upsert(upsertData, {
+      onConflict: 'user_id,course_id',
+    })
+    .select()
+    .single();
+
+  if (error) {
+    console.error('Error upserting course progress:', error);
+    throw error;
+  }
+
+  return data;
+}
+
+/**
+ * Get course progress for a user
+ */
+export async function getCourseProgress(
+  userId: string,
+  courseId: string
+): Promise<LmsCourseProgress | null> {
+  const { data, error } = await lmsSupabaseClient
+    .from('lms_course_progress')
+    .select('*')
+    .eq('user_id', userId)
+    .eq('course_id', courseId)
+    .single();
+
+  if (error) {
+    if (error.code === 'PGRST116') {
+      return null;
+    }
+    console.error('Error fetching course progress:', error);
+    throw error;
+  }
+
+  return data;
+}
+
+/**
+ * Get all course progress for a user
+ */
+export async function getUserCoursesProgress(
+  userId: string
+): Promise<LmsCourseProgress[]> {
+  const { data, error } = await lmsSupabaseClient
+    .from('lms_course_progress')
+    .select('*')
+    .eq('user_id', userId)
+    .order('last_accessed_at', { ascending: false });
+
+  if (error) {
+    console.error('Error fetching user courses progress:', error);
+    throw error;
+  }
+
+  return data || [];
+}
+
+/**
+ * Get user's in-progress courses
+ */
+export async function getUserInProgressCourses(
+  userId: string
+): Promise<LmsCourseProgress[]> {
+  const { data, error } = await lmsSupabaseClient
+    .from('lms_course_progress')
+    .select('*')
+    .eq('user_id', userId)
+    .eq('status', 'in_progress')
+    .order('last_accessed_at', { ascending: false });
+
+  if (error) {
+    console.error('Error fetching in-progress courses:', error);
+    throw error;
+  }
+
+  return data || [];
+}
+
+/**
+ * Get user's completed courses
+ */
+export async function getUserCompletedCourses(
+  userId: string
+): Promise<LmsCourseProgress[]> {
+  const { data, error } = await lmsSupabaseClient
+    .from('lms_course_progress')
+    .select('*')
+    .eq('user_id', userId)
+    .eq('status', 'completed')
+    .order('completed_at', { ascending: false });
+
+  if (error) {
+    console.error('Error fetching completed courses:', error);
+    throw error;
+  }
+
+  return data || [];
+}
+
+/**
+ * Get overall progress stats for a user
+ */
+export async function getUserProgressStats(userId: string): Promise<UserProgressStats> {
+  const { data: courses, error: coursesError } = await lmsSupabaseClient
+    .from('lms_course_progress')
+    .select('*')
+    .eq('user_id', userId);
+
+  if (coursesError) {
+    console.error('Error fetching user progress stats:', coursesError);
+    throw coursesError;
+  }
+
+  const allCourses = courses || [];
+  const coursesStarted = allCourses.filter(c => c.status !== 'not_started').length;
+  const coursesCompleted = allCourses.filter(c => c.status === 'completed').length;
+  const certificatesEarned = allCourses.filter(c => c.certificate_earned).length;
+  const totalTimeSpentSeconds = allCourses.reduce((sum, c) => sum + (c.total_time_spent_seconds || 0), 0);
+  const totalProgress = allCourses.reduce((sum, c) => sum + (c.progress_percentage || 0), 0);
+  const averageProgress = allCourses.length > 0 ? totalProgress / allCourses.length : 0;
+
+  // Get total lessons completed
+  const { data: lessons } = await lmsSupabaseClient
+    .from('lms_lesson_progress')
+    .select('id')
+    .eq('user_id', userId)
+    .eq('status', 'completed');
+
+  return {
+    coursesStarted,
+    coursesCompleted,
+    lessonsCompleted: lessons?.length || 0,
+    totalTimeSpentHours: Math.round((totalTimeSpentSeconds / 3600) * 10) / 10,
+    certificatesEarned,
+    averageProgress: Math.round(averageProgress),
+  };
+}
+
+/**
+ * Recalculate course progress based on lesson progress
+ */
+async function recalculateCourseProgress(
+  userId: string,
+  courseId: string,
+  courseSlug: string
+): Promise<void> {
+  // Get all lesson progress for this course
+  const lessonProgress = await getCourseLessonsProgress(userId, courseId);
+
+  // Get total lessons from the course
+  const { data: course } = await lmsSupabaseClient
+    .from('lms_courses')
+    .select('id')
+    .eq('id', courseId)
+    .single();
+
+  if (!course) return;
+
+  // Get total lessons count from modules and direct lessons
+  const { data: modules } = await lmsSupabaseClient
+    .from('lms_modules')
+    .select('id')
+    .eq('course_id', courseId);
+
+  let totalLessons = 0;
+
+  if (modules && modules.length > 0) {
+    const { count } = await lmsSupabaseClient
+      .from('lms_lessons')
+      .select('id', { count: 'exact', head: true })
+      .in('module_id', modules.map(m => m.id));
+    totalLessons = count || 0;
+  }
+
+  // Also count direct lessons
+  const { count: directLessonsCount } = await lmsSupabaseClient
+    .from('lms_lessons')
+    .select('id', { count: 'exact', head: true })
+    .eq('course_id', courseId)
+    .is('module_id', null);
+
+  totalLessons += directLessonsCount || 0;
+
+  const completedLessons = lessonProgress.filter(l => l.status === 'completed').length;
+  const progressPercentage = totalLessons > 0 ? (completedLessons / totalLessons) * 100 : 0;
+  const totalTimeSpent = lessonProgress.reduce((sum, l) => sum + (l.time_spent_seconds || 0), 0);
+
+  let status: 'not_started' | 'in_progress' | 'completed' = 'not_started';
+  if (completedLessons > 0 && completedLessons >= totalLessons) {
+    status = 'completed';
+  } else if (lessonProgress.length > 0) {
+    status = 'in_progress';
+  }
+
+  await upsertCourseProgress(userId, {
+    course_id: courseId,
+    course_slug: courseSlug,
+    status,
+    progress_percentage: progressPercentage,
+    lessons_completed: completedLessons,
+    total_lessons: totalLessons,
+  });
+}
+
+/**
+ * Mark a lesson as started
+ */
+export async function markLessonStarted(
+  userId: string,
+  lessonId: string,
+  courseId: string,
+  courseSlug: string
+): Promise<LmsLessonProgress> {
+  return upsertLessonProgress(userId, {
+    lesson_id: lessonId,
+    course_id: courseId,
+    course_slug: courseSlug,
+    status: 'in_progress',
+  });
+}
+
+/**
+ * Mark a lesson as completed
+ */
+export async function markLessonCompleted(
+  userId: string,
+  lessonId: string,
+  courseId: string,
+  courseSlug: string,
+  quizPassed?: boolean,
+  quizScore?: number
+): Promise<LmsLessonProgress> {
+  return upsertLessonProgress(userId, {
+    lesson_id: lessonId,
+    course_id: courseId,
+    course_slug: courseSlug,
+    status: 'completed',
+    progress_percentage: 100,
+    quiz_passed: quizPassed,
+    quiz_score: quizScore,
+  });
+}
+
+/**
+ * Update lesson video progress
+ */
+export async function updateLessonVideoProgress(
+  userId: string,
+  lessonId: string,
+  courseId: string,
+  courseSlug: string,
+  progressPercentage: number
+): Promise<LmsLessonProgress> {
+  return upsertLessonProgress(userId, {
+    lesson_id: lessonId,
+    course_id: courseId,
+    course_slug: courseSlug,
+    status: progressPercentage >= 90 ? 'completed' : 'in_progress',
+    progress_percentage: progressPercentage,
+  });
+}
+/**
+ * Save a quiz submission history record
+ */
+export async function saveQuizSubmission(
+  userId: string,
+  input: SaveQuizSubmissionInput
+): Promise<LmsQuizSubmission> {
+  // First, get the current attempt number for this quiz/user
+  const { count } = await lmsSupabase
+    .from('lms_quiz_submissions')
+    .select('*', { count: 'exact', head: true })
+    .eq('user_id', userId)
+    .eq('quiz_id', input.quiz_id);
+
+  const attemptNumber = (count || 0) + 1;
+
+  const { data, error } = await lmsSupabase
+    .from('lms_quiz_submissions')
+    .insert({
+      user_id: userId,
+      quiz_id: input.quiz_id,
+      lesson_id: input.lesson_id,
+      course_id: input.course_id,
+      score_achieved: input.score_achieved,
+      total_questions: input.total_questions,
+      score_percentage: input.score_percentage,
+      passed: input.passed,
+      answers: input.answers,
+      attempt_number: attemptNumber,
+      completed_at: new Date().toISOString(),
+    })
+    .select()
+    .single();
+
+  if (error) {
+    console.error('Error saving quiz submission:', error);
+    throw error;
+  }
+
+  return data as LmsQuizSubmission;
+}

@@ -17,6 +17,7 @@ import {
   ChevronDown,
   CheckCircle,
   MessageSquare,
+  Edit3,
 } from 'lucide-react';
 import { Header } from '../../components/Header';
 import { Footer } from '../../components/Footer';
@@ -26,7 +27,9 @@ import type { LmsQuizRow } from '../../types/lmsSupabase';
 import type { LmsDetail } from '../../data/lmsCourseDetails';
 import MarkdownRenderer from '../../components/guides/MarkdownRenderer';
 import { CourseReviewForm } from '../../components/lms/CourseReviewForm';
-import { useCreateCourseReview, useHasUserReviewed } from '../../hooks/useCourseReviews';
+import { useCreateCourseReview, useUpdateCourseReview, useUserCourseReview } from '../../hooks/useCourseReviews';
+import { useMarkLessonStarted, useMarkLessonCompleted, useUpdateLessonVideoProgress, useLessonProgress, useSaveQuizSubmission } from '../../hooks/useCourseProgress';
+import { useAuth } from '../../components/Header';
 import type { CreateReviewInput } from '../../types/lmsCourseReview';
 
 type TabType = 'resources';
@@ -153,10 +156,26 @@ export const LmsLessonPage: React.FC = () => {
   const [showReviewForm, setShowReviewForm] = useState(false);
   const [reviewSubmitted, setReviewSubmitted] = useState(false);
 
-  // Review mutation
+  // Review mutations and queries
   const createReviewMutation = useCreateCourseReview();
+  const updateReviewMutation = useUpdateCourseReview();
 
   const { data: course, isLoading: courseLoading } = useLmsCourse(courseSlug || '');
+
+  // Check if user has an existing review for this course
+  const { data: existingUserReview } = useUserCourseReview(course?.id || '');
+  const hasExistingReview = !!existingUserReview;
+
+  // Progress hooks and state
+  const { user } = useAuth();
+  const markLessonStartedMutation = useMarkLessonStarted();
+  const markLessonCompletedMutation = useMarkLessonCompleted();
+  const updateVideoProgressMutation = useUpdateLessonVideoProgress();
+  const saveQuizSubmissionMutation = useSaveQuizSubmission();
+  const { data: dbLessonProgress } = useLessonProgress(lessonId || '');
+
+  const lastProgressSyncRef = useRef<number>(0);
+  const lastProgressValueRef = useRef<number>(0);
 
   // Auto-expand the module containing the current lesson
   useEffect(() => {
@@ -275,7 +294,7 @@ export const LmsLessonPage: React.FC = () => {
     }
   }, [course?.id]);
 
-  // Load progress and completion state
+  // Load progress and completion state from localStorage
   useEffect(() => {
     if (lessonId) {
       const progress = getLessonProgress(lessonId);
@@ -284,6 +303,41 @@ export const LmsLessonPage: React.FC = () => {
       setIsVideoCompleted(completed);
     }
   }, [lessonId]);
+
+  // Sync Supabase progress to local state
+  useEffect(() => {
+    if (dbLessonProgress && lessonId) {
+      const localProgress = getLessonProgress(lessonId);
+      const localCompleted = isLessonCompleted(lessonId);
+
+      // If DB has better progress, update local
+      if (dbLessonProgress.progress_percentage > localProgress) {
+        setVideoProgress(dbLessonProgress.progress_percentage);
+        saveLessonProgress(lessonId, dbLessonProgress.progress_percentage);
+      }
+
+      if (dbLessonProgress.status === 'completed' && !localCompleted) {
+        setIsVideoCompleted(true);
+        markLessonCompleted(lessonId);
+      }
+
+      if (dbLessonProgress.quiz_passed && !isQuizPassed(lessonId)) {
+        setQuizPassed(true);
+        markQuizPassed(lessonId);
+      }
+    }
+  }, [dbLessonProgress, lessonId]);
+
+  // Mark lesson as started in Supabase
+  useEffect(() => {
+    if (user && lessonId && course?.id) {
+      markLessonStartedMutation.mutate({
+        lessonId,
+        courseId: course.id,
+        courseSlug: courseSlug || '',
+      });
+    }
+  }, [user?.id, lessonId, course?.id]);
 
   // Fetch quiz when lesson changes
   useEffect(() => {
@@ -359,10 +413,35 @@ export const LmsLessonPage: React.FC = () => {
       };
       localStorage.setItem(submissionKey, JSON.stringify(submissionData));
 
+      // Sync to Supabase
+      if (user && course?.id && quiz) {
+        saveQuizSubmissionMutation.mutate({
+          quiz_id: quiz.id,
+          lesson_id: lessonId,
+          course_id: course.id,
+          score_achieved: correctAnswers,
+          total_questions: questions.length,
+          score_percentage: scorePercentage,
+          passed: passed,
+          answers: quizAnswers,
+        });
+      }
+
       // Store quiz passed status
       if (passed) {
         markQuizPassed(lessonId);
         markLessonCompleted(lessonId);
+
+        // Sync to Supabase
+        if (user && course?.id) {
+          markLessonCompletedMutation.mutate({
+            lessonId,
+            courseId: course.id,
+            courseSlug: courseSlug || '',
+            quizPassed: true,
+            quizScore: scorePercentage,
+          });
+        }
       }
     }
   };
@@ -388,6 +467,31 @@ export const LmsLessonPage: React.FC = () => {
     if (progress >= 90 && !isVideoCompleted && !quiz) {
       setIsVideoCompleted(true);
       markLessonCompleted(currentLesson.id);
+
+      // Sync completion to Supabase
+      if (user && course?.id) {
+        markLessonCompletedMutation.mutate({
+          lessonId: currentLesson.id,
+          courseId: course.id,
+          courseSlug: courseSlug || '',
+        });
+      }
+    }
+
+    // Periodically sync progress to Supabase (every 10 seconds or 5% progress)
+    const now = Date.now();
+    const timeDelta = now - lastProgressSyncRef.current;
+    const progressDelta = Math.abs(progress - lastProgressValueRef.current);
+
+    if (user && course?.id && (timeDelta > 10000 || progressDelta >= 5)) {
+      updateVideoProgressMutation.mutate({
+        lessonId: currentLesson.id,
+        courseId: course.id,
+        courseSlug: courseSlug || '',
+        progressPercentage: progress,
+      });
+      lastProgressSyncRef.current = now;
+      lastProgressValueRef.current = progress;
     }
   };
 
@@ -876,15 +980,27 @@ export const LmsLessonPage: React.FC = () => {
                           </h2>
                           <p className="text-lg text-gray-700 mb-2">You've completed the course!</p>
                           <p className="text-gray-600 mb-8">
-                            Help us improve by sharing your learning experience. Your feedback is valuable!
+                            {hasExistingReview
+                              ? 'You\'ve already left a review for this course. You can update it anytime!'
+                              : 'Help us improve by sharing your learning experience. Your feedback is valuable!'
+                            }
                           </p>
                           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
                             <button
                               onClick={() => setShowReviewForm(true)}
                               className="flex items-center gap-2 px-8 py-3 bg-gradient-to-r from-[#030F35] to-[#0A2463] text-white font-semibold rounded-xl hover:shadow-lg transition-all"
                             >
-                              <MessageSquare size={20} />
-                              Leave a Review
+                              {hasExistingReview ? (
+                                <>
+                                  <Edit3 size={20} />
+                                  Edit Review
+                                </>
+                              ) : (
+                                <>
+                                  <MessageSquare size={20} />
+                                  Leave a Review
+                                </>
+                              )}
                             </button>
                             <Link
                               to={`/lms/${courseSlug}`}
@@ -900,9 +1016,18 @@ export const LmsLessonPage: React.FC = () => {
                             courseId={course?.id || ''}
                             courseSlug={courseSlug || ''}
                             courseTitle={course?.title || ''}
-                            isSubmitting={createReviewMutation.isPending}
+                            mode={hasExistingReview ? 'edit' : 'create'}
+                            existingReview={existingUserReview}
+                            isSubmitting={hasExistingReview ? updateReviewMutation.isPending : createReviewMutation.isPending}
                             onSubmit={async (input) => {
-                              await createReviewMutation.mutateAsync(input);
+                              if (hasExistingReview && existingUserReview) {
+                                await updateReviewMutation.mutateAsync({
+                                  reviewId: existingUserReview.id,
+                                  input,
+                                });
+                              } else {
+                                await createReviewMutation.mutateAsync(input);
+                              }
                               setReviewSubmitted(true);
                               setShowReviewForm(false);
                             }}
@@ -919,10 +1044,13 @@ export const LmsLessonPage: React.FC = () => {
                             <CheckCircle className="w-10 h-10 text-blue-600" />
                           </div>
                           <h2 className="text-2xl font-bold text-gray-900 mb-3">
-                            Thank You for Your Feedback!
+                            {hasExistingReview ? 'Review Updated!' : 'Thank You for Your Feedback!'}
                           </h2>
                           <p className="text-gray-600 mb-8">
-                            Your review helps us improve courses for future learners.
+                            {hasExistingReview
+                              ? 'Your review has been successfully updated.'
+                              : 'Your review helps us improve courses for future learners.'
+                            }
                           </p>
                           <Link
                             to={`/lms/${courseSlug}`}
@@ -967,12 +1095,22 @@ export const LmsLessonPage: React.FC = () => {
                                 markLessonCompleted(currentLesson.id);
                                 setVideoProgress(100);
                                 saveLessonProgress(currentLesson.id, 100);
+
+                                // Sync to Supabase
+                                if (user && course?.id) {
+                                  markLessonCompletedMutation.mutate({
+                                    lessonId: currentLesson.id,
+                                    courseId: course.id,
+                                    courseSlug: courseSlug || '',
+                                  });
+                                }
                               }
                             }}
-                            className="flex items-center gap-2 px-6 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors"
+                            disabled={markLessonCompletedMutation.isPending}
+                            className="flex items-center gap-2 px-6 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
                           >
                             <CheckCircle2 size={20} />
-                            <span>Mark as Completed</span>
+                            <span>{markLessonCompletedMutation.isPending ? 'Saving...' : 'Mark as Completed'}</span>
                           </button>
                         </div>
                       )}

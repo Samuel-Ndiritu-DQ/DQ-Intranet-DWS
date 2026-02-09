@@ -18,28 +18,28 @@ const supportOptions: SupportCard[] = [
   {
     icon: <User size={28} color="white" />,
     title: 'Contact Your People Partner',
-    description: 'HR topics, onboarding questions, and people-related support.',
+    description: 'Onboarding support, people topics, and clear next steps.',
     href: '/support/people-partner',
     buttonText: 'Get in Touch',
   },
   {
     icon: <MessageCircle size={28} color="white" />,
     title: 'DWS Communication Center',
-    description: 'Ask questions, raise requests, or get clarifications centrally.',
+    description: 'Ask questions, raise requests, and get fast clarification.',
     href: '/support/communication-center',
     buttonText: 'Get in Touch',
   },
   {
     icon: <BookOpen size={28} color="white" />,
     title: 'FAQs & Glossary',
-    description: 'Self-serve answers to common DQ terms, tools, and processes.',
+    description: 'Self-serve answers for DQ terms, tools, and processes.',
     href: '/support/faqs',
     buttonText: 'Get in Touch',
   },
   {
     icon: <UsersIcon size={28} color="white" />,
     title: 'Unit or Delivery Lead',
-    description: 'Day-to-day work priorities, expectations, and delivery guidance.',
+    description: 'Daily priorities, expectations, and delivery direction.',
     href: '/support/unit-or-delivery-lead',
     buttonText: 'Get in Touch',
   },
@@ -429,10 +429,10 @@ export function OnboardingLanding() {
 
           <div className="w-full flex items-center relative z-10">
             <div className="container mx-auto px-4 md:px-6 lg:px-8 xl:px-12">
-            <div className="max-w-5xl">
+            <div className="max-w-4xl">
               <FadeInUpOnScroll>
                 <h1 
-                  className="text-[76px] text-white mb-6 text-left font-sans"
+                  className="text-[44px] sm:text-[56px] lg:text-[76px] text-white mb-6 text-left font-sans"
                   style={{
                     fontWeight: 700,
                     lineHeight: 1.1,
@@ -442,7 +442,7 @@ export function OnboardingLanding() {
                     Welcome to DQ Onboarding
                 </h1>
                 <p className="text-lg md:text-xl text-white/95 mb-8 font-normal leading-relaxed text-left max-w-3xl" style={{ fontFamily: 'Inter, system-ui, -apple-system, sans-serif' }}>
-                    Your 3-month onboarding journey helps you integrate into DQ, adopt our DNA, and gain confidence in your role.
+                    Learn how DQ actually works. You will see how intent becomes execution, how decisions are made, and how real work moves. You are not onboarding into a role. You are onboarding into an execution system.
                 </p>
               </FadeInUpOnScroll>
 
@@ -485,20 +485,20 @@ export function OnboardingLanding() {
         <section id="onboarding-sections" className="py-28 md:py-36 bg-white">
           <div className="container mx-auto px-4 md:px-6 lg:px-8">
             <div className="max-w-7xl mx-auto">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-16 items-center">
-            <FadeInUpOnScroll>
-                  <div>
-                    <p className="text-xs font-bold tracking-[0.15em] uppercase text-[#E95139] mb-5">
+              <div className="grid grid-cols-1 md:grid-cols-12 gap-12 lg:gap-16 items-center">
+            <FadeInUpOnScroll className="md:col-span-5 lg:col-span-6">
+                  <div className="max-w-xl">
+                    <p className="text-xs font-bold tracking-[0.15em] uppercase text-[#E95139] mb-4">
                       Getting Started
                     </p>
-                    <h2 className="text-[36px] font-bold text-[#030F35] mb-8 leading-tight">
+                    <h2 className="text-[36px] font-bold text-[#030F35] mb-6 leading-tight">
                       DQ Organization
                 </h2>
-                    <div className="text-lg text-gray-700 leading-relaxed mb-10 space-y-3">
-                      <p>Before you dive in, get grounded in the organization you’ve joined.</p>
-                      <p>DigitalQatalyst is a purpose driven digital organisation, built on intentional frameworks that guide how we operate.</p>
-                      <p>Every decision, process, and interaction is designed to convert potential into real execution.</p>
-                      <p>Understanding this foundation will help you navigate how work flows at DQ and why things are done the way they are.</p>
+                    <div className="text-lg text-gray-700 leading-relaxed mb-8 space-y-3">
+                      <p>DQ is a purpose-driven digital organisation, designed to turn potential into execution.</p>
+                      <p>Work flows shape decisions, not hierarchy, titles, or assumptions.</p>
+                      <p>Understanding the organisation shows how decisions are made, how teams collaborate, and why work is structured the way it is.</p>
+                      <p>That clarity helps you execute sooner.</p>
               </div>
                     <button
                       onClick={handleExploreOrganization}
@@ -509,10 +509,10 @@ export function OnboardingLanding() {
                     </button>
                                 </div>
                 </FadeInUpOnScroll>
-                <FadeInUpOnScroll delay={0.1}>
-                  <div className="h-72 md:h-96 soft-panel rounded-2xl border border-slate-200/60 shadow-xl overflow-hidden hover:shadow-2xl transition-all duration-500">
+                <FadeInUpOnScroll delay={0.1} className="md:col-span-7 lg:col-span-6">
+                  <div className="w-full aspect-[4/3] md:aspect-[5/4] soft-panel rounded-2xl border border-slate-200/60 shadow-xl overflow-hidden hover:shadow-2xl transition-all duration-500">
                     <img 
-                      src="https://i.ibb.co/hxhnPrKJ/Screenshot-2026-01-20-at-10-05-10-AM.png" 
+                      src="https://image2url.com/r2/default/images/1770380544703-54614bac-d4dc-43c0-9493-8db13369707d.blob" 
                       alt="DQ Organization" 
                       className="w-full h-full object-cover"
                     />
@@ -527,9 +527,9 @@ export function OnboardingLanding() {
         <section className="py-28 md:py-36 bg-slate-50/50">
           <div className="container mx-auto px-4 md:px-6 lg:px-8">
             <div className="max-w-7xl mx-auto">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-16 items-center">
-                <FadeInUpOnScroll delay={0.1}>
-                  <div className="h-72 md:h-96 soft-panel rounded-2xl border border-indigo-200/40 shadow-xl flex items-center justify-center p-6 md:p-8 overflow-hidden order-2 md:order-1 hover:shadow-2xl transition-all duration-500">
+              <div className="grid grid-cols-1 md:grid-cols-12 gap-12 lg:gap-16 items-center">
+                <FadeInUpOnScroll delay={0.1} className="md:col-span-7 lg:col-span-6 order-2 md:order-1">
+                  <div className="w-full aspect-[4/3] md:aspect-[5/4] soft-panel rounded-2xl border border-indigo-200/40 shadow-xl flex items-center justify-center p-6 md:p-8 overflow-hidden hover:shadow-2xl transition-all duration-500">
                     <img 
                       src="https://i.ibb.co/hR2rjJzY/Screenshot-2026-01-20-at-10-45-17-AM.png"
                       alt="Golden Honeycomb of Competence Framework"
@@ -544,30 +544,33 @@ export function OnboardingLanding() {
                     />
                 </div>
               </FadeInUpOnScroll>
-                <FadeInUpOnScroll className="order-1 md:order-2">
-                  <div>
-                    <p className="text-xs font-bold tracking-[0.15em] uppercase text-[#E95139] mb-5">
+                <FadeInUpOnScroll className="md:col-span-5 lg:col-span-6 order-1 md:order-2">
+                  <div className="max-w-xl">
+                    <p className="text-xs font-bold tracking-[0.15em] uppercase text-[#E95139] mb-4">
                       DQ DNA
                     </p>
-                    <h2 className="text-[36px] font-bold text-[#030F35] mb-4 leading-tight">
+                    <h2 className="text-[36px] font-bold text-[#030F35] mb-6 leading-tight">
                       DQ GHC (The Golden Honeycomb of Competencies)
                     </h2>
-                    <div className="text-lg text-gray-700 leading-relaxed mb-10 space-y-3">
+                    <div className="text-lg text-gray-700 leading-relaxed mb-8 space-y-3">
                       <p>
-                        The DQ Golden Honeycomb of Competencies is a master framework defining the complete organisational DNA of DigitalQatalyst globally.
+                        As DQ scales, consistency matters.
                       </p>
                       <p>
-                        It integrates visionary strategic operational psychological and behavioural design dimensions into one coherent and scalable enterprise-wide system structure.
+                        The Golden Honeycomb of Competencies (GHC) keeps culture, leadership, governance, and value aligned as teams, markets, and products grow.
                       </p>
                       <p>
-                        This framework aligns thinking behaviour execution and decision-making enabling consistency agility and purpose across teams products and markets.
+                        It connects how we think, decide, lead, and deliver.
+                      </p>
+                      <p>
+                        That keeps clarity and discipline when complexity rises.
                       </p>
                     </div>
                     <button
                       onClick={handleExploreGHC}
                       className="inline-flex items-center gap-2 px-7 py-3.5 bg-[#030F35] text-white font-semibold rounded-lg hover:bg-[#0B1C3F] transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] group"
                     >
-                      Explore More about GHC 
+                      Explore GHC
                       <ArrowRight size={18} className="transition-transform group-hover:translate-x-1" />
                     </button>
                   </div>
@@ -581,31 +584,32 @@ export function OnboardingLanding() {
         <section className="py-28 md:py-36 bg-white">
           <div className="container mx-auto px-4 md:px-6 lg:px-8">
             <div className="max-w-7xl mx-auto">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-16 items-center">
-              <FadeInUpOnScroll>
-                <div>
-                    <p className="text-xs font-bold tracking-[0.15em] uppercase text-[#E95139] mb-5">
+              <div className="grid grid-cols-1 md:grid-cols-12 gap-12 lg:gap-16 items-center">
+              <FadeInUpOnScroll className="md:col-span-5 lg:col-span-6">
+                <div className="max-w-xl">
+                    <p className="text-xs font-bold tracking-[0.15em] uppercase text-[#E95139] mb-4">
                       Operational System
                     </p>
-                    <h2 className="text-[36px] font-bold text-[#030F35] mb-8 leading-tight">
+                    <h2 className="text-[36px] font-bold text-[#030F35] mb-6 leading-tight">
                       DQ 6x Digitals (6xD)
                 </h2>
-                    <div className="text-lg text-gray-700 leading-relaxed mb-10 space-y-3">
-                      <p>Transformation isn’t something we talk about; it’s something we deliberately design, build, and improve.</p>
-                      <p>The Agile 6xD Framework is how DQ designs, builds, and scales digital transformation — not as a one-time project, but as a living, evolving process.</p>
-                      <p>It’s built on Six Essential Perspectives — each answering a fundamental question every organisation must face on its path to relevance in the digital age.</p>
+                    <div className="text-lg text-gray-700 leading-relaxed mb-8 space-y-3">
+                      <p>Transformation at DQ is not theory.</p>
+                      <p>Agile 6xD is how we design, build, and scale work, turning ideas into outcomes through real execution.</p>
+                      <p>It gives teams a shared system to make sense of change, move work forward, and deliver under pressure.</p>
+                      <p>This is the execution backbone across teams, products, and initiatives.</p>
                               </div>
                     <button
                       onClick={handleExplore6XD}
                       className="inline-flex items-center gap-2 px-7 py-3.5 bg-[#030F35] text-white font-semibold rounded-lg hover:bg-[#0B1C3F] transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] group"
                               >
-                      Explore More about 6x Digitals
+                      Explore Agile 6xD
                       <ArrowRight size={18} className="transition-transform group-hover:translate-x-1" />
                     </button>
                         </div>
                       </FadeInUpOnScroll>
-                <FadeInUpOnScroll delay={0.1}>
-                  <div className="h-72 md:h-96 soft-panel rounded-2xl border border-teal-200/40 shadow-xl flex items-center justify-center p-6 md:p-8 overflow-hidden hover:shadow-2xl transition-all duration-500">
+                <FadeInUpOnScroll delay={0.1} className="md:col-span-7 lg:col-span-6">
+                  <div className="w-full aspect-[4/3] md:aspect-[5/4] soft-panel rounded-2xl border border-teal-200/40 shadow-xl flex items-center justify-center p-6 md:p-8 overflow-hidden hover:shadow-2xl transition-all duration-500">
                     <img 
                       src="https://i.ibb.co/JWqPMgtz/23.png"
                       alt="D6 Digital Accelerators Framework - 6X Digitals"
@@ -629,19 +633,20 @@ export function OnboardingLanding() {
         <section className="py-28 md:py-36" style={{ backgroundColor: '#f9fafb' }}>
           <div className="container mx-auto px-4 md:px-6 lg:px-8">
             <div className="max-w-7xl mx-auto">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
-            <FadeInUpOnScroll>
-                  <div>
-                    <p className="text-xs font-bold tracking-[0.15em] uppercase text-[#E95139] mb-5">
+              <div className="grid grid-cols-1 md:grid-cols-12 gap-12 lg:gap-16 items-center">
+            <FadeInUpOnScroll className="md:col-span-5 lg:col-span-6">
+                  <div className="max-w-xl">
+                    <p className="text-xs font-bold tracking-[0.15em] uppercase text-[#E95139] mb-4">
                       Your Role
                 </p>
-                    <h2 className="text-[36px] font-bold text-[#030F35] mb-8 leading-tight">
+                    <h2 className="text-[36px] font-bold text-[#030F35] mb-6 leading-tight">
                       Your Role at DQ
                 </h2>
-                    <div className="text-lg text-gray-700 leading-relaxed mb-10 space-y-3">
-                      <p>This is where DQ&apos;s mission connects directly to your work.</p>
-                      <p>Every role is designed with clear ownership, responsibility, and purpose.</p>
-                      <p>Understanding your role shows how your contribution creates impact across the organisation.</p>
+                    <div className="text-lg text-gray-700 leading-relaxed mb-8 space-y-3">
+                      <p>Your role at DQ is more than a job description.</p>
+                      <p>It is the responsibilities, decisions, and outcomes you own in the system.</p>
+                      <p>Knowing where you fit helps you take ownership faster, make better decisions, and create visible impact.</p>
+                      <p>This is where responsibility meets execution.</p>
                     </div>
                     <button
                       type="button"
@@ -652,8 +657,8 @@ export function OnboardingLanding() {
                     </button>
               </div>
             </FadeInUpOnScroll>
-                <FadeInUpOnScroll delay={0.1}>
-                  <div className="h-80 md:h-96 soft-panel rounded-2xl border border-slate-200/60 shadow-xl overflow-hidden hover:shadow-2xl transition-all duration-500">
+                <FadeInUpOnScroll delay={0.1} className="md:col-span-7 lg:col-span-6">
+                  <div className="w-full aspect-[4/3] md:aspect-[5/4] soft-panel rounded-2xl border border-slate-200/60 shadow-xl overflow-hidden hover:shadow-2xl transition-all duration-500">
                     <img 
                       src="https://i.ibb.co/Nn1m3yxD/IT-04.webp"
                       alt="Professional collaborating at DQ - your role in focus"
@@ -928,12 +933,12 @@ export function OnboardingLanding() {
                   Need Help Along the Way?
                 </h2>
                 <p className="text-lg md:text-xl text-white/90 max-w-3xl mx-auto">
-                  You're not expected to do this alone—support is available for onboarding, HR questions, and everyday work needs.
+                  You are not expected to figure everything out alone. For onboarding help, process clarity, or day-to-day support, the channels are ready. Use them early. Use them often. That is how work moves faster at DQ.
                 </p>
               </div>
             </FadeInUpOnScroll>
 
-            <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div className="max-w-6xl mx-auto grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-8">
               {supportOptions.slice(0, 3).map((support, index) => {
                 // DWS main colors: Orange, Dark Blue, White - enhanced for vector background
                 const gradients = [

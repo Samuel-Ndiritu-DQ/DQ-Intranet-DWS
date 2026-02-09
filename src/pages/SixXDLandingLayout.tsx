@@ -437,6 +437,7 @@ type LandingOverrides = {
   badgeLabel?: string;
   heroHeadline?: string;
   heroHeadlineHighlightWord?: string;
+  heroHeadlineFontSize?: string;
   heroCTA?: string;
   heroSupporting?: string;
   heroFootnote?: string;
@@ -497,6 +498,7 @@ export function GHCLanding({ badgeLabel, overrides }: GHCLandingProps) {
   const actionCards = overrides?.actionCards ?? ACTION_CARDS_DEFAULT;
   const heroHeadline = overrides?.heroHeadline;
   const heroHeadlineHighlightWord = overrides?.heroHeadlineHighlightWord;
+  const heroHeadlineFontSize = overrides?.heroHeadlineFontSize;
   const heroCTA = overrides?.heroCTA ?? 'Read the Storybook';
   const heroSupporting =
     overrides?.heroSupporting ??
@@ -588,7 +590,7 @@ export function GHCLanding({ badgeLabel, overrides }: GHCLandingProps) {
 
   const renderHeroHeadline = () => {
     const baseStyle = {
-      fontSize: 'clamp(40px, 5vw, 70px)',
+      fontSize: heroHeadlineFontSize ?? 'clamp(40px, 5vw, 70px)',
       lineHeight: 1.05,
       whiteSpace: 'nowrap' as const,
     };

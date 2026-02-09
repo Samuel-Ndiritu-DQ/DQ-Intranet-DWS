@@ -40,7 +40,7 @@ const associateFeedbacks: AssociateFeedback[] = [
       'https://i.ibb.co/XkGXwk4Z/Screenshot-2026-01-27-at-3-39-28-PM.png',
     rating: 5,
     feedback:
-      'DigitalQatalyst’s values helped me focus on creating real impact, not just completing tasks. It encouraged ownership, clear thinking about outcomes, and continuous learning—helping me grow more confident and responsible in my role and as an individual.',
+      'DigitalQatalyst’s values helped me focus on creating real impact, not just completing tasks. They pushed me to take ownership, think clearly about outcomes, and stay open to continuous learning. Over time, this shifted how I approach my work: I plan with intent, communicate with purpose, and follow through with accountability. I’ve become more confident in making decisions, raising risks early, and supporting the team when challenges come up. These values also shaped me personally, helping me stay disciplined, curious, and responsible every day.',
   },
   {
     id: 'jerry',
@@ -50,7 +50,7 @@ const associateFeedbacks: AssociateFeedback[] = [
       'https://i.ibb.co/XMPk1nQ/Whats-App-Image-2026-01-23-at-11-20-35-AM-1.jpg',
     rating: 5,
     feedback:
-      'Digital Qatalyst’s values and mission encouraged me to continuously learn, adapt, and take ownership of my work. They pushed me to embrace challenges with curiosity and see feedback as a tool for growth. Collaboration and innovation strengthened my problem-solving and communication skills, helping me become more resilient and confident both professionally and personally.',
+      'DigitalQatalyst’s values and mission encourage me to keep learning, adapt fast, and take real ownership of my work. They push me to face challenges with curiosity and to treat feedback as fuel for growth, not criticism. In a collaborative, innovative culture, I’ve strengthened my problem-solving, communication, and prioritization skills. I now raise risks earlier, ask better questions, and contribute with more confidence in meetings. This mindset helps me deliver value, not just activity, every single day. Overall, I’m more resilient and confident professionally and personally.',
   },
   {
     id: 'sharon',
@@ -60,7 +60,7 @@ const associateFeedbacks: AssociateFeedback[] = [
       'https://images.pexels.com/photos/3760853/pexels-photo-3760853.jpeg?auto=compress&cs=tinysrgb&w=1200',
     rating: 5,
     feedback:
-      'A value that has significantly influenced my growth is Collaboration. It taught me the importance of leaning on others’ strengths and openly sharing progress, challenges, and insights. By engaging more with my team, I gained new perspectives that improved the quality of my work. Seeking timely feedback and involving the right people earlier made my work more efficient, aligned, and impactful.',
+      'A value that has significantly influenced my growth is Collaboration. It taught me to lean on others’ strengths and share progress, challenges, and insights openly. By engaging more with my team, I gained fresh perspectives that improved the quality of my work and helped me avoid blind spots. I also learned to ask for feedback earlier, not at the end, so I can adjust faster and deliver stronger outcomes. Involving the right people sooner has made my work more efficient, better aligned, and more impactful.',
   },
   {
     id: 'fadil',
@@ -894,12 +894,11 @@ const ProofAndTrust: React.FC = () => {
         <div className="mb-16">
           <FadeInUpOnScroll className="text-center mb-10">
             <h2 className="text-3xl font-bold text-gray-900 mb-3 clamp-1">
-              Why Agile Working Accelerates Growth
+              The DQ Agile Advantage
             </h2>
             <div>
-              <p className="text-lg text-gray-600 max-w-3xl mx-auto mb-8 text-balance clamp-2">
-                Agile working empowers teams to adapt, collaborate, and grow
-                faster together.
+              <p className="text-base sm:text-lg text-gray-600 mx-auto mb-8 text-balance leading-tight whitespace-normal sm:whitespace-nowrap max-w-full sm:max-w-4xl">
+                See how our way of working creates time for what matters: learning, focus, and meaningful impact.
               </p>
             </div>
           </FadeInUpOnScroll>
@@ -944,11 +943,11 @@ const ProofAndTrust: React.FC = () => {
         <div className="mb-16 bg-gradient-to-br from-gray-50 to-white rounded-2xl p-8 md:p-12 overflow-hidden relative">
           <FadeInUpOnScroll className="text-center mb-10 relative z-10">
             <h2 className="text-3xl font-bold text-gray-900 mb-3 clamp-1">
-              Associate Voices Shaping Digital Qatalyst
+              What Our Team Says
             </h2>
             <div>
-              <p className="text-lg text-gray-600 max-w-3xl mx-auto clamp-2">
-                Real associate stories reflecting ownership, collaboration, growth, learning, and everyday impact.
+              <p className="text-base sm:text-lg text-gray-600 mx-auto clamp-1 leading-tight whitespace-normal sm:whitespace-nowrap max-w-full sm:max-w-4xl">
+                Hear directly from the people who make it all happen.
               </p>
             </div>
           </FadeInUpOnScroll>
@@ -969,7 +968,7 @@ const ProofAndTrust: React.FC = () => {
             </h2>
             <div className="relative">
               <p className="text-lg text-gray-600 max-w-3xl mx-auto clamp-2">
-                Governance, Operations, Platforms, and Delivery — the four
+                Governance, Operations, Platforms, and Delivery the four
                 pillars driving DQ’s success.
               </p>
             </div>

@@ -143,7 +143,7 @@ const HeroSection: React.FC<HeroSectionProps> = ({ "data-id": dataId }) => {
                   </div>
                   <input
                     type="text"
-                    placeholder="Ask me anything about DWS... What do you need help with?"
+                    placeholder={isAuthenticated ? "Hi ".concat(user?.firstName ?? "there", ", what can we help you find today?") : "What can we help you find today?"}
                     className={`w-full py-3 pl-12 pr-4 outline-none text-gray-700 rounded-lg bg-gray-50 transition-all duration-300 ${
                       isSearchFocused ? 'bg-white ring-2 ring-blue-500' : ''
                     }`}

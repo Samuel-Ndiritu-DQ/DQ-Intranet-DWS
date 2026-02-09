@@ -172,7 +172,7 @@ const EnterpriseStages: React.FC = () => {
             Associate Growth Journey
           </h2>
           <p className="clamp-2 mx-auto max-w-3xl text-lg text-gray-600">
-            Every step of your journey matters — learn, collaborate, and grow to shape your success at DQ.
+            Every step of your journey matters learn, collaborate, and grow to shape your success at DQ.
           </p>
         </FadeInUpOnScroll>
 

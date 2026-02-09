@@ -178,7 +178,7 @@ const LeadApplySection = () => {
           </h2>
         </FadeInUpOnScroll>
         <FadeInUpOnScroll delay={0.2}>
-          <p className="text-lg text-gray-200 mb-12 max-w-3xl mx-auto">
+          <p className="text-base sm:text-lg text-gray-200 mb-12 mx-auto leading-tight whitespace-normal sm:whitespace-nowrap max-w-full sm:max-w-4xl">
             Everything you need to get started, work smarter, and unlock real progress at DQ all from one digital workspace.
           </p>
         </FadeInUpOnScroll>

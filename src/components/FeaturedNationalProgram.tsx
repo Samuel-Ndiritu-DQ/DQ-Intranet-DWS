@@ -138,7 +138,7 @@ export const FeaturedNationalProgram: React.FC = () => {
         </h2>
         <div>
           <p className="text-lg text-gray-600 max-w-3xl mx-auto">
-            Stay up to date with the latest updates, podcasts, and highlights everything you shouldn’t miss. 
+            Catch up on fresh stories, new podcasts, and highlights curated for you.
           </p>
         </div>
       </FadeInUpOnScroll>

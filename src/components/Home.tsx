@@ -408,7 +408,7 @@ export const HomePage: React.FC = () => {
               Services & Marketplaces
             </h2>
             <div>
-              <p className="text-lg text-gray-600 max-w-3xl mx-auto clamp-2">
+              <p className="text-base sm:text-lg text-gray-600 mx-auto clamp-1 leading-tight whitespace-normal sm:whitespace-nowrap max-w-full sm:max-w-4xl text-balance">
                 Everything you need to get started, work smarter, and unlock real progress at DQ all from one digital workspace.
               </p>
             </div>

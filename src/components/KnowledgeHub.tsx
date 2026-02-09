@@ -279,9 +279,8 @@ const KnowledgeHubContent = () => {
           <h2 className="text-3xl font-bold text-gray-900 mb-3 clamp-1">
             Stay Ahead with Workspace Insights
           </h2>
-          <p className="text-lg text-gray-600 max-w-3xl mx-auto clamp-2">
-            Stay current with DQ updates, insights, and events designed to help
-            you work smarter and grow every day.
+          <p className="text-base sm:text-lg text-gray-600 mx-auto clamp-1 leading-tight whitespace-normal sm:whitespace-nowrap max-w-full sm:max-w-4xl text-balance">
+            Stay current with DQ updates, insights, and events designed to help you work smarter and grow every day.
           </p>
         </FadeInUpOnScroll>
         {/* Segmented Tabs */}

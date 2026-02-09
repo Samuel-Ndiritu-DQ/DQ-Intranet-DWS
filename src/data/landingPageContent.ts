@@ -7,6 +7,7 @@ import {
   Clock,
   BookOpen,
   Award,
+  Heart,
   Rocket,
   Sparkles,
   type LucideIcon,
@@ -117,9 +118,9 @@ export const testimonials: Testimonial[] = [
       "https://image2url.com/images/1760524231537-47b810dd-94eb-4571-a6a9-0a9c6fbfb390.jpg",
     avatar: "https://randomuser.me/api/portraits/women/44.jpg",
     quote:
-      "Digital Qatalyst’s values helped me focus on creating real impact rather than just completing tasks.",
+      "DigitalQatalyst’s values helped me focus on creating real impact, not just completing tasks.",
     fullQuote:
-      "DigitalQatalyst’s values helped me focus on creating real impact rather than just completing tasks. They encouraged me to take ownership, think clearly about outcomes, and work with greater accountability. Collaboration and continuous learning supported my growth, helping me become more confident and responsible—both in my role and as an individual.",
+      "DigitalQatalyst’s values helped me focus on creating real impact, not just completing tasks. They pushed me to take ownership, think clearly about outcomes, and stay open to continuous learning. Over time, this shifted how I approach my work: I plan with intent, communicate with purpose, and follow through with accountability. I’ve become more confident in making decisions, raising risks early, and supporting the team when challenges come up. These values also shaped me personally, helping me stay disciplined, curious, and responsible every day.",
     rating: 5,
     modalTitle: "How Digital Qatalyst Builds Real Impact Through Values",
     videoThumbnail:
@@ -159,7 +160,7 @@ export const testimonials: Testimonial[] = [
     quote:
       "DigitalQatalyst’s values helped me focus on creating real impact, not just completing tasks.",
     fullQuote:
-      "DigitalQatalyst’s values helped me focus on creating real impact, not just completing tasks. They encouraged me to take ownership and think clearly about outcomes. Accountability, collaboration, and continuous learning supported my growth—helping me become more confident and responsible in my role and as an individual.",
+      "DigitalQatalyst’s values helped me focus on creating real impact, not just completing tasks. They pushed me to take ownership, think clearly about outcomes, and stay open to continuous learning. Over time, this shifted how I approach my work: I plan with intent, communicate with purpose, and follow through with accountability. I’ve become more confident in making decisions, raising risks early, and supporting the team when challenges come up. These values also shaped me personally, helping me stay disciplined, curious, and responsible every day.",
     rating: 5,
     modalTitle: "Real Impact Through Ownership",
     videoThumbnail:
@@ -238,7 +239,7 @@ export const featuredSectors: FeaturedSector[] = [
 // ============================================
 export const impactStats: ImpactStat[] = [
   {
-    label: 'Faster Task Closure',
+    label: 'Faster Delivery',
     value: 80,
     prefix: 'Over',
     suffix: '%',
@@ -247,7 +248,7 @@ export const impactStats: ImpactStat[] = [
     iconClassName: "text-[#FB5535]",
   },
   {
-    label: 'Focus Time Saved',
+    label: 'Deep Work Time Saved',
     value: 6,
     prefix: '+',
     suffix: 'hrs',
@@ -256,7 +257,7 @@ export const impactStats: ImpactStat[] = [
     iconClassName: "text-[#FB5535]",
   },
   {
-    label: 'Concepts Learned Daily',
+    label: 'New Skills Daily',
     value: 5,
     suffix: '+',
     iconComponent: BookOpen,
@@ -264,10 +265,10 @@ export const impactStats: ImpactStat[] = [
     iconClassName: "text-[#FB5535]",
   },
   {
-    label: 'Collaboration Growth Rate',
-    value: 87,
-    suffix: '%',
-    iconComponent: Award,
+    label: 'Team Satisfaction Score',
+    value: 4.8,
+    suffix: '/5',
+    iconComponent: Heart,
     iconSize: 20,
     iconClassName: "text-[#FB5535]",
   },
@@ -277,9 +278,9 @@ export const impactStats: ImpactStat[] = [
 // HERO CONTENT
 // ============================================
 export const heroContent: HeroContent = {
-  title: "Welcome to your Digital Workspace",
+  title: "Welcome Home, Qatalyst.",
   subtitle:
-    "A smarter way to work, learn, and collaborate at DQ. Designed to help every Qatalyst work faster",
+    "Connect, learn, and collaborate in one place. Your personalized hub designed to make your daily work simpler and more meaningful.",
   suggestionPills: [
     "Open an IT service request",
     "Where's the HR leave policy?",

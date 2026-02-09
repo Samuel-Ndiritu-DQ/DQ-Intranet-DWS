@@ -14,7 +14,7 @@ export interface GuideContent {
 
 export const GUIDE_CONTENT: Record<string, GuideContent> = {
   'ghc': {
-    title: 'The GHC (Golden Honeycomb)',
+    title: 'The GHC (Golden Honeycomb of Competencies)',
     subtitle: 'The Master Map',
     shortOverview: 'The Golden Honeycomb of Competencies (GHC) defines how work is organised at Digital Qatalyst. It brings together our direction, culture, and ways of working into one clear system that guides how decisions are made and work gets done.\n\nGHC exists to create clarity at every level. By connecting organisational goals to everyday work, it helps associates understand how their contributions matter and how to move work forward with confidence.\n\nGHC allows DQ to grow, adapt, and solve difficult problems without losing alignment. It enables consistent collaboration, clear execution, and reliable delivery across the organisation, through seven connected competencies: Vision, House of Values, Persona, Agile TMS, Agile SoS, Agile Flows, and Agile 6xD.',
     highlights: [

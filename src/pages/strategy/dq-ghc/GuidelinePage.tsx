@@ -168,9 +168,8 @@ function GuidelinePage() {
       {/* Hero Section */}
       <HeroSection 
         title={displayTitle}
-        subtitle="The Blueprint That Connects Our Vision to Your Daily Work"
+        subtitle="GHC is the operating framework that connects direction, culture, and execution at DQ."
         imageUrl="/images/guidelines-content.PNG"
-        badge="Strategy Framework"
       />
 
       <main className="flex-1 bg-white">

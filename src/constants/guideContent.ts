@@ -18,11 +18,11 @@ export const GUIDE_CONTENT: Record<string, GuideContent> = {
     subtitle: 'The Master Map',
     shortOverview: 'The Golden Honeycomb of Competencies (GHC) defines how work is organised at Digital Qatalyst. It brings together our direction, culture, and ways of working into one clear system that guides how decisions are made and work gets done.\n\nGHC exists to create clarity at every level. By connecting organisational goals to everyday work, it helps associates understand how their contributions matter and how to move work forward with confidence.\n\nGHC allows DQ to grow, adapt, and solve difficult problems without losing alignment. It enables consistent collaboration, clear execution, and reliable delivery across the organisation, through seven connected competencies: Vision, House of Values, Persona, Agile TMS, Agile SoS, Agile Flows, and Agile 6xD.',
     highlights: [
-      'Work with Clarity: Know exactly what matters and why, so you never waste energy pulling in the wrong direction.',
-      'Stay Grounded: When plans change, the framework keeps you steady and focused, so you don\'t lose momentum.',
-      'Collaborate Easily: We all speak the same language, which removes confusion and makes working together seamless.',
-      'See Your Impact: Connect your daily to-do list to the big picture. Know that your work creates real value, not just busy work.',
-      'Keep Growing: Use the tools to master new skills and evolve your role every single day.'
+      'Clear direction in everyday work: GHC helps you understand what matters most and why, so decisions and effort stay aligned instead of pulling in different directions.',
+      'Confidence when priorities change: When work shifts or new challenges appear, GHC provides structure that helps you adapt without losing focus or momentum.',
+      'Better collaboration across teams: Using a shared way of working makes it easier to communicate, coordinate, and move work forward with others without constant clarification.',
+      'Stronger connection between effort and impact: GHC links daily tasks to broader goals, helping you see how your work contributes to real outcomes, not just activity.',
+      'Consistent growth and learning: The GHC mindset and tools support continuous improvement; helping you develop skills, take on new responsibilities, and grow as work evolves.'
     ],
     storybookIntro: 'The Golden Honeycomb of competencies isn\'t just a framework; it is what drives us in Digital Qatalyst. It shows exactly how we design our work, make decisions, and stay aligned as one team.\n\nGet to know the seven core elements that make up our DNA. Instead of seeing them as separate rules, you will see how they link together; how our Culture drives our Execution, and how our Vision shapes your daily Tasks.\n\nWhen you understand the Golden Honeycomb of competencies, You will see clearly where your role fits into the team, making it easier to prioritize work, collaborate with teammates, and move forward with total confidence; even when the path gets complex.',
     whatYouWillLearn: [

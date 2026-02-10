@@ -54,7 +54,8 @@ const SIXXD_CARDS = [
     icon: Briefcase as LucideIcon,
     gradient: "bg-gradient-to-br from-[#131e42] via-[#30478a] to-[#f0f6ff]",
     accent: "#f0f6ff",
-    image: "https://image2url.com/r2/default/images/1770354686414-b937fd73-1454-446b-ba05-81a99e216fd2.jpg",
+    image:
+      "https://image2url.com/r2/default/images/1770711252171-5234c11d-afc2-44ba-a4f6-30269cd2bd3b.png",
     ctaLabel: "Read capability overview",
   },
   {

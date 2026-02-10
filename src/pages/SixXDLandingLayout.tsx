@@ -1316,7 +1316,14 @@ function ClassGrid({
   variant?: 'list' | 'chips';
 }) {
   const [activeClass, setActiveClass] = useState(tags[0] ?? '');
-  const filteredCards = cards.filter((card) => card.category === activeClass);
+  const filteredCards = activeClass === 'All Products'
+    ? cards
+    : cards.filter((card) => card.category === activeClass);
+
+  const classCode = (category: string) => {
+    const match = category.match(/\(([^)]+)\)/);
+    return match ? match[1] : category;
+  };
 
   return (
     <section id={id} className="relative py-24 bg-white">
@@ -1350,10 +1357,10 @@ function ClassGrid({
                     type="button"
                     onClick={() => setActiveClass(tag)}
                     className={[
-                      'px-4 py-2 rounded-full text-sm font-semibold border transition-colors',
+                      'px-4 py-2 rounded-full text-sm font-semibold border transition-colors shadow-sm',
                       isActive
-                        ? 'bg-[#e1513b] text-white border-[#e1513b] shadow-sm'
-                        : 'bg-white text-[#4a5678] border-[#dce5ff] hover:border-[#e1513b] hover:text-[#131e42]'
+                        ? 'bg-[#0c1a3a] text-white border-[#0c1a3a]'
+                        : 'bg-white text-[#131e42] border-[#dce5ff] hover:border-[#0c1a3a] hover:text-[#0c1a3a]'
                     ].join(' ')}
                     aria-current={isActive ? 'step' : undefined}
                   >
@@ -1367,36 +1374,51 @@ function ClassGrid({
               {filteredCards.map((card) => (
                 <article
                   key={card.id}
-                  className="rounded-3xl border border-[#e5e9f5] bg-white shadow-sm p-6 flex flex-col gap-3"
+                  className="rounded-3xl border border-[#e5e9f5] bg-white shadow-md overflow-hidden flex flex-col"
                 >
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <h3 className="text-xl font-semibold text-[#131e42] leading-tight">{card.title}</h3>
-                      <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#6b7390] mt-1">
-                        {card.category}
-                      </p>
+                  <div
+                    className="h-48 w-full"
+                    style={{
+                      background: 'linear-gradient(135deg, #a6b1ff 0%, #8ee7ff 100%)',
+                    }}
+                  >
+                    <div className="p-4 text-white text-sm font-semibold uppercase tracking-[0.18em]">
+                      {classCode(card.category)}
                     </div>
                   </div>
-                  <p className="text-sm text-[#131e42] leading-snug">
-                    <span className="font-semibold">What:</span> {card.executionQuestion}
-                  </p>
-                  <p className="text-sm text-[#4a5678] leading-snug">
-                    <span className="font-semibold">Why:</span> {card.executionLens}
-                  </p>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (card.route.startsWith('http')) {
-                        window.open(card.route, '_blank', 'noopener,noreferrer');
-                      } else {
-                        window.location.href = card.route;
-                      }
-                    }}
-                    className="mt-2 inline-flex items-center gap-2 text-sm font-semibold text-[#e1513b] hover:underline"
-                  >
-                    {card.ctaLabel ?? 'Open Product'}
-                    <ArrowRight className="h-4 w-4" />
-                  </button>
+                  <div className="p-6 flex flex-col gap-3 flex-1">
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <h3 className="text-xl font-semibold text-[#131e42] leading-tight">{card.title}</h3>
+                        <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#6b7390] mt-1">
+                          {card.category}
+                        </p>
+                      </div>
+                      <span className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#6b7390]">
+                        {classCode(card.category)}
+                      </span>
+                    </div>
+                    <p className="text-sm text-[#131e42] leading-snug">
+                      {card.executionQuestion}
+                    </p>
+                    <p className="text-sm text-[#4a5678] leading-snug">
+                      {card.executionLens}
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (card.route.startsWith('http')) {
+                          window.open(card.route, '_blank', 'noopener,noreferrer');
+                        } else {
+                          window.location.href = card.route;
+                        }
+                      }}
+                      className="mt-auto inline-flex items-center gap-2 text-sm font-semibold text-[#0c1a3a] hover:underline"
+                    >
+                      {card.ctaLabel ?? 'Open Product'}
+                      <ArrowRight className="h-4 w-4" />
+                    </button>
+                  </div>
                 </article>
               ))}
             </div>

@@ -25,10 +25,10 @@ export function ProductCard({ product, productClass }: ProductCardProps) {
       animate={{ opacity: 1, scale: 1 }}
       exit={{ opacity: 0, scale: 0.97 }}
       transition={{ duration: 0.2 }}
-      className="snap-start flex-none w-[320px] md:w-[360px] lg:w-[400px] rounded-2xl bg-white border border-gray-100 shadow-sm overflow-hidden"
+      className="snap-start flex-none w-[340px] md:w-[340px] lg:w-[340px] min-h-[730px] rounded-2xl bg-white border border-gray-100 shadow-sm overflow-hidden"
     >
       <div
-        className="h-40 w-full relative"
+        className="h-[412px] w-full relative"
         style={{ background: gradient }}
       >
         <div className="absolute inset-0 opacity-10"

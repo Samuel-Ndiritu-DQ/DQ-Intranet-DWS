@@ -455,6 +455,7 @@ type LandingOverrides = {
   responsesTitleFontSize?: string;
   responsesIntroFontSize?: string;
   responsesSequential?: boolean;
+  responsesLayout?: 'carousel' | 'classes-grid';
   responseCards?: CompetencyCard[];
   responseTags?: string[];
   bottomCTA?: string;
@@ -494,6 +495,7 @@ export function GHCLanding({ badgeLabel, overrides }: GHCLandingProps) {
     'Agile Flows',
     'Agile 6xD',
   ];
+  const responsesLayout = overrides?.responsesLayout ?? 'carousel';
   const featureCards = overrides?.foundationCards ?? FEATURE_CARDS_DEFAULT;
   const actionCards = overrides?.actionCards ?? ACTION_CARDS_DEFAULT;
   const heroHeadline = overrides?.heroHeadline;
@@ -936,6 +938,20 @@ function SectionCarousel({
     );
   }
 
+  if (responsesLayout === 'classes-grid') {
+    return (
+      <ClassGrid
+        id="ghc-carousel"
+        title={responsesTitle}
+        subtitle={responsesIntro}
+        titleFontSize={responsesTitleFontSize}
+        subtitleFontSize={responsesIntroFontSize}
+        tags={responseTags}
+        cards={responseCards}
+      />
+    );
+  }
+
   return (
     <SevenResponsesRailCarousel
       id="ghc-carousel"
@@ -1268,6 +1284,127 @@ function SevenResponsesRailCarousel({
                     ].join(' ')}
                     aria-label={`Go to response ${i + 1}`}
                   />
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function ClassGrid({
+  id,
+  title,
+  subtitle,
+  titleFontSize,
+  subtitleFontSize,
+  tags,
+  cards,
+}: {
+  id: string;
+  title: string;
+  subtitle: string;
+  titleFontSize?: string;
+  subtitleFontSize?: string;
+  tags: string[];
+  cards: CompetencyCard[];
+}) {
+  const [activeClass, setActiveClass] = useState(tags[0] ?? '');
+  const filteredCards = cards.filter((card) => card.category === activeClass);
+
+  return (
+    <section id={id} className="relative py-24 bg-white">
+      <div className="container mx-auto px-4 md:px-6 lg:px-10">
+        <div className="mx-auto w-full max-w-6xl">
+          <div className="max-w-3xl">
+            <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-semibold uppercase tracking-[0.24em] bg-[hsl(var(--accent)/0.10)] border border-[hsl(var(--accent)/0.35)] text-[hsl(var(--accent))] shadow-sm backdrop-blur">
+              PRODUCTS
+            </span>
+            <h2
+              className="ghc-font-display text-4xl md:text-5xl font-semibold text-[#131e42] mt-4 leading-[1.05]"
+              style={titleFontSize ? { fontSize: titleFontSize } : undefined}
+            >
+              {title}
+            </h2>
+            <p
+              className="text-[#4a5678] mt-3 text-lg md:text-xl leading-snug"
+              style={subtitleFontSize ? { fontSize: subtitleFontSize } : undefined}
+            >
+              {subtitle}
+            </p>
+          </div>
+
+          <div className="mt-10 grid grid-cols-1 lg:grid-cols-[32%_68%] gap-8 lg:gap-10 items-start">
+            <aside className="p-4 md:p-5 lg:p-6 rounded-3xl border border-[#e5e9f5] bg-white shadow-sm">
+              <div className="text-xs font-semibold uppercase tracking-[0.2em] text-[#6b7390] mb-4">
+                Classes
+              </div>
+              <ol className="space-y-2" aria-label="Product classes">
+                {tags.map((tag, i) => {
+                  const isActive = tag === activeClass;
+                  const number = String(i + 1).padStart(2, '0');
+                  return (
+                    <li key={tag}>
+                      <button
+                        type="button"
+                        onClick={() => setActiveClass(tag)}
+                        className={[
+                          'w-full flex items-center gap-3 px-4 py-3 text-left transition-colors rounded-2xl border',
+                          isActive
+                            ? 'border-[#e1513b] bg-[#e1513b]/5 text-[#131e42]'
+                            : 'border-transparent bg-[#f8f9fd] text-[#4a5678] hover:border-[#dce5ff] hover:bg-white',
+                        ].join(' ')}
+                        aria-current={isActive ? 'step' : undefined}
+                      >
+                        <span className={`text-xs font-semibold ${isActive ? 'text-[#e1513b]' : 'text-[#9aa4c6]'}`}>
+                          {number}
+                        </span>
+                        <span className="text-sm font-semibold leading-tight">{tag}</span>
+                      </button>
+                    </li>
+                  );
+                })}
+              </ol>
+            </aside>
+
+            <div className="min-w-0">
+              <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
+                {filteredCards.map((card) => (
+                  <article
+                    key={card.id}
+                    className="rounded-3xl border border-[#e5e9f5] bg-white shadow-sm p-6 flex flex-col gap-3"
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <h3 className="text-xl font-semibold text-[#131e42] leading-tight">{card.title}</h3>
+                      </div>
+                      <span className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[#e1513b] bg-[#e1513b]/10 px-3 py-1 rounded-full">
+                        {card.category}
+                      </span>
+                    </div>
+                    <p className="text-sm text-[#131e42] leading-snug">
+                      <span className="font-semibold">What:</span> {card.executionQuestion}
+                    </p>
+                    <p className="text-sm text-[#4a5678] leading-snug">
+                      <span className="font-semibold">Why:</span> {card.executionLens}
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (card.route.startsWith('http')) {
+                          window.open(card.route, '_blank', 'noopener,noreferrer');
+                        } else {
+                          window.location.href = card.route;
+                        }
+                      }}
+                      className="mt-2 inline-flex items-center gap-2 text-sm font-semibold text-[#e1513b] hover:underline"
+                    >
+                      {card.ctaLabel ?? 'Open Product'}
+                      <ArrowRight className="h-4 w-4" />
+                    </button>
+                  </article>
                 ))}
               </div>
             </div>

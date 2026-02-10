@@ -8,9 +8,9 @@ const SIXXD_CARDS = [
     number: 1,
     category: "Digital Transformation Management Platform",
     title: "DTMP",
-    executionQuestion: "Transformation work gets tracked after the fact instead of steered in real time.",
+    executionQuestion: "Fragmented initiatives get tracked after the fact instead of steered in real time.",
     executionLens:
-      "Delivery Product: For leaders and portfolio owners, DTMP gives real-time steering across initiatives so fragmentation is removed before it starts.",
+      "Delivery Product (DT 2.0): Real-time steering for bespoke initiatives so leaders remove fragmentation before it starts.",
     story: "",
     problem: "",
     response: "",
@@ -29,7 +29,7 @@ const SIXXD_CARDS = [
     title: "DTMA",
     executionQuestion: "Teams are asked to transform without a shared practice.",
     executionLens:
-      "Insight Product: For leaders and delivery teams, DTMA builds shared practice through applied learning so execution stays aligned in real work.",
+      "Insight Product (DCO): Applied learning that builds shared practice so execution stays aligned in real work.",
     story: "",
     problem: "",
     response: "",
@@ -47,7 +47,7 @@ const SIXXD_CARDS = [
     title: "DTMaaS",
     executionQuestion: "Launching initiatives is slow and inconsistent across teams.",
     executionLens:
-      "Delivery Product (TMaaS): For transformation leads, provides ready-to-run motions so delivery starts fast, consistent with 6xD.",
+      "Delivery Product (TMaaS): Ready-to-run blueprints so transformation starts fast and consistent with 6xD.",
     story: "",
     problem: "",
     response: "",
@@ -66,7 +66,7 @@ const SIXXD_CARDS = [
     title: "DTMI",
     executionQuestion: "Transformation knowledge is scattered across documents and teams.",
     executionLens:
-      "Insight Product: For decision makers and practitioners, DTMI curates live insights so decisions and alignment stay grounded in evidence.",
+      "Insight Product (DCO): Live insights keep decisions and alignment evidence-based and current.",
     story: "",
     problem: "",
     response: "",
@@ -84,7 +84,7 @@ const SIXXD_CARDS = [
     title: "DTO4T",
     executionQuestion: "Maturity and next steps are guessed instead of diagnosed.",
     executionLens:
-      "Delivery Product: For transformation teams, DTO4T diagnoses maturity, prescribes actions, and reduces risk before scaling.",
+      "Delivery Product (DT 2.0): Diagnoses maturity, prescribes actions, and reduces risk before scaling.",
     story: "",
     problem: "",
     response: "",
@@ -102,7 +102,7 @@ const SIXXD_CARDS = [
     title: "DTMB",
     executionQuestion: "Transformation guidance varies by team and gets interpreted differently.",
     executionLens:
-      "Insight Product: For leaders and practitioners, DTMB codifies models and plays so guidance stays consistent through the lifecycle.",
+      "Insight Product (DCO): Codified models and plays keep guidance consistent through the lifecycle.",
     story: "",
     problem: "",
     response: "",
@@ -120,7 +120,7 @@ const SIXXD_CARDS = [
     title: "Plant 4.0",
     executionQuestion: "Industrial execution is fragmented across assets, systems, and sites.",
     executionLens:
-      "Transaction Platform: For industrial operators and engineers, connects assets and operations so plant execution runs as one system.",
+      "Transaction Platform (TxM): Connects assets and operations so plant execution runs as one system.",
     story: "",
     problem: "",
     response: "",
@@ -138,7 +138,7 @@ const SIXXD_CARDS = [
     title: "DWS",
     executionQuestion: "Execution slows when tools, services, and workflows live in different places.",
     executionLens:
-      "Transaction Platform: For associates and delivery teams, unifies work, collaboration, and automation so daily execution flows without friction.",
+      "Transaction Platform (TxM): Unifies work, collaboration, and automation so daily execution flows without friction.",
     story: "",
     problem: "",
     response: "",
@@ -174,7 +174,7 @@ const SIXXD_ACTIONS = [
     title: "Learn by doing",
     icon: GraduationCap,
     badge: "Start here",
-    description: "New joiners and operators: build delivery habits fast through missions that mirror DQ execution.",
+    description: "New joiners: build delivery habits fast through missions that mirror DQ execution.",
     tags: ["Practice", "Missions", "Feedback"],
     cta: "Start in Learning Center",
     path: "/lms?category=6xd",
@@ -188,7 +188,7 @@ const SIXXD_ACTIONS = [
     title: "Capability overview",
     icon: Layers,
     badge: "Understand",
-    description: "Leaders and planners: understand the system behind every product before you act.",
+    description: "Leaders and planners: understand the execution system before you act.",
     tags: ["Storybook", "Execution", "Context"],
     cta: "Read the Agile 6xD storybook",
     path: "/marketplace/guides/dq-6xd",
@@ -223,13 +223,13 @@ export default function SixXDProductsLanding() {
         heroHeadlineHighlightWord: "execution",
         heroHeadlineFontSize: "70px",
         heroSupporting:
-          "Execution fails when it is fragmented or guessed. DQ builds Agile 6xD Products as systems we design, prove internally, and scale.",
+          "Execution fails when it is fragmented or guessed. DQ builds and proves products as one execution system.",
         heroCTA: "Read the Agile 6xD Storybook",
         heroCTALink: "/marketplace/guides/dq-6xd",
         heroFootnote: "Internal-first. Proven under real delivery pressure.",
         foundationTitle: "What are Agile 6xD Products",
         foundationSubtitle:
-          "Execution systems, not standalone tools. They emerge from real DQ delivery, prevent fragmentation, work together as one spine, and only ship if they survive real work.",
+          "Execution systems, not standalone tools. Built from how DQ delivers, used in live work first, and only shipped if they survive real conditions. They exist to prevent fragmentation and run together as one spine.",
         foundationTitleFontSize: "30px",
         foundationSubtitleFontSize: "16px",
         foundationCards: [
@@ -251,7 +251,7 @@ export default function SixXDProductsLanding() {
           "GHC shapes how we think; 6xD shapes how we execute; products are the outcome. If it doesn’t survive our delivery environments, it doesn’t ship.",
         responsesTitle: "Execution systems used at DQ",
         responsesIntro:
-          "GHC → 6xD → Products. Shared competencies drive decisions, 6xD drives delivery, products are the proven systems. They map to four execution classes—Delivery Services, Delivery Products, Insight Products, and Transaction Platforms—and each removes a recurring failure like fragmentation, slow time-to-value, stalled pilots, or strategy stuck in slides.",
+          "GHC → 6xD → Products. Shared competencies drive decisions, 6xD drives delivery, and products are the proven systems across four execution classes. Each class solves a specific gap and has a place in the lifecycle.",
         responsesTitleFontSize: "30px",
         responsesIntroFontSize: "16px",
         responsesSequential: true,
@@ -280,7 +280,7 @@ export default function SixXDProductsLanding() {
         takeActionSubtitleFontSize: "16px",
         takeActionTitle: "Choose your path",
         takeActionSubtitle:
-          "Learn the system, understand the capabilities, or deploy the products — choose the step that moves you now.",
+          "Learn by doing, understand the system, or deploy platforms — choose the step that fits your readiness.",
         takeActionLayout: "feature",
       }}
     />

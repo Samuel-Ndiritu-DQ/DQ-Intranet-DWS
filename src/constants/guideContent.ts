@@ -83,7 +83,7 @@ export const GUIDE_CONTENT: Record<string, GuideContent> = {
     storybookIntro: 'Understand the specific pillars that hold up our culture, such as Trust, Speed, and Quality. We break down what these values actually look like in practice, moving beyond buzzwords to real actions.\n\nYou will explore the "above the line" and "below the line" behaviors that define our interactions. This helps you recognize when a team is healthy and when it needs a cultural reset.\n\nBy understanding the HoV, you gain the tools to build a high-performing team dynamic. It clarifies the expectations we have for every associate, regardless of their role or seniority.',
     whatYouWillLearn: [
       'Core Pillars: The specific values that define the Digital Qatalyst culture.',
-      'Behavioral Indicators: The specific actions that demonstrate—or violate—our values.',
+      'Behavioral Indicators: The specific actions that demonstrate or violate our values.',
       'The Trust Equation: How reliability and intimacy build the trust needed for speed.',
       'Cultural Alignment: How our culture supports our ability to be Agile and innovative.',
       'Accountability: How we hold each other responsible for maintaining these standards.'
@@ -175,7 +175,7 @@ export const GUIDE_CONTENT: Record<string, GuideContent> = {
     courseIntro: 'Start with the SoS Overview to visualize the System of Systems model in action across the organisation. You will learn the specific behaviors required to operate effectively within this highly interconnected environment.\n\nFrom there, dive into the protocols for synchronization and escalation that keep the wider system healthy. You will learn to identify "systemic noise" and how to filter it out to focus on the signal.\n\nFinally, practice your role as a connector within this network through real-world simulation exercises. This builds your ability to navigate the complex web of relationships and deliver value at scale.',
     whatYouWillPractice: [
       'System Navigation: Practice identifying where your team fits within the larger System of Systems.',
-      'Interface Management: Learn to manage the "API" of your team—how you send and receive work.',
+      'Interface Management: Learn to manage the "API" of your team: how you send and receive work.',
       'Escalation Protocols: Practice using the correct channels to flag systemic risks or failures.',
       'Cross-System Sync: Learn to align your local rhythm with the global heartbeat of the organisation.',
       'Impact Analysis: Practice assessing how changes in your area ripple through the rest of the system.'
@@ -215,7 +215,7 @@ export const GUIDE_CONTENT: Record<string, GuideContent> = {
     shortOverview: 'The 6xD model is our comprehensive guide for transforming into a Digital Cognitive Organisation (DCO). It provides six distinct lenses to view the digital economy, ensuring we don\'t miss any critical angle of change.\n\nIt answers every fundamental question of transformation, from why we must change to who will deliver it. This holistic view prevents blind spots and ensures our strategies are robust and future-proof.\n\nBy mastering these perspectives, you align your work with the deeper shifts in the market. You move beyond simple digitization to creating true cognitive capabilities that adapt and learn.',
     highlights: [
       'Strategic Context: Understand the specific market shifts (Digital Economy) that explain why organisations must change.',
-      'Clear Destination: Visualize exactly where we are headed—the intelligent, adaptive Digital Cognitive Organisation.',
+      'Clear Destination: Visualize exactly where we are headed: the intelligent, adaptive Digital Cognitive Organisation.',
       'Scalable Foundation: Focus on building the right modular architectures (DBP) to make transformation scalable.',
       'Repeatable Success: Treat transformation as a designed discipline (DT2.0) with reliable methods rather than chaotic guesswork.',
       'Empowered Delivery: Ensure the digital workforce (DW:WS) has the right skills and environment to sustain the change.'

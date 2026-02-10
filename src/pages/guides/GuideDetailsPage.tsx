@@ -126,10 +126,64 @@ function GuideDetailsPage() {
     }
   }, [itemId])
 
+  // Track active section on scroll
+  useEffect(() => {
+    if (sections.length === 0) return
+
+    const handleScroll = () => {
+      const scrollPosition = window.scrollY + 150 // Offset for header
+
+      // Find which section is currently in view
+      for (let i = sections.length - 1; i >= 0; i--) {
+        const section = sections[i]
+        const element = document.getElementById(section.id)
+        
+        if (element) {
+          const { offsetTop } = element
+          
+          if (scrollPosition >= offsetTop) {
+            setActiveSection(section.id)
+            break
+          }
+        }
+      }
+    }
+
+    // Initial check
+    handleScroll()
+
+    // Add scroll listener with throttle
+    let ticking = false
+    const scrollListener = () => {
+      if (!ticking) {
+        window.requestAnimationFrame(() => {
+          handleScroll()
+          ticking = false
+        })
+        ticking = true
+      }
+    }
+
+    window.addEventListener('scroll', scrollListener, { passive: true })
+
+    return () => {
+      window.removeEventListener('scroll', scrollListener)
+    }
+  }, [sections])
+
   const scrollToSection = (sectionId: string) => {
     const element = document.getElementById(sectionId)
     if (element) {
-      element.scrollIntoView({ behavior: 'smooth' })
+      const headerOffset = 120
+      const elementPosition = element.getBoundingClientRect().top
+      const offsetPosition = elementPosition + window.pageYOffset - headerOffset
+
+      window.scrollTo({
+        top: offsetPosition,
+        behavior: 'smooth'
+      })
+      
+      // Update active section immediately for better UX
       setActiveSection(sectionId)
     }
   }
@@ -232,7 +286,7 @@ function GuideDetailsPage() {
                 {/* Guide Content Sections */}
                 <div className="space-y-12">
                   {sections.map((section) => (
-                    <section key={section.id} id={section.id} className="scroll-mt-8">
+                    <section key={section.id} id={section.id} className="scroll-mt-24">
                       {/* Section Content */}
                       <div className="prose prose-lg max-w-none text-gray-700 leading-relaxed">
                         <MarkdownRenderer body={section.content.trim()} />

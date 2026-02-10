@@ -25,20 +25,8 @@ export function ProductCard({ product, productClass }: ProductCardProps) {
       animate={{ opacity: 1, scale: 1 }}
       exit={{ opacity: 0, scale: 0.97 }}
       transition={{ duration: 0.2 }}
-      className="snap-start flex-none w-[340px] md:w-[340px] lg:w-[340px] h-[415px] rounded-2xl bg-white border border-gray-100 shadow-sm overflow-hidden"
+      className="snap-start flex-none w-[340px] md:w-[340px] lg:w-[340px] h-auto rounded-2xl bg-white border border-gray-100 shadow-sm overflow-hidden"
     >
-      <div
-        className="h-[200px] w-full relative"
-        style={{ background: gradient }}
-      >
-        <div className="absolute inset-0 opacity-10"
-          style={{ backgroundImage: "radial-gradient(circle at 20% 20%, #fff 4%, transparent 25%), radial-gradient(circle at 70% 60%, #fff 6%, transparent 28%)" }}
-        />
-        <div className="p-4 text-white text-sm font-semibold uppercase tracking-[0.18em]">
-          {productClass.shortName}
-        </div>
-      </div>
-
       <div className="p-6 flex flex-col gap-3">
         <div className="flex items-start justify-between gap-3">
           <div>

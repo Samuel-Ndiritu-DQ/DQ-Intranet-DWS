@@ -47,10 +47,12 @@ function GuideDetailsPage() {
     for (const line of lines) {
       const trimmed = line.trim()
       
+      // Check if line is a H1 heading (starts with #, but not ##)
+      const isH1 = trimmed.match(/^#\s+[^#]/)
       // Check if line is a H2 heading (starts with ##, but not ###)
       const isH2 = trimmed.match(/^##\s+[^#]/)
       
-      if (isH2) {
+      if (isH1 || isH2) {
         // Save previous section if exists
         if (currentSection) {
           currentSection.content = currentContent.join('\n')
@@ -58,9 +60,9 @@ function GuideDetailsPage() {
         }
         
         // Start new section
-        const title = trimmed.replace(/^##\s*/, '')
+        const title = trimmed.replace(/^#{1,2}\s*/, '')
         currentSection = {
-          id: title.toLowerCase().replace(/\s+/g, '-'),
+          id: title.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, ''),
           title: title,
           content: ''
         }

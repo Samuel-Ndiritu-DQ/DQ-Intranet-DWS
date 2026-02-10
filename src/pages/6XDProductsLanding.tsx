@@ -18,7 +18,8 @@ const SIXXD_CARDS = [
     icon: Target as LucideIcon,
     gradient: "bg-gradient-to-br from-[#131e42] via-[#1d2f64] to-[#e1513b]",
     accent: "#f0f6ff",
-    image: "https://image2url.com/r2/default/images/1770354560794-72c7a866-573c-455f-ac74-44c6753068f5.jpg",
+    image:
+      "https://image2url.com/r2/default/images/1770711361142-16232790-309d-46f7-b393-824cc3263275.png",
     ctaLabel: "Read capability overview",
   },
   {

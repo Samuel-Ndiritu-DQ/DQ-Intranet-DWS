@@ -55,14 +55,15 @@ function GuideDetailsPage() {
           parsedSections.push(currentSection)
         }
         
-        // Start new section
+        // Start new section - include the heading in the content
         const title = trimmed.replace(/^#+\s*/, '')
         currentSection = {
           id: title.toLowerCase().replace(/\s+/g, '-'),
           title: title,
           content: ''
         }
-        currentContent = []
+        // Add the heading line to content so it gets rendered
+        currentContent = [line]
       } else {
         // Add content to current section
         if (currentSection) {
@@ -232,17 +233,8 @@ function GuideDetailsPage() {
                 <div className="space-y-12">
                   {sections.map((section) => (
                     <section key={section.id} id={section.id} className="scroll-mt-8">
-                      {/* Section Header with Dark Blue Line */}
-                      <div className="mb-6">
-                        <div className="flex items-center mb-3">
-                          {/* Vertical Dark Blue Line */}
-                          <div className="w-1 h-6 mr-4" style={{ backgroundColor: '#030E31' }} />
-                          <h2 className="text-2xl font-bold text-gray-900">{section.title}</h2>
-                        </div>
-                      </div>
-                      
                       {/* Section Content */}
-                      <div className="prose prose-lg max-w-none">
+                      <div className="prose prose-lg max-w-none text-gray-700 leading-relaxed">
                         <MarkdownRenderer body={section.content.trim()} />
                       </div>
                     </section>

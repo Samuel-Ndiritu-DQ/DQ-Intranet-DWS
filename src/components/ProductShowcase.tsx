@@ -58,25 +58,10 @@ export function ProductShowcase() {
         </div>
 
         <ClassFilter
-          classes={classes.filter((c) => c.id !== "all")}
-          activeId={activeClass === "all" ? classes[1].id : activeClass}
-          onSelect={(id) => setActiveClass(id === "all" ? "all" : id)}
+          classes={classes}
+          activeId={activeClass}
+          onSelect={(id) => setActiveClass(id)}
         />
-
-        <div className="flex flex-wrap gap-3" aria-label="All toggle">
-          <button
-            type="button"
-            onClick={() => setActiveClass("all")}
-            className={[
-              "px-4 py-2 rounded-full text-sm font-semibold border transition-colors shadow-sm",
-              activeClass === "all"
-                ? "bg-indigo-600 text-white border-indigo-600 shadow-indigo-200"
-                : "bg-white text-gray-700 border-gray-200 hover:bg-gray-50",
-            ].join(" ")}
-          >
-            All Products
-          </button>
-        </div>
 
         <div
           ref={scrollerRef}

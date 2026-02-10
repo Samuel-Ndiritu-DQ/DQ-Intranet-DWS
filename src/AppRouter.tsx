@@ -21,6 +21,7 @@ import DashboardRouter from "./pages/dashboard/DashboardRouter";
 import DiscoverDQ from "./pages/DiscoverDQ";
 import ComingSoonPage from "./pages/ComingSoonPage";
 import GrowthSectorsComingSoon from "./pages/GrowthSectorsComingSoon";
+import SixXDProductsLanding from "./pages/6XDProductsLanding";
 import NotFound from "./pages/NotFound";
 import AdminGuidesList from "./pages/admin/guides/AdminGuidesList";
 import GuideEditor from "./pages/admin/guides/GuideEditor";
@@ -52,6 +53,8 @@ export function AppRouter() {
             <Route path="/discover-dq" element={<DiscoverDQ />} />
             <Route path="/coming-soon" element={<ComingSoonPage />} />
             <Route path="/growth-sectors-coming-soon" element={<GrowthSectorsComingSoon />} />
+            <Route path="/products" element={<SixXDProductsLanding />} />
+            <Route path="/dq-products" element={<SixXDProductsLanding />} />
             <Route path="/*" element={<App />} />
             <Route path="/courses/:itemId" element={<LmsCourseDetailPage />} />
             <Route path="/lms" element={<LmsCourses />} />

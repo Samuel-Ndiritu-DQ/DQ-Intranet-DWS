@@ -261,8 +261,9 @@ export default function SixXDProductsLanding() {
         responsesTitleFontSize: "30px",
         responsesIntroFontSize: "16px",
         responsesSequential: false,
-        responsesLayout: "classes-grid",
+        responsesLayout: "chips-grid",
         responseTags: [
+          "All Products",
           "Class 01 — Delivery Services (DBP)",
           "Class 02 — Delivery Products (DT2.0)",
           "Class 03 — Insight Products (DCO)",

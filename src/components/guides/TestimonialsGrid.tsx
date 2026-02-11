@@ -30,98 +30,132 @@ const TestimonialsGrid: React.FC<Props> = ({ items, onClickGuide }) => {
   return (
     <div className="space-y-6">
       {/* Service cards row */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
         {/* Client Feedback Service Card */}
-        <div className="bg-white rounded-lg shadow-md overflow-hidden flex flex-col min-h-[340px]">
+        <div className="bg-white rounded-lg shadow border border-gray-200 p-3 hover:shadow-md transition-shadow flex flex-col h-[400px]">
           {/* Hero Image */}
-          <img 
-            src={serviceCardImage} 
-            alt="Client Success Stories" 
-            className="w-full h-32 object-cover"
-            loading="lazy"
-          />
+          <div className="rounded-lg overflow-hidden mb-2 bg-slate-50 flex-shrink-0" style={{ height: '160px', minHeight: '160px', maxHeight: '160px' }}>
+            <img 
+              src={serviceCardImage} 
+              alt="The DQ Effect" 
+              className="w-full h-full object-cover"
+              loading="lazy"
+            />
+          </div>
           
           {/* Content */}
-          <div className="p-4 flex flex-col flex-grow">
+          <div className="flex flex-col flex-1">
             {/* Title */}
-            <h3 className="text-lg font-bold text-gray-900 mb-2 line-clamp-2">Client Success Stories</h3>
+            <h3 className="font-semibold text-gray-900 mb-1.5 flex-shrink-0" style={{ 
+              display: '-webkit-box',
+              WebkitLineClamp: 2,
+              WebkitBoxOrient: 'vertical',
+              overflow: 'hidden',
+              minHeight: '44px',
+              maxHeight: '44px',
+              lineHeight: '1.375rem'
+            }}>The DQ Effect</h3>
             
             {/* Description */}
-            <p className="text-sm text-gray-600 mb-3 leading-relaxed line-clamp-2 flex-grow">
-              Real impact in action. See how we help partners succeed in their digital journeys.
+            <p className="text-sm text-gray-600 mb-2 flex-shrink-0" style={{
+              display: '-webkit-box',
+              WebkitLineClamp: 2,
+              WebkitBoxOrient: 'vertical',
+              overflow: 'hidden',
+              minHeight: '36px',
+              maxHeight: '36px',
+              lineHeight: '1.125rem'
+            }}>
+              What does true transformation look like?
             </p>
             
             {/* Tag */}
-            <div className="flex flex-wrap gap-2 mb-3">
-              <span className="inline-flex items-center px-3 py-1 text-xs font-medium rounded-full bg-white border border-gray-200 text-[#0B1E67]">
-                Client Success
+            <div className="flex flex-wrap gap-2 mb-1.5 flex-shrink-0">
+              <span className="inline-flex items-center px-3 py-1 text-xs font-medium rounded-full border" style={{ backgroundColor: 'var(--dws-chip-bg)', color: 'var(--dws-chip-text)', borderColor: 'var(--dws-card-border)' }}>
+                Clients
               </span>
             </div>
             
             {/* Metadata */}
-            <div className="text-xs text-gray-600 mb-3">
-              <div>{formatDate()}</div>
+            <div className="flex items-center text-xs text-gray-500 gap-3 mb-2 flex-shrink-0">
+              <span>{formatDate()}</span>
             </div>
             
-            {/* Separator */}
-            <div className="border-t border-gray-200 mb-3"></div>
-            
-            {/* View Details Button */}
-            <button
-              type="button"
-              onClick={() => navigate('/marketplace/guides/testimonials')}
-              className="w-full inline-flex items-center justify-center rounded-full bg-[var(--guidelines-primary-solid)] text-white text-sm font-semibold px-4 py-2 transition-all hover:bg-[var(--guidelines-primary-solid-hover)] focus:outline-none focus:ring-2 focus:ring-[var(--guidelines-ring-color)]"
-              aria-label="View details"
-            >
-              View Details
-            </button>
+            {/* Button at bottom */}
+            <div className="pt-2.5 mt-auto border-t border-gray-100 flex-shrink-0">
+              <button
+                type="button"
+                onClick={() => navigate('/marketplace/guides/testimonials')}
+                className="w-full inline-flex items-center justify-center rounded-full text-sm font-semibold px-4 py-2 transition-all focus:outline-none focus:ring-2 bg-[var(--guidelines-primary-solid)] text-white hover:bg-[var(--guidelines-primary-solid-hover)] focus:ring-[var(--guidelines-ring-color)]"
+                aria-label="View details"
+              >
+                View Details
+              </button>
+            </div>
           </div>
         </div>
 
         {/* Associate Testimonials Service Card */}
-        <div className="bg-white rounded-lg shadow-md overflow-hidden flex flex-col min-h-[340px]">
+        <div className="bg-white rounded-lg shadow border border-gray-200 p-3 hover:shadow-md transition-shadow flex flex-col h-[400px]">
           {/* Hero Image */}
-          <img 
-            src={serviceCardImage} 
-            alt="Associate Voices" 
-            className="w-full h-32 object-cover"
-            loading="lazy"
-          />
+          <div className="rounded-lg overflow-hidden mb-2 bg-slate-50 flex-shrink-0" style={{ height: '160px', minHeight: '160px', maxHeight: '160px' }}>
+            <img 
+              src={serviceCardImage} 
+              alt="Life at DQ" 
+              className="w-full h-full object-cover"
+              loading="lazy"
+            />
+          </div>
           
           {/* Content */}
-          <div className="p-4 flex flex-col flex-grow">
+          <div className="flex flex-col flex-1">
             {/* Title */}
-            <h3 className="text-lg font-bold text-gray-900 mb-2 line-clamp-2">Associate Voices</h3>
+            <h3 className="font-semibold text-gray-900 mb-1.5 flex-shrink-0" style={{ 
+              display: '-webkit-box',
+              WebkitLineClamp: 2,
+              WebkitBoxOrient: 'vertical',
+              overflow: 'hidden',
+              minHeight: '44px',
+              maxHeight: '44px',
+              lineHeight: '1.375rem'
+            }}>Life at DQ</h3>
             
             {/* Description */}
-            <p className="text-sm text-gray-600 mb-3 leading-relaxed line-clamp-2 flex-grow">
-              Stories of growth, culture, and collaboration from our team.
+            <p className="text-sm text-gray-600 mb-2 flex-shrink-0" style={{
+              display: '-webkit-box',
+              WebkitLineClamp: 2,
+              WebkitBoxOrient: 'vertical',
+              overflow: 'hidden',
+              minHeight: '36px',
+              maxHeight: '36px',
+              lineHeight: '1.125rem'
+            }}>
+              What does it mean to be a Digital Qatalyst?
             </p>
             
             {/* Tag */}
-            <div className="flex flex-wrap gap-2 mb-3">
-              <span className="inline-flex items-center px-3 py-1 text-xs font-medium rounded-full bg-white border border-gray-200 text-[#0B1E67]">
-                Associate Stories
+            <div className="flex flex-wrap gap-2 mb-1.5 flex-shrink-0">
+              <span className="inline-flex items-center px-3 py-1 text-xs font-medium rounded-full border" style={{ backgroundColor: 'var(--dws-chip-bg)', color: 'var(--dws-chip-text)', borderColor: 'var(--dws-card-border)' }}>
+                Associates
               </span>
             </div>
             
             {/* Metadata */}
-            <div className="text-xs text-gray-600 mb-3">
-              <div>{formatDate()}</div>
+            <div className="flex items-center text-xs text-gray-500 gap-3 mb-2 flex-shrink-0">
+              <span>{formatDate()}</span>
             </div>
             
-            {/* Separator */}
-            <div className="border-t border-gray-200 mb-3"></div>
-            
-            {/* View Details Button */}
-            <button
-              type="button"
-              onClick={() => navigate('/marketplace/guides/associate-testimonials')}
-              className="w-full inline-flex items-center justify-center rounded-full bg-[var(--guidelines-primary-solid)] text-white text-sm font-semibold px-4 py-2 transition-all hover:bg-[var(--guidelines-primary-solid-hover)] focus:outline-none focus:ring-2 focus:ring-[var(--guidelines-ring-color)]"
-              aria-label="View details"
-            >
-              View Details
-            </button>
+            {/* Button at bottom */}
+            <div className="pt-2.5 mt-auto border-t border-gray-100 flex-shrink-0">
+              <button
+                type="button"
+                onClick={() => navigate('/marketplace/guides/associate-testimonials')}
+                className="w-full inline-flex items-center justify-center rounded-full text-sm font-semibold px-4 py-2 transition-all focus:outline-none focus:ring-2 bg-[var(--guidelines-primary-solid)] text-white hover:bg-[var(--guidelines-primary-solid-hover)] focus:ring-[var(--guidelines-ring-color)]"
+                aria-label="View details"
+              >
+                View Details
+              </button>
+            </div>
           </div>
         </div>
       </div>

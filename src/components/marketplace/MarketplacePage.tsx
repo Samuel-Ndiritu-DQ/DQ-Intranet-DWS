@@ -2087,8 +2087,8 @@ type DesignSystemTab = 'cids' | 'vds' | 'cds';
           );
         })()}
 
-        {/* Search + Sort - Hide for Glossary tab (has its own search) */}
-        {!(isGuides && activeTab === 'glossary') && !isDesignSystem && (
+        {/* Search + Sort - Show for all tabs including Glossary */}
+        {!isDesignSystem && (
           <div className="mb-6 flex items-center gap-3">
             <div className="flex-1">
               <SearchBar
@@ -2109,13 +2109,6 @@ type DesignSystemTab = 'cids' | 'vds' | 'cds';
                 }}
               />
             </div>
-          </div>
-        )}
-        {isGuides && activeTab === 'blueprints' && (
-          <div className="mb-4">
-            <span className="inline-flex items-center px-3 py-1 text-xs font-semibold rounded-full border border-blue-200 bg-blue-50 text-blue-700">
-              Product
-            </span>
           </div>
         )}
 
@@ -2259,92 +2252,31 @@ type DesignSystemTab = 'cids' | 'vds' | 'cds';
             ) : isGuides ? (
               <>
                 {activeTab === 'faqs' ? (
-                  <FAQsPageContent categoryFilter={(queryParams.get('faq_category') || '').split(',').filter(Boolean)[0] || null} />
+                  <div className="flex items-center justify-center py-20">
+                    <div className="bg-gray-100 rounded-lg p-12 text-center max-w-md">
+                      <div className="text-gray-400 mb-4">
+                        <svg className="w-16 h-16 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                      </div>
+                      <h3 className="text-xl font-semibold text-gray-700 mb-2">Coming Soon</h3>
+                      <p className="text-gray-500">FAQs content is currently being prepared and will be available soon.</p>
+                    </div>
+                  </div>
                 ) : activeTab === '6xd' ? (
                   <SixXDComingSoonCards />
                 ) : activeTab === 'glossary' ? (
-                  <>
-                    {/* Global Search Bar for Glossary */}
-                    <div className="mb-6">
-                      <div className="relative">
-                        <input
-                          type="text"
-                          value={queryParams.get('q') || ''}
-                          onChange={(e) => {
-                            const next = new URLSearchParams(queryParams.toString());
-                            next.delete('page');
-                            if (e.target.value) {
-                              next.set('q', e.target.value);
-                            } else {
-                              next.delete('q');
-                            }
-                            const qs = next.toString();
-                            if (typeof window !== 'undefined') {
-                              window.history.replaceState(null, '', `${window.location.pathname}${qs ? '?' + qs : ''}`);
-                            }
-                            setQueryParams(new URLSearchParams(next.toString()));
-                          }}
-                          placeholder="Search DQ terms (e.g. DWS, CWS, Agile TMS)"
-                          className="w-full px-4 py-3 pl-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[var(--guidelines-primary)] focus:border-[var(--guidelines-primary)] outline-none"
-                        />
-                        <svg
-                          className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                  <div className="flex items-center justify-center py-20">
+                    <div className="bg-gray-100 rounded-lg p-12 text-center max-w-md">
+                      <div className="text-gray-400 mb-4">
+                        <svg className="w-16 h-16 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
                       </div>
+                      <h3 className="text-xl font-semibold text-gray-700 mb-2">Coming Soon</h3>
+                      <p className="text-gray-500">Glossary content is currently being prepared and will be available soon.</p>
                     </div>
-                    {/* Show 6xD Perspective Cards when Agile 6xD is selected */}
-                    {(() => {
-                      const selectedKnowledgeSystems = parseFilterValues(queryParams, 'glossary_knowledge_system');
-                      const has6xD = selectedKnowledgeSystems.includes('6xd');
-                      const selectedPerspectives = parseFilterValues(queryParams, 'glossary_6xd_perspective');
-                      
-                      // Always show cards when 6xD is selected
-                      if (has6xD) {
-                        return (
-                          <>
-                            <SixXDPerspectiveCards
-                              onCardClick={(perspectiveId) => {
-                                // Navigate to perspective detail page
-                                navigate(`/marketplace/guides/6xd-perspective/${perspectiveId}`);
-                                track('Glossary.6xDPerspectiveSelected', { perspective: perspectiveId });
-                              }}
-                            />
-                            {/* Show filtered terms below cards */}
-                            {filteredGlossaryTerms.length > 0 && (
-                              <div className="mt-8">
-                                <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                                  {selectedPerspectives.length > 0 ? 'Terms in this perspective' : 'All 6xD terms'}
-                                </h3>
-                                <GlossaryGrid
-                                  items={filteredGlossaryTerms}
-                                  onClickTerm={(term) => {
-                                    navigate(`/marketplace/guides/glossary/${term.id}`);
-                                  }}
-                                  hideEmptyState={false}
-                                />
-                              </div>
-                            )}
-                          </>
-                        );
-                      }
-                      
-                      // Show regular glossary grid when 6xD is not selected
-                      return (
-                        <GlossaryGrid
-                          items={filteredGlossaryTerms}
-                          onClickTerm={(term) => {
-                            navigate(`/marketplace/guides/glossary/${term.id}`);
-                          }}
-                          hideEmptyState={false}
-                        />
-                      );
-                    })()}
-                  </>
+                  </div>
                 ) : activeTab === 'testimonials' ? (
                   <TestimonialsGrid
                     items={filteredItems}

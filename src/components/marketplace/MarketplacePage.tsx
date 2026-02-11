@@ -799,7 +799,15 @@ type DesignSystemTab = 'cids' | 'vds' | 'cds';
             return;
           }
 
-          if (statuses.length) q = q.in('status', statuses); else q = q.eq('status', 'Approved');
+          if (statuses.length) q = q.in('status', statuses); else {
+            // For Strategy tab: show Published/Approved AND Draft (but not Archived)
+            // For other tabs: show only Approved
+            if (isStrategyTab) {
+              q = q.in('status', ['Approved', 'Published', 'Draft']);
+            } else {
+              q = q.eq('status', 'Approved');
+            }
+          }
           if (qStr) q = q.or(`title.ilike.%${qStr}%,summary.ilike.%${qStr}%`);
           if (isStrategyTab) {
             q = q.or('domain.ilike.%Strategy%,guide_type.ilike.%Strategy%');
@@ -855,8 +863,21 @@ type DesignSystemTab = 'cids' | 'vds' | 'cds';
           // Exclude removed guidelines from facets
           let facetQ = supabaseClient
             .from('guides')
-            .select('domain,sub_domain,guide_type,function_area,unit,location,status')
-            .eq('status', 'Approved');
+            .select('domain,sub_domain,guide_type,function_area,unit,location,status');
+          
+          // Apply same status filter as main query for facets
+          if (statuses.length) {
+            facetQ = facetQ.in('status', statuses);
+          } else {
+            // For Strategy tab: show Published/Approved AND Draft (but not Archived)
+            // For other tabs: show only Approved
+            if (isStrategyTab) {
+              facetQ = facetQ.in('status', ['Approved', 'Published', 'Draft']);
+            } else {
+              facetQ = facetQ.eq('status', 'Approved');
+            }
+          }
+          
           excludedSlugs.forEach(slug => {
             facetQ = facetQ.neq('slug', slug);
           });
@@ -922,6 +943,95 @@ type DesignSystemTab = 'cids' | 'vds' | 'cds';
           // Note: Server-side filtering is also applied, but client-side filtering ensures consistency
           if (isStrategyTab) {
             // Show all strategy guides; server-side query already biases toward Strategy
+            // EXCLUDE: HoV competencies (HoV 1-12) - only show main HoV card (dq-hov)
+            // EXCLUDE: Any other unwanted strategy guides
+            const excludedStrategySlugs = [
+              'dq-competencies-emotional-intelligence',
+              'dq-competencies-growth-mindset',
+              'dq-competencies-purpose',
+              'dq-competencies-perceptive',
+              'dq-competencies-proactive',
+              'dq-competencies-perseverance',
+              'dq-competencies-precision',
+              'dq-competencies-customer',
+              'dq-competencies-learning',
+              'dq-competencies-collaboration',
+              'dq-competencies-responsibility',
+              'dq-competencies-trust',
+              'dq-competencies', // Exclude the competencies overview page
+              'dq-beliefs', // Exclude DQ Beliefs if it exists
+              'dq-strategy-2021-2030', // Exclude DQ Strategy 2021-2030 if it exists
+              'dq-journey', // Exclude DQ Journey
+              'journey', // Exclude any guide with "journey" slug
+            ];
+            
+            // Canonical GHC slugs - only these should be shown
+            const canonicalGHCSlugs = [
+              'dq-ghc',
+              'dq-vision',
+              'dq-hov',
+              'dq-persona',
+              'dq-agile-tms',
+              'dq-agile-sos',
+              'dq-agile-flows',
+              'dq-agile-6xd'
+            ];
+            
+            out = out.filter(it => {
+              const slug = (it.slug || '').toLowerCase();
+              const title = (it.title || '').toLowerCase();
+              
+              // Exclude if slug matches any excluded slug
+              if (excludedStrategySlugs.includes(slug)) return false;
+              
+              // Exclude if title contains unwanted keywords
+              if (title.includes('dq journey') || 
+                  title.includes('dq beliefs') || 
+                  title.includes('strategy 2021') ||
+                  title.includes('strategy 2030')) {
+                return false;
+              }
+              
+              // For GHC guides, only allow canonical slugs to prevent duplicates
+              // Check if this looks like a GHC guide (has GHC-related keywords)
+              const looksLikeGHC = title.includes('ghc') || 
+                                   title.includes('agile tms') || 
+                                   title.includes('agile sos') || 
+                                   title.includes('agile flows') || 
+                                   title.includes('agile 6xd') ||
+                                   title.includes('6xd') ||
+                                   slug.includes('ghc') ||
+                                   slug.includes('agile');
+              
+              // If it looks like a GHC guide but doesn't have a canonical slug, exclude it
+              if (looksLikeGHC && !canonicalGHCSlugs.includes(slug)) {
+                // Exception: allow if it's explicitly not a duplicate (doesn't match canonical titles)
+                const canonicalTitles = [
+                  'ghc overview',
+                  'golden honeycomb',
+                  'dq vision',
+                  'house of values',
+                  'dq persona',
+                  'agile tms',
+                  'agile sos',
+                  'agile flows',
+                  'agile 6xd'
+                ];
+                
+                // If title closely matches a canonical title, it's likely a duplicate
+                const matchesCanonical = canonicalTitles.some(canonical => {
+                  // Remove common prefixes/suffixes for comparison
+                  const cleanTitle = title.replace(/^(ghc|dq)\s+/i, '').replace(/\s+\(.*\)$/i, '').trim();
+                  return cleanTitle.includes(canonical) || canonical.includes(cleanTitle);
+                });
+                
+                if (matchesCanonical) {
+                  return false; // Exclude duplicate
+                }
+              }
+              
+              return true;
+            });
           } else if (isBlueprintTab) {
             // Products tab: Replace all database results with static products
             // Convert static products to guide format immediately
@@ -1280,20 +1390,7 @@ type DesignSystemTab = 'cids' | 'vds' | 'cds';
               'dq-agile-flows',
               'dq-agile-6xd'
             ];
-            const hovOrder = [
-              'dq-competencies-emotional-intelligence',
-              'dq-competencies-growth-mindset',
-              'dq-competencies-purpose',
-              'dq-competencies-perceptive',
-              'dq-competencies-proactive',
-              'dq-competencies-perseverance',
-              'dq-competencies-precision',
-              'dq-competencies-customer',
-              'dq-competencies-learning',
-              'dq-competencies-collaboration',
-              'dq-competencies-responsibility',
-              'dq-competencies-trust'
-            ];
+            // Note: HoV competencies are excluded from display, so no need to include them in ordering
             const titleOrder = [
               'dq golden honeycomb of competencies',
               'dq vision',
@@ -1302,27 +1399,13 @@ type DesignSystemTab = 'cids' | 'vds' | 'cds';
               'agile tms',
               'agile sos',
               'agile flows',
-              'agile 6xd',
-              'emotional intelligence',
-              'growth mindset',
-              'purpose',
-              'perceptive',
-              'proactive',
-              'perseverance',
-              'precision',
-              'customer',
-              'learning',
-              'collaboration',
-              'responsibility',
-              'trust'
+              'agile 6xd'
             ];
             const orderIndex = (item: any) => {
               const slug = (item.slug || '').toLowerCase();
               const title = (item.title || '').toLowerCase();
               const slugIdx = ghcOrder.indexOf(slug);
               if (slugIdx >= 0) return slugIdx;
-              const hovIdx = hovOrder.indexOf(slug);
-              if (hovIdx >= 0) return ghcOrder.length + hovIdx;
               const titleIdx = titleOrder.findIndex(t => title.includes(t));
               return titleIdx >= 0 ? titleIdx : Number.MAX_SAFE_INTEGER;
             };

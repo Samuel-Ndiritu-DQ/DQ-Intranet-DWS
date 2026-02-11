@@ -37,7 +37,7 @@ function GuideDetailsPage() {
   const [sections, setSections] = useState<Section[]>([])
   const [activeSection, setActiveSection] = useState<string>('')
 
-  // Parse sections from guide body
+  // Parse sections from guide body - only H1 headings for TOC
   const parseSections = (body: string): Section[] => {
     const parsedSections: Section[] = []
     const lines = body.split('\n')
@@ -47,8 +47,10 @@ function GuideDetailsPage() {
     for (const line of lines) {
       const trimmed = line.trim()
       
-      // Check if line is a heading (starts with #)
-      if (trimmed.startsWith('#')) {
+      // Check if line is an H1 heading (starts with single #)
+      const isH1 = trimmed.startsWith('# ') && !trimmed.startsWith('## ')
+      
+      if (isH1) {
         // Save previous section if exists
         if (currentSection) {
           currentSection.content = currentContent.join('\n')
@@ -56,16 +58,16 @@ function GuideDetailsPage() {
         }
         
         // Start new section - include the heading in the content
-        const title = trimmed.replace(/^#+\s*/, '')
+        const title = trimmed.replace(/^#\s*/, '')
         currentSection = {
-          id: title.toLowerCase().replace(/\s+/g, '-'),
+          id: title.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, ''),
           title: title,
           content: ''
         }
         // Add the heading line to content so it gets rendered
         currentContent = [line]
       } else {
-        // Add content to current section
+        // Add content to current section (including H2, H3, etc.)
         if (currentSection) {
           currentContent.push(line)
         }
@@ -260,12 +262,6 @@ function GuideDetailsPage() {
                   <span>{guide.estimated_time_min} min read</span>
                 </div>
               )}
-              {guide.domain && (
-                <div className="flex items-center">
-                  <BookOpen size={18} className="mr-2" />
-                  <span>{guide.domain}</span>
-                </div>
-              )}
               {guide.guide_type && (
                 <div className="flex items-center">
                   <User size={18} className="mr-2" />
@@ -284,9 +280,13 @@ function GuideDetailsPage() {
             <div className="lg:col-span-3">
               <div className="bg-white rounded-lg shadow-sm p-8">
                 {/* Guide Content Sections */}
-                <div className="space-y-12">
-                  {sections.map((section) => (
+                <div className="space-y-8">
+                  {sections.map((section, index) => (
                     <section key={section.id} id={section.id} className="scroll-mt-24">
+                      {/* Thin divider line between sections (not before first section) */}
+                      {index > 0 && (
+                        <div className="border-t border-gray-200 mb-6"></div>
+                      )}
                       {/* Section Content */}
                       <div className="prose prose-lg max-w-none text-gray-700 leading-relaxed">
                         <MarkdownRenderer body={section.content.trim()} />

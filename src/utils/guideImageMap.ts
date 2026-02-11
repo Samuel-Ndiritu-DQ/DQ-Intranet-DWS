@@ -242,10 +242,16 @@ export function getGuideImageUrl(g: GuideLike): string {
 
   // For the main GHC overview card, force the overview image even if a heroImageUrl exists
   if (isMainGHC()) {
+    // Check if there's a valid database image first
+    const src = (g.heroImageUrl || '').trim()
+    if (src && src.startsWith('http')) {
+      return src
+    }
     return '/images/DQ%20GHC%20Overview%20.png'
   }
   
-  // For non-guidelines guides, prioritize heroImageUrl if it's a valid URL
+  // PRIORITY 1: For ALL guides, prioritize heroImageUrl from database if it's a valid URL
+  // This ensures database images are always used when available
   const src = (g.heroImageUrl || '').trim()
   if (src && src.startsWith('http')) {
     return src

@@ -246,26 +246,46 @@ export const GuideCard: React.FC<GuideCardProps> = ({ guide, onClick, imageOverr
     }
   }
   
+  // Check if guide is in Draft status
+  const isDraft = guide.status === 'Draft'
+  const isPublished = guide.status === 'Published' || guide.status === 'Approved'
+  
   return (
-    <div className="bg-white rounded-lg shadow border border-gray-200 p-3 hover:shadow-md transition-shadow cursor-pointer h-[400px] flex flex-col" onClick={onClick}>
+    <div className="bg-white rounded-lg shadow border border-gray-200 p-3 hover:shadow-md transition-shadow cursor-pointer h-[400px] flex flex-col" onClick={isDraft ? undefined : onClick}>
       {imageUrl && (
-        <div className={`rounded-lg overflow-hidden mb-3 ${isBlueprint ? 'bg-slate-100' : ''}`}>
+        <div className="rounded-lg overflow-hidden mb-2 bg-slate-50 flex-shrink-0" style={{ height: '160px', minHeight: '160px', maxHeight: '160px' }}>
           <img 
             src={imageUrl} 
             alt={displayTitle} 
-            className={`w-full h-40 ${isBlueprint ? 'object-contain p-2' : 'object-cover'}`} 
+            className="w-full h-full object-cover"
             loading="lazy" 
             decoding="async" 
             width={640} 
-            height={180}
+            height={160}
             onError={handleImageError}
             crossOrigin="anonymous"
           />
         </div>
       )}
-      <h3 className="font-semibold text-gray-900 mb-1 line-clamp-2" title={displayTitle}>{displayTitle}</h3>
-      <p className="text-sm text-gray-600 line-clamp-3 mb-2">{displayDescription}</p>
-      <div className="flex flex-wrap gap-2 mb-2">
+      <h3 className="font-semibold text-gray-900 mb-1.5 flex-shrink-0" style={{ 
+        display: '-webkit-box',
+        WebkitLineClamp: 2,
+        WebkitBoxOrient: 'vertical',
+        overflow: 'hidden',
+        minHeight: '44px',
+        maxHeight: '44px',
+        lineHeight: '1.375rem'
+      }} title={displayTitle}>{displayTitle}</h3>
+      <p className="text-sm text-gray-600 mb-2 flex-shrink-0" style={{
+        display: '-webkit-box',
+        WebkitLineClamp: 2,
+        WebkitBoxOrient: 'vertical',
+        overflow: 'hidden',
+        minHeight: '36px',
+        maxHeight: '36px',
+        lineHeight: '1.125rem'
+      }}>{displayDescription}</p>
+      <div className="flex flex-wrap gap-2 mb-1.5 flex-shrink-0">
         {!isBlueprint && (
           <>
             {domain && (
@@ -291,32 +311,48 @@ export const GuideCard: React.FC<GuideCardProps> = ({ guide, onClick, imageOverr
           </>
         )}
       </div>
-      <div className="flex items-center text-xs text-gray-500 gap-3 mb-3">
+      <div className="flex items-center text-xs text-gray-500 gap-3 mb-2 flex-shrink-0">
         {timeBucket && <span>{timeBucket}</span>}
         {lastUpdated && <span>{lastUpdated}</span>}
       </div>
             {/* Show author info only when provided and not a product */}
       {(!isBlueprint && !isGhcOverview && (guide.authorName || guide.authorOrg)) && (
-        <div className="text-xs text-gray-600 mb-3">
+        <div className="text-xs text-gray-600 mb-2 flex-shrink-0">
           <span
             className="truncate"
             title={`${guide.authorName || ""}${guide.authorOrg ? " - " + guide.authorOrg : ""}`}
           >
-            {`${guide.authorName || ""}${guide.authorOrg ? ` - ${guide.authorOrg}` : ""}`}
+            {/* Filter out "bb" and other placeholder text */}
+            {(() => {
+              const authorText = `${guide.authorName || ""}${guide.authorOrg ? ` - ${guide.authorOrg}` : ""}`.trim();
+              // Don't show if it's just "bb" or other single/double letter placeholders
+              if (authorText.toLowerCase() === 'bb' || authorText.length <= 2) {
+                return null;
+              }
+              return authorText;
+            })()}
           </span>
         </div>
       )}
-      <div className="pt-3 mt-4 border-t border-gray-100">
+      {/* Spacer to push button to bottom - but with max height to prevent excessive spacing */}
+      <div className="pt-2.5 mt-auto border-t border-gray-100 flex-shrink-0">
         <button
           type="button"
           onClick={(e) => {
             e.stopPropagation()
-            onClick()
+            if (!isDraft) {
+              onClick()
+            }
           }}
-            className="w-full inline-flex items-center justify-center rounded-full bg-[var(--guidelines-primary-solid)] text-white text-sm font-semibold px-4 py-2 transition-all hover:bg-[var(--guidelines-primary-solid-hover)] focus:outline-none focus:ring-2 focus:ring-[var(--guidelines-ring-color)]"
-            aria-label="Read more"
-          >
-            Read More
+          disabled={isDraft}
+          className={`w-full inline-flex items-center justify-center rounded-full text-sm font-semibold px-4 py-2 transition-all focus:outline-none focus:ring-2 ${
+            isDraft
+              ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+              : 'bg-[var(--guidelines-primary-solid)] text-white hover:bg-[var(--guidelines-primary-solid-hover)] focus:ring-[var(--guidelines-ring-color)]'
+          }`}
+          aria-label={isDraft ? 'Coming soon' : 'Read more'}
+        >
+          {isDraft ? 'Coming Soon' : 'Read More'}
         </button>
       </div>
     </div>

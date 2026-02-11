@@ -53,40 +53,42 @@ export const SixXDComingSoonCards: React.FC = () => {
       {SIXD_CARDS.map((card, index) => (
         <div
           key={index}
-          className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden transition-all duration-300 hover:shadow-lg hover:border-gray-300 flex flex-col"
+          className="bg-white rounded-lg shadow border border-gray-200 p-3 transition-all duration-300 hover:shadow-md flex flex-col h-[400px]"
         >
-          {/* Image */}
-          <div className="relative h-48 bg-gray-100 overflow-hidden">
+          {/* Image - Match GuideCard styling */}
+          <div className="rounded-lg overflow-hidden mb-2 bg-slate-50 h-40 min-h-[160px] max-h-[160px] flex-shrink-0">
             <img
               src={card.imageUrl}
               alt={card.title}
               className="w-full h-full object-cover"
             />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent"></div>
           </div>
 
           {/* Card Content */}
-          <div className="p-6 flex flex-col flex-1">
-            {/* Title - Fixed height for alignment */}
-            <h3 className="text-lg font-bold text-gray-900 mb-2 h-14 flex items-start">
+          <div className="flex flex-col flex-1">
+            {/* Title - Match GuideCard styling */}
+            <h3 className="font-semibold text-gray-900 mb-1.5 line-clamp-2 min-h-[44px] flex-shrink-0">
               {card.title}
             </h3>
 
-            {/* Subtitle - Fixed height for alignment */}
-            <p className="text-sm font-medium text-gray-500 mb-3 italic h-10 flex items-start">
+            {/* Subtitle - Italic tagline */}
+            <p className="text-sm text-gray-500 mb-2 italic line-clamp-1 flex-shrink-0">
               {card.subtitle}
             </p>
 
-            {/* Description - Fixed height for alignment */}
-            <p className="text-sm text-gray-600 mb-4 h-16 flex items-start">
+            {/* Description - Match GuideCard styling */}
+            <p className="text-sm text-gray-600 line-clamp-2 mb-2 min-h-[36px] leading-snug flex-shrink-0">
               {card.description}
             </p>
 
-            {/* Footer with Coming Soon Button */}
-            <div className="pt-4 border-t border-gray-200 mt-auto">
+            {/* Spacer to push button to bottom */}
+            <div className="flex-grow min-h-[8px]"></div>
+
+            {/* Footer with Coming Soon Button - Match GuideCard styling */}
+            <div className="pt-2.5 border-t border-gray-100 flex-shrink-0">
               <button
                 disabled
-                className="w-full px-4 py-2 bg-gray-300 text-gray-500 rounded-lg text-sm font-medium cursor-not-allowed flex items-center justify-center gap-2"
+                className="w-full px-4 py-2 bg-gray-300 text-gray-500 rounded-full text-sm font-semibold cursor-not-allowed flex items-center justify-center gap-2"
                 aria-label="Coming Soon"
               >
                 <Clock size={16} />

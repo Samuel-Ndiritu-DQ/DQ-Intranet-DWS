@@ -24,7 +24,7 @@ export const STATIC_PRODUCTS: StaticProduct[] = [
   {
     id: 'static-product-dtmp',
     title: 'DTMP - Digital Transformation Management Platform',
-    summary: 'A centralized platform to manage transformation data, processes, and analytics in one governed system.',
+    summary: 'Unified platform to govern transformation data and analytics.',
     domain: 'Product',
     guideType: 'Marketplace',
     heroImageUrl: '/images/DTMP.jpg',
@@ -41,7 +41,7 @@ export const STATIC_PRODUCTS: StaticProduct[] = [
   {
     id: 'static-product-dto4t',
     title: 'DTO4T - Digital Twin of Organization for Transformation',
-    summary: 'An AI-driven digital twin that accelerates transformation through simulated journeys and blueprinting.',
+    summary: 'Simulate transformation journeys with AI-driven digital twin blueprints.',
     domain: 'Product',
     guideType: 'Marketplace',
     heroImageUrl: '/images/DTO4T.jpg',
@@ -58,7 +58,7 @@ export const STATIC_PRODUCTS: StaticProduct[] = [
   {
     id: 'static-product-tmaas',
     title: 'TMaaS - Transformation Management as a Service',
-    summary: 'A self-service platform that lets organizations design, launch, and scale digital transformation through modular, on-demand initiatives.',
+    summary: 'Scale digital transformation through modular and on-demand initiatives.',
     domain: 'Product',
     guideType: 'Marketplace',
     heroImageUrl: '/images/tmaas.jpg',
@@ -75,7 +75,7 @@ export const STATIC_PRODUCTS: StaticProduct[] = [
   {
     id: 'static-product-dtma',
     title: 'DTMA - Digital Transformation Management Academy',
-    summary: 'An academy that upskills teams with tailored training, certifications, and AI-enabled learning paths.',
+    summary: 'Advanced academy for upskilling teams with professional certifications.',
     domain: 'Product',
     guideType: 'Marketplace',
     heroImageUrl: '/images/DTMA.jpg',
@@ -92,7 +92,7 @@ export const STATIC_PRODUCTS: StaticProduct[] = [
   {
     id: 'static-product-dtmb',
     title: 'DTMB - Digital Transformation Management Boost',
-    summary: 'A resource line of boosts, playbooks, and reference material to accelerate DT management.',
+    summary: 'Access essential playbooks and resources to boost transformation.',
     domain: 'Product',
     guideType: 'Marketplace',
     heroImageUrl: '/images/DTMB.jpg',
@@ -108,8 +108,8 @@ export const STATIC_PRODUCTS: StaticProduct[] = [
   },
   {
     id: 'static-product-dtmi',
-    title: 'DTMI',
-    summary: 'A Digital Transformation Management initiative. Detailed description to follow.',
+    title: 'DTMI - Digital Transformation Management Insights',
+    summary: 'Explore insights via blogs, articles, podcasts, and interviews.',
     domain: 'Product',
     guideType: 'Marketplace',
     heroImageUrl: '/images/DTMI.jpg',

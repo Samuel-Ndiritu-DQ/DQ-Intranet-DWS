@@ -253,7 +253,7 @@ export const GuideCard: React.FC<GuideCardProps> = ({ guide, onClick, imageOverr
   return (
     <div className="bg-white rounded-lg shadow border border-gray-200 p-3 hover:shadow-md transition-shadow cursor-pointer h-[400px] flex flex-col" onClick={isDraft ? undefined : onClick}>
       {imageUrl && (
-        <div className="rounded-lg overflow-hidden mb-2 bg-slate-50 flex-shrink-0" style={{ height: '160px', minHeight: '160px', maxHeight: '160px' }}>
+        <div className="rounded-lg overflow-hidden mb-2.5 bg-slate-50 flex-shrink-0" style={{ height: '160px', minHeight: '160px', maxHeight: '160px' }}>
           <img 
             src={imageUrl} 
             alt={displayTitle} 
@@ -267,7 +267,7 @@ export const GuideCard: React.FC<GuideCardProps> = ({ guide, onClick, imageOverr
           />
         </div>
       )}
-      <h3 className="font-semibold text-gray-900 mb-1.5 flex-shrink-0" style={{ 
+      <h3 className="font-semibold text-gray-900 mb-2 flex-shrink-0" style={{ 
         display: '-webkit-box',
         WebkitLineClamp: 2,
         WebkitBoxOrient: 'vertical',
@@ -276,7 +276,7 @@ export const GuideCard: React.FC<GuideCardProps> = ({ guide, onClick, imageOverr
         maxHeight: '44px',
         lineHeight: '1.375rem'
       }} title={displayTitle}>{displayTitle}</h3>
-      <p className="text-sm text-gray-600 mb-2 flex-shrink-0" style={{
+      <p className="text-sm text-gray-600 mb-2.5 flex-shrink-0" style={{
         display: '-webkit-box',
         WebkitLineClamp: 2,
         WebkitBoxOrient: 'vertical',
@@ -285,7 +285,7 @@ export const GuideCard: React.FC<GuideCardProps> = ({ guide, onClick, imageOverr
         maxHeight: '36px',
         lineHeight: '1.125rem'
       }}>{displayDescription}</p>
-      <div className="flex flex-wrap gap-2 mb-1.5 flex-shrink-0">
+      <div className="flex flex-wrap gap-2 mb-2 flex-shrink-0">
         {!isBlueprint && (
           <>
             {domain && (
@@ -311,13 +311,13 @@ export const GuideCard: React.FC<GuideCardProps> = ({ guide, onClick, imageOverr
           </>
         )}
       </div>
-      <div className="flex items-center text-xs text-gray-500 gap-3 mb-2 flex-shrink-0">
+      <div className="flex items-center text-xs text-gray-500 gap-3 mb-2.5 flex-shrink-0">
         {timeBucket && <span>{timeBucket}</span>}
         {lastUpdated && <span>{lastUpdated}</span>}
       </div>
             {/* Show author info only when provided and not a product */}
       {(!isBlueprint && !isGhcOverview && (guide.authorName || guide.authorOrg)) && (
-        <div className="text-xs text-gray-600 mb-2 flex-shrink-0">
+        <div className="text-xs text-gray-600 mb-2.5 flex-shrink-0">
           <span
             className="truncate"
             title={`${guide.authorName || ""}${guide.authorOrg ? " - " + guide.authorOrg : ""}`}
@@ -334,8 +334,8 @@ export const GuideCard: React.FC<GuideCardProps> = ({ guide, onClick, imageOverr
           </span>
         </div>
       )}
-      {/* Spacer to push button to bottom - but with max height to prevent excessive spacing */}
-      <div className="pt-2.5 mt-auto border-t border-gray-100 flex-shrink-0">
+      {/* Spacer to push button to bottom */}
+      <div className="pt-2 mt-auto border-t border-gray-100 flex-shrink-0">
         <button
           type="button"
           onClick={(e) => {

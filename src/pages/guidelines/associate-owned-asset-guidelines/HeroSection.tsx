@@ -6,9 +6,9 @@ interface HeroSectionProps {
   author?: string
 }
 
-export function HeroSection({ title = 'DQ Associate Owned Asset Guidelines', date = 'Version 1.8 • December 19, 2025', author = 'DQ Operations • Digital Qatalyst' }: HeroSectionProps) {
+export function HeroSection({ title = 'DQ Associate Owned Asset Guidelines', date = 'Version 1.8 • December 19, 2025', author = 'HRA' }: HeroSectionProps) {
   return (
-    <div className="relative w-full h-[500px] overflow-hidden">
+    <div className="relative w-full h-[325px] overflow-hidden">
       <div 
         className="absolute inset-0 bg-cover bg-center"
         style={{
@@ -20,17 +20,7 @@ export function HeroSection({ title = 'DQ Associate Owned Asset Guidelines', dat
 
       <div className="relative z-10 h-full flex flex-col justify-center px-6 md:px-12 lg:px-24 text-white">
         <div className="max-w-4xl">
-          <span className="inline-block px-4 py-1.5 rounded-full bg-white/20 backdrop-blur-sm text-sm font-medium mb-4">
-            Guideline
-          </span>
-
-          {date && (
-            <div className="text-sm text-white/90 mb-6 font-inter">
-              {date}
-            </div>
-          )}
-
-          <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-8 leading-tight font-inter">
+          <h1 className="text-[40px] font-bold mb-8 leading-tight font-inter">
             {title}
           </h1>
 

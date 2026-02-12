@@ -14,7 +14,7 @@ export function HeroSection({
   badge = 'Strategy Framework'
 }: HeroSectionProps) {
   return (
-    <div className="relative w-full h-[500px] overflow-hidden">
+    <div className="relative w-full h-[325px] overflow-hidden">
       <div 
         className="absolute inset-0 bg-cover bg-center"
         style={{
@@ -36,12 +36,12 @@ export function HeroSection({
             {new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
           </div>
 
-          <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-8 leading-tight font-inter">
+          <h1 className="text-[28px] font-bold mb-8 leading-tight font-inter whitespace-nowrap">
             {title}
           </h1>
 
           {subtitle && (
-            <div className="flex items-center gap-3 text-sm text-white/90 font-inter">
+            <div className="flex items-center gap-3 text-[14px] text-white/90 font-inter">
               <span>{subtitle}</span>
             </div>
           )}

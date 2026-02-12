@@ -8,8 +8,11 @@ interface HeroSectionProps {
 }
 
 export function HeroSection({ title, subtitle, imageUrl, badge }: HeroSectionProps) {
+  // Check if this is the GHC title to apply special styling
+  const isGHCTitle = title.includes('Golden Honeycomb')
+  
   return (
-    <div className="relative w-full h-[500px] overflow-hidden">
+    <div className="relative w-full h-[325px] overflow-hidden">
       <div 
         className="absolute inset-0 bg-cover bg-center"
         style={{
@@ -27,12 +30,12 @@ export function HeroSection({ title, subtitle, imageUrl, badge }: HeroSectionPro
             </span>
           )}
 
-          <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold mb-8 leading-tight font-inter">
+          <h1 className={`font-bold mb-8 leading-tight font-inter ${isGHCTitle ? 'text-[28px] whitespace-nowrap' : 'text-[40px]'}`}>
             {title}
           </h1>
 
           {subtitle && (
-            <div className="flex items-center gap-3 text-sm text-white/90 font-inter">
+            <div className="flex items-center gap-3 text-[14px] text-white/90 font-inter">
               <span>{subtitle}</span>
             </div>
           )}

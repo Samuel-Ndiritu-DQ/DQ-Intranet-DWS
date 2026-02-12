@@ -5,4 +5,10 @@ on:
       - main
   pull_request:
     types: [opened, synchronize, reopened]
-jobs: {}
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Confirm Sonar handled by Automatic Analysis
+        run: echo "SonarCloud Automatic Analysis is enabled; CI Sonar scan omitted intentionally."

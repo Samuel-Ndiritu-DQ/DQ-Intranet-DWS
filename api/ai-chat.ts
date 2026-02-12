@@ -160,28 +160,36 @@ function setCors(res: VercelResponse) {
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
+  setCors(res);
+
   if (req.method === 'OPTIONS') {
-    setCors(res);
     return res.status(204).end();
   }
 
   if (req.method === 'GET') {
-    setCors(res);
-    if (!OPENAI_API_KEY) {
-      return res.status(503).json({ ok: false, error: 'OPENAI_API_KEY not configured' });
-    }
-    return res.status(200).json({
-      ok: true,
-      model: DEFAULT_MODEL,
-      embedModel: DEFAULT_EMBED_MODEL,
-    });
+    return handleGet(res);
   }
 
-  if (req.method !== 'POST') {
-    res.setHeader('Allow', 'GET, POST, OPTIONS');
-    return res.status(405).json({ error: 'Method not allowed' });
+  if (req.method === 'POST') {
+    return handlePost(req, res);
   }
 
+  res.setHeader('Allow', 'GET, POST, OPTIONS');
+  return res.status(405).json({ error: 'Method not allowed' });
+}
+
+function handleGet(res: VercelResponse) {
+  if (!OPENAI_API_KEY) {
+    return res.status(503).json({ ok: false, error: 'OPENAI_API_KEY not configured' });
+  }
+  return res.status(200).json({
+    ok: true,
+    model: DEFAULT_MODEL,
+    embedModel: DEFAULT_EMBED_MODEL,
+  });
+}
+
+async function handlePost(req: VercelRequest, res: VercelResponse) {
   if (!OPENAI_API_KEY) {
     return res.status(500).json({ error: 'OPENAI_API_KEY is not configured in the server environment.' });
   }
@@ -230,24 +238,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     if (stream) {
-      setCors(res);
-      res.setHeader('Content-Type', 'text/event-stream');
-      res.setHeader('Cache-Control', 'no-cache, no-transform');
-      res.setHeader('Connection', 'keep-alive');
-
-      if (!upstream.body) {
-        return res.status(500).json({ error: 'Upstream streaming body missing' });
-      }
-
-      const reader = (upstream.body as any).getReader();
-      let isDone = false;
-      while (!isDone) {
-        const { done, value } = await reader.read();
-        isDone = done;
-        if (value) res.write(Buffer.from(value));
-      }
-      res.end();
-      return;
+      return streamResponse(res, upstream);
     }
 
     const data = await upstream.json();
@@ -256,7 +247,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(500).json({ error: 'AI provider did not return a message' });
     }
 
-    setCors(res);
     res.setHeader('Cache-Control', 'no-store');
     return res.status(200).json({
       reply,
@@ -270,4 +260,23 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       detail: error?.message || String(error),
     });
   }
+}
+
+async function streamResponse(res: VercelResponse, upstream: Response) {
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache, no-transform');
+  res.setHeader('Connection', 'keep-alive');
+
+  if (!upstream.body) {
+    return res.status(500).json({ error: 'Upstream streaming body missing' });
+  }
+
+  const reader = (upstream.body as any).getReader();
+  let isDone = false;
+  while (!isDone) {
+    const { done, value } = await reader.read();
+    isDone = done;
+    if (value) res.write(Buffer.from(value));
+  }
+  res.end();
 }

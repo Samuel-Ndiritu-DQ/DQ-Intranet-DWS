@@ -31,10 +31,10 @@ function buildSystemPrompt(context?: string) {
 
 function sanitizeMessages(raw: any): ChatMessage[] {
   if (!Array.isArray(raw)) return [];
-  const allowed: ChatRole[] = ['system', 'user', 'assistant'];
+  const allowedRoles = new Set<ChatRole>(['system', 'user', 'assistant']);
   return raw
     .map((m) => ({
-      role: allowed.includes(m?.role) ? (m.role as ChatRole) : 'user',
+      role: allowedRoles.has(m?.role) ? (m.role as ChatRole) : 'user',
       content: typeof m?.content === 'string' ? m.content.trim() : '',
     }))
     .filter((m) => m.content.length > 0)

@@ -4,6 +4,10 @@
 @import "tailwindcss/utilities";
 /* DO NOT DELETE THESE TAILWIND IMPORTS, OTHERWISE THE STYLING WILL NOT RENDER AT ALL */
 
+html {
+  scroll-behavior: smooth;
+}
+
 :root {
   --dq-navy: #030F35;
   --dq-coral: #FB5535;
@@ -13,6 +17,105 @@
   --dq-font: system-ui, -apple-system, "system-ui", "Segoe UI", sans-serif;
   --accent: 11 78% 57%; /* Coral/orange */
   --accent-foreground: 0 0% 100%;
+
+  --background: 216 33% 98%;
+  --foreground: 224 56% 17%;
+  --primary: 220 65% 30%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 228 100% 25%;
+  --secondary-foreground: 0 0% 100%;
+  --muted: 228 40% 93%;
+  --muted-foreground: 220 20% 46%;
+  --card: 0 0% 100%;
+  --card-foreground: 224 56% 17%;
+  --border: 228 40% 93%;
+  --radius: 0.75rem;
+}
+
+.gradient-hero {
+  background: linear-gradient(135deg, hsl(228 100% 25%) 0%, hsl(14 97% 60%) 100%);
+}
+
+.gradient-subtle {
+  background: linear-gradient(135deg, hsl(228 40% 93% / 0.5) 0%, hsl(216 33% 98%) 100%);
+}
+
+.gradient-text {
+  background: linear-gradient(135deg, hsl(228 100% 25%) 0%, hsl(14 97% 60%) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.gradient-divider {
+  height: 2px;
+  background: linear-gradient(90deg, transparent 0%, hsl(228 100% 25% / 0.2) 50%, transparent 100%);
+}
+
+.gradient-left-border {
+  position: relative;
+}
+
+.gradient-left-border::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  border-radius: 9999px;
+  background: linear-gradient(135deg, hsl(228 100% 25%) 0%, hsl(14 97% 60%) 100%);
+}
+
+.glass-card {
+  background-color: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(24px);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  box-shadow: 0 8px 30px rgba(15, 23, 42, 0.08);
+}
+
+.font-display {
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+.bg-card {
+  background-color: hsl(var(--card));
+}
+
+.bg-background {
+  background-color: hsl(var(--background));
+}
+
+.bg-muted {
+  background-color: hsl(var(--muted));
+}
+
+.text-foreground {
+  color: hsl(var(--foreground));
+}
+
+.text-card-foreground {
+  color: hsl(var(--card-foreground));
+}
+
+.text-primary {
+  color: hsl(var(--primary));
+}
+
+.bg-primary {
+  background-color: hsl(var(--primary));
+}
+
+.border-primary {
+  border-color: hsl(var(--primary));
+}
+
+.border-border {
+  border-color: hsl(var(--border));
+}
+
+.text-muted-foreground {
+  color: hsl(var(--muted-foreground));
 }
 
 /* Global typography reset to system UI stack */

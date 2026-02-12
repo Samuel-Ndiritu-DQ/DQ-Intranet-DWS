@@ -28,64 +28,7 @@ INSERT INTO public.news (
   'Company News',
   'DQ Leadership',
   'GHC',
-  '# Is Beijing Building the World''s First AI Superstate?
-
-While the U.S. pushes a loud "compute nationalism" agenda, China is quietly executing a parallel strategy that is more coordinated, vertically integrated, and harder to track.
-
-There is a strange calm around China''s AI strategy right now. No loud announcements. No flashy political statements. No weekly executive orders.
-
-**Just… quiet expansion.**
-
-But behind that silence, something massive is unfolding: China is building compute capacity at a speed the world has never seen before.
-
-While the U.S. under Trump is pushing a loud and public "compute nationalism" agenda, China is executing a parallel strategy—one that is arguably more coordinated, more vertically integrated, and far harder for the outside world to track.
-
-So the question is worth asking:
-
-**Is China quietly building the world''s first AI superstate?**
-
-Let''s unpack what''s actually happening.
-
-## China Doesn''t Announce the Plan — It Already Builds It
-
-Unlike the U.S., China does not debate infrastructure at length.
-
-**It activates.**
-
-Here''s what gives China a structural advantage in the AI infrastructure race:
-
-### 1. State-directed industrial capacity
-
-China can mobilize:
-
-- land
-- labour
-- energy
-- construction
-- logistics
-
-at national scale without hitting the political bottlenecks Western countries face.
-
-### 2. Full-stack control of hardware supply chains
-
-From raw materials → to wafer fabrication → to packaging → to datacenter rack assembly
-
-China has built more of the chain internally than any other nation.
-
-### 3. Rapid build cycles
-
-A hyperscale datacenter in the U.S. may take 24–36 months to complete.
-
-In China, it can be done in 10–14 months—sometimes less.
-
-And while export controls limit China''s access to the newest Nvidia chips, it still produces:
-
-- competitive domestic GPUs
-- specialized AI ASICs
-- custom accelerators
-- and enormous distributed compute clusters
-
-China is not slowing down—it is diversifying.',
+  'While the U.S. pushes a loud "compute nationalism" agenda, China is quietly executing a parallel strategy that is more coordinated, vertically integrated, and harder to track. There is a strange calm around China''s AI strategy right now. No loud announcements. No flashy political statements. No weekly executive orders. Just quiet expansion. But behind that silence, something massive is unfolding: China is building compute capacity at a speed the world has never seen before. While the U.S. under Trump is pushing a loud and public "compute nationalism" agenda, China is executing a parallel strategy—one that is arguably more coordinated, more vertically integrated, and far harder for the outside world to track. So the question is worth asking: Is China quietly building the world''s first AI superstate? Let''s unpack what''s actually happening. China doesn''t announce the plan—it already builds it. Unlike the U.S., China does not debate infrastructure at length. It activates. Here''s what gives China a structural advantage in the AI infrastructure race: state-directed industrial capacity, full-stack control of hardware supply chains, and rapid build cycles. China can mobilize land, labour, energy, construction, and logistics at national scale without hitting the political bottlenecks Western countries face. From raw materials to wafer fabrication to packaging to datacenter rack assembly, China has built more of the chain internally than any other nation. A hyperscale datacenter in the U.S. may take 24–36 months to complete. In China, it can be done in 10–14 months—sometimes less. And while export controls limit China''s access to the newest Nvidia chips, it still produces competitive domestic GPUs, specialized AI ASICs, custom accelerators, and enormous distributed compute clusters. China is not slowing down—it is diversifying.',
   'Blog',
   'DigitalQatalyst',
   NULL

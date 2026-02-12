@@ -224,9 +224,9 @@ function GuidelinePage() {
                       <Link
                         to={`/marketplace/guides/${currentSlug}/details`}
                         className="inline-flex items-center gap-2 px-6 py-3 text-sm font-bold text-white rounded-lg transition-colors"
-                        style={{ backgroundColor: '#030E31' }}
-                        onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#020A28' }}
-                        onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = '#030E31' }}
+                        style={{ backgroundColor: '#f55436' }}
+                        onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#d4442e' }}
+                        onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = '#f55436' }}
                       >
                         <span>View Details</span>
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -273,9 +273,9 @@ function GuidelinePage() {
                       <button
                         onClick={() => window.open('https://digital-qatalyst.shorthandstories.com/5d87ac25-6eb5-439e-a861-845787aa8e59/index.html', '_blank')}
                         className="inline-flex items-center gap-2 px-6 py-3 text-white font-medium rounded-lg transition-colors"
-                        style={{ backgroundColor: '#030E31' }}
-                        onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#020A28' }}
-                        onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = '#030E31' }}
+                        style={{ backgroundColor: '#f55436' }}
+                        onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#d4442e' }}
+                        onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = '#f55436' }}
                       >
                         <BookOpen size={16} />
                         Read more in the storybook
@@ -320,9 +320,9 @@ function GuidelinePage() {
                       <button
                         onClick={() => window.open('https://dq-intranet-pykepfa4x-digitalqatalysts-projects.vercel.app/lms/ghc-course/lesson/828f2848-3489-4ee9-8169-7ba3d2c8c17a', '_blank')}
                         className="inline-flex items-center gap-2 px-6 py-3 text-white font-medium rounded-lg transition-colors"
-                        style={{ backgroundColor: '#030E31' }}
-                        onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#020A28' }}
-                        onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = '#030E31' }}
+                        style={{ backgroundColor: '#f55436' }}
+                        onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#d4442e' }}
+                        onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = '#f55436' }}
                       >
                         <PlayCircle size={16} />
                         View Course

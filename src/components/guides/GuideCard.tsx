@@ -348,8 +348,9 @@ export const GuideCard: React.FC<GuideCardProps> = ({ guide, onClick, imageOverr
           className={`w-full inline-flex items-center justify-center rounded-full text-sm font-semibold px-4 py-2 transition-all focus:outline-none focus:ring-2 ${
             isDraft
               ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-              : 'bg-[var(--guidelines-primary-solid)] text-white hover:bg-[var(--guidelines-primary-solid-hover)] focus:ring-[var(--guidelines-ring-color)]'
+              : 'text-white hover:bg-[#d4442e] focus:ring-[#f55436]'
           }`}
+          style={isDraft ? {} : { backgroundColor: '#f55436' }}
           aria-label={isDraft ? 'Coming soon' : 'Read more'}
         >
           {isDraft ? 'Coming Soon' : 'Read More'}

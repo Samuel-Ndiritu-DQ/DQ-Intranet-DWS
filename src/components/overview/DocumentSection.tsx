@@ -92,46 +92,55 @@ export function DocumentSection({ title, documents }: DocumentSectionProps) {
             simulateUpload(file.id);
         });
     };
+    const updateUploadingProgress = (fileId: string, progress: number) => {
+        setUploadingFiles(prev => prev.map(file => file.id === fileId ? {
+            ...file,
+            progress
+        } : file));
+    };
+    const markUploadComplete = (fileId: string, progress: number) => {
+        setUploadingFiles(prev => prev.map(file => file.id === fileId ? {
+            ...file,
+            progress,
+            status: 'complete'
+        } : file));
+    };
+    const addCompletedDocument = (fileId: string) => {
+        setUploadingFiles(prev => {
+            const uploadedFile = prev.find(file => file.id === fileId);
+            if (!uploadedFile) {
+                return prev;
+            }
+
+            const newDoc: DocumentItem = {
+                id: fileId,
+                name: uploadedFile.name,
+                type: uploadedFile.type,
+                size: uploadedFile.size,
+                uploadDate: new Date().toLocaleDateString(),
+                status: 'Pending'
+            };
+
+            setDocs(currentDocs => [...currentDocs, newDoc]);
+
+            return prev.filter(file => file.id !== fileId);
+        });
+    };
+    const finalizeUpload = (fileId: string, progress: number) => {
+        markUploadComplete(fileId, progress);
+        setTimeout(() => addCompletedDocument(fileId), 1000);
+    };
     // Simulate file upload
     const simulateUpload = (fileId: string) => {
         let progress = 0;
         const interval = setInterval(() => {
             progress += Math.floor(Math.random() * 10) + 5;
             if (progress >= 100) {
-                clearInterval(interval);
                 progress = 100;
-                // Add to documents after "upload" completes
-                setUploadingFiles(prev => prev.map(file => file.id === fileId ? {
-                    ...file,
-                    progress,
-                    status: 'complete'
-                } : file));
-                setTimeout(() => {
-                    setUploadingFiles(prev => {
-                        const uploadedFile = prev.find(file => file.id === fileId);
-                        if (!uploadedFile) {
-                            return prev;
-                        }
-
-                        const newDoc: DocumentItem = {
-                            id: fileId,
-                            name: uploadedFile.name,
-                            type: uploadedFile.type,
-                            size: uploadedFile.size,
-                            uploadDate: new Date().toLocaleDateString(),
-                            status: 'Pending'
-                        };
-
-                        setDocs(currentDocs => [...currentDocs, newDoc]);
-
-                        return prev.filter(file => file.id !== fileId);
-                    });
-                }, 1000);
+                clearInterval(interval);
+                finalizeUpload(fileId, progress);
             } else {
-                setUploadingFiles(prev => prev.map(file => file.id === fileId ? {
-                    ...file,
-                    progress
-                } : file));
+                updateUploadingProgress(fileId, progress);
             }
         }, 300);
     };

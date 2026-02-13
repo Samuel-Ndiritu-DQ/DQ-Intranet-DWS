@@ -6,7 +6,7 @@ import { SearchBar } from '../SearchBar.js';
 import { FilterIcon, XIcon, HomeIcon, ChevronRightIcon, InfoIcon } from 'lucide-react';
 import { ErrorDisplay, CourseCardSkeleton } from '../SkeletonLoader.js';
 import { fetchMarketplaceItems, fetchMarketplaceFilters } from '../../services/marketplace.js';
-import { getMarketplaceConfig, getTabSpecificFilters } from '../../utils/marketplaceConfig.js';
+import { getMarketplaceConfig, getTabSpecificFilters, getDesignSystemTabSpecificFilters } from '../../utils/marketplaceConfig.js';
 import { MarketplaceComparison } from './MarketplaceComparison.js';
 import { Header } from '../Header';
 import { Footer } from '../Footer';
@@ -590,11 +590,12 @@ type DesignSystemTab = 'cids' | 'vds' | 'cds';
         return;
       }
       
-      // For Design System, use config.filterCategories directly
+      // For Design System, use tab-specific filters
       if (isDesignSystem) {
-        setFilterConfig(config.filterCategories);
+        const tabFilters = getDesignSystemTabSpecificFilters(activeDesignSystemTab);
+        setFilterConfig(tabFilters);
         const initial: Record<string, string | string[]> = {};
-        config.filterCategories.forEach(c => { initial[c.id] = ''; });
+        tabFilters.forEach(c => { initial[c.id] = ''; });
         setFilters(initial);
         return;
       }
@@ -615,7 +616,7 @@ type DesignSystemTab = 'cids' | 'vds' | 'cds';
       }
     };
     loadFilterOptions();
-  }, [marketplaceType, config, isCourses, isGuides, isKnowledgeHub, isServicesCenter, isDesignSystem, activeServiceTab, filterConfig.length, Object.keys(filters).length]);
+  }, [marketplaceType, config, isCourses, isGuides, isKnowledgeHub, isServicesCenter, isDesignSystem, activeServiceTab, activeDesignSystemTab, filterConfig.length, Object.keys(filters).length]);
   
   // Fetch items based on marketplace type
   useEffect(() => {
@@ -1359,7 +1360,36 @@ type DesignSystemTab = 'cids' | 'vds' | 'cds';
         setLoading(false);
         setError(null);
         // Filter items by active tab
-        const filteredDesignSystemItems = getDesignSystemItemsByType(activeDesignSystemTab);
+        let filteredDesignSystemItems = getDesignSystemItemsByType(activeDesignSystemTab);
+        
+        // Apply category filters based on active tab
+        // For CI.DS tab, check 'cids' filters
+        // For V.DS tab, check 'vds' filters
+        // For CDS tab, check 'cds' filters
+        const filterKey = activeDesignSystemTab; // 'cids', 'vds', or 'cds'
+        const categoryFilters = filters[filterKey];
+        const categoryArray = Array.isArray(categoryFilters) 
+          ? categoryFilters 
+          : (typeof categoryFilters === 'string' && categoryFilters ? categoryFilters.split(',').filter(Boolean) : []);
+        
+        if (categoryArray.length > 0) {
+          filteredDesignSystemItems = filteredDesignSystemItems.filter(item => 
+            item.category && categoryArray.includes(item.category)
+          );
+        }
+        
+        // Apply location filters
+        const locationFilters = filters['location'];
+        const locationArray = Array.isArray(locationFilters)
+          ? locationFilters
+          : (typeof locationFilters === 'string' && locationFilters ? locationFilters.split(',').filter(Boolean) : []);
+        
+        if (locationArray.length > 0) {
+          filteredDesignSystemItems = filteredDesignSystemItems.filter(item =>
+            item.location && locationArray.includes(item.location)
+          );
+        }
+        
         setItems(filteredDesignSystemItems);
         setFilteredItems(filteredDesignSystemItems);
         setTotalCount(filteredDesignSystemItems.length);
@@ -2185,19 +2215,32 @@ type DesignSystemTab = 'cids' | 'vds' | 'cds';
                 onClearFilters={clearKnowledgeHubFilters}
               />
             ) : isDesignSystem ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-6xl mx-auto">
-                {filteredItems.map((item: any) => (
-                  <DesignSystemCard
-                    key={item.id}
-                    id={item.id}
-                    title={item.title}
-                    description={item.description}
-                    imageUrl={item.imageUrl}
-                    tags={item.tags}
-                    type={item.type}
-                  />
-                ))}
-              </div>
+              filteredItems.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-6xl mx-auto">
+                  {filteredItems.map((item: any) => (
+                    <DesignSystemCard
+                      key={item.id}
+                      id={item.id}
+                      title={item.title}
+                      description={item.description}
+                      imageUrl={item.imageUrl}
+                      tags={item.tags}
+                      type={item.type}
+                    />
+                  ))}
+                </div>
+              ) : (
+                <div className="flex flex-col items-center justify-center py-16 px-4">
+                  <div className="text-center max-w-md">
+                    <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                      No {activeDesignSystemTab === 'cids' ? 'CI.DS' : activeDesignSystemTab === 'vds' ? 'V.DS' : 'CDS'} services found
+                    </h3>
+                    <p className="text-gray-600 text-sm">
+                      Service cards will appear here once they are added.
+                    </p>
+                  </div>
+                </div>
+              )
             ) : isGuides ? (
               <>
                 {activeTab === 'faqs' ? (

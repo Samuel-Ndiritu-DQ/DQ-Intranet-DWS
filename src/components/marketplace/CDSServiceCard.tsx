@@ -18,13 +18,14 @@ export const CDSServiceCardComponent: React.FC<CDSServiceCardProps> = ({ card, o
 
   return (
     <div
-      className={`flex flex-col min-h-[340px] bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-all duration-200 cursor-pointer guidelines-theme ${
-        isSelected ? 'ring-2 ring-blue-500 shadow-lg' : ''
+      className={`flex flex-col bg-white rounded-2xl shadow-lg hover:shadow-xl transition-shadow duration-200 overflow-hidden cursor-pointer ${
+        isSelected ? 'ring-2 ring-blue-500 shadow-xl' : ''
       }`}
+      style={{ width: '100%', maxWidth: '340px' }}
       onClick={onClick}
     >
       {/* Featured Image */}
-      <div className="relative h-48 bg-gray-200 overflow-hidden">
+      <div className="relative bg-gray-200 overflow-hidden" style={{ height: '140px' }}>
         <img
           src={imageUrl}
           alt={card.title}
@@ -40,24 +41,24 @@ export const CDSServiceCardComponent: React.FC<CDSServiceCardProps> = ({ card, o
       </div>
 
       {/* Card Content */}
-      <div className="px-4 pt-3 pb-2 flex-grow flex flex-col">
-        <div className="flex items-start mb-2">
+      <div className="px-8 pt-6 pb-4 flex-grow flex flex-col">
+        <div className="flex items-start mb-4">
           <div className="flex-grow">
-            <h3 className="font-bold text-gray-900 text-lg mb-1 line-clamp-2 leading-tight">
+            <h3 className="font-bold text-gray-900 text-xl leading-tight line-clamp-2 mb-4">
               {card.title}
             </h3>
           </div>
         </div>
 
         {/* Description */}
-        <div className="mb-3">
-          <p className="text-sm text-gray-600 line-clamp-3 leading-snug">
+        <div className="mb-5">
+          <p className="text-base text-gray-500 leading-relaxed line-clamp-3">
             {card.description}
           </p>
         </div>
 
         {/* CDS Tag */}
-        <div className="mb-3">
+        <div className="mb-5">
           <span
             className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold"
             style={{
@@ -71,7 +72,7 @@ export const CDSServiceCardComponent: React.FC<CDSServiceCardProps> = ({ card, o
       </div>
 
       {/* Footer with CTA */}
-      <div className="mt-auto pt-3 border-t border-gray-100 px-4 pb-4">
+      <div className="mt-auto px-8 pt-5 pb-6">
         <button
           type="button"
           onClick={(e) => {

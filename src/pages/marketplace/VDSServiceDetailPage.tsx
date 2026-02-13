@@ -266,7 +266,7 @@ export default function VDSServiceDetailPage() {
             {/* Sidebar */}
             <div className="lg:col-span-1">
               <nav className="sticky top-24 h-[calc(100vh-6rem)] overflow-y-auto">
-                <div className="bg-gray-50 border-l border-gray-200 p-6">
+                <div className="bg-gray-50 p-6">
                   <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4">
                     Contents
                   </h2>

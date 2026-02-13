@@ -136,7 +136,7 @@ export const CDS_SERVICE_CARDS: CDSServiceCard[] = [
         {
           id: '2.7',
           title: '2.7 DQ MarCom | Channels vs Content Pillars',
-          content: `While each campaign pillar serves a unique strategic purpose, their impact is amplified when mapped to the channels best suited to their strengths. This alignment ensures that content resonates in both form and function—delivered through the platform where it naturally thrives.`,
+          content: `While each campaign pillar serves a unique strategic purpose, their impact is amplified when mapped to the channels best suited to their strengths. This alignment ensures that content resonates in both form and function - delivered through the platform where it naturally thrives.`,
           tableData: {
             columns: [
               { header: '#', accessor: 'number' },
@@ -251,7 +251,7 @@ export const CDS_SERVICE_CARDS: CDSServiceCard[] = [
         {
           id: '6.2',
           title: '6.2 Campaign Review Template',
-          content: `Post-campaign review for actionable insights:\n\n**Results vs Objectives:** Did we meet or exceed expectations?\n\n**Top-Performing Assets:** What content formats resonated most?\n\n**Audience Feedback Themes:** What did people say—and how did they feel?\n\n**Visual & Tone Resonance:** Was the brand voice visually and emotionally consistent?\n\n**Budget Use and ROI:** Did we get value for our spend?\n\n**Lessons Learned:** What should we repeat, avoid, or tweak?\n\n**Pillar Impact Assessment:** Which content pillar drove the highest engagement?`
+          content: `Post-campaign review for actionable insights:\n\n**Results vs Objectives:** Did we meet or exceed expectations?\n\n**Top-Performing Assets:** What content formats resonated most?\n\n**Audience Feedback Themes:** What did people say - and how did they feel?\n\n**Visual & Tone Resonance:** Was the brand voice visually and emotionally consistent?\n\n**Budget Use and ROI:** Did we get value for our spend?\n\n**Lessons Learned:** What should we repeat, avoid, or tweak?\n\n**Pillar Impact Assessment:** Which content pillar drove the highest engagement?`
         },
         {
           id: '6.3',

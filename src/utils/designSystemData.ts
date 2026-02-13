@@ -8,6 +8,7 @@ export interface DesignSystemItem {
   imageUrl: string
   location?: string
   tags?: string[]
+  category?: string // For filtering: 'cids-framework', 'cids-lifecycle', 'cids-template'
 }
 
 export const DESIGN_SYSTEM_ITEMS: DesignSystemItem[] = [
@@ -17,7 +18,9 @@ export const DESIGN_SYSTEM_ITEMS: DesignSystemItem[] = [
     description: 'CI.DS is DQ\'s intelligent system for turning ideas into consistent, high-impact content at scale.',
     type: 'cids',
     imageUrl: '/images/cids.PNG',
-    tags: ['CI.DS']
+    tags: ['CI.DS'],
+    category: 'cids-framework',
+    location: 'DXB'
   },
   {
     id: 'vds-framework',
@@ -25,7 +28,9 @@ export const DESIGN_SYSTEM_ITEMS: DesignSystemItem[] = [
     description: 'V.DS defines DQ\'s cinematic system for creating strategic, scalable, high-impact video content.',
     type: 'vds',
     imageUrl: '/images/vds.png',
-    tags: ['V.DS']
+    tags: ['V.DS'],
+    category: 'vds-framework',
+    location: 'KSA'
   },
   {
     id: 'cds-campaigns-design-system',
@@ -33,7 +38,9 @@ export const DESIGN_SYSTEM_ITEMS: DesignSystemItem[] = [
     description: 'CDS defines DQ\'s system for designing and scaling high-impact campaigns.',
     type: 'cds',
     imageUrl: '/images/design service card image.PNG',
-    tags: ['CDS']
+    tags: ['CDS'],
+    category: 'cds-framework',
+    location: 'NBO'
   }
 ]
 

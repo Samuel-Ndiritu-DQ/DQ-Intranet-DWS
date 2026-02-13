@@ -459,6 +459,8 @@ type LandingOverrides = {
   responsesLayout?: 'carousel' | 'classes-grid' | 'chips-grid';
   responseCards?: CompetencyCard[];
   responseTags?: string[];
+  responsesCTALabel?: string;
+  responsesCTATo?: string;
   bottomCTA?: string;
   actionCards?: ActionCard[];
   finalHeadline?: string;
@@ -915,6 +917,8 @@ function SectionCarousel({
     ['Vision', 'House of Values', 'Persona', 'Agile TMS', 'Agile SoS', 'Agile Flows', 'Agile 6xD'];
   const responseCards = content?.responseCards ?? COMPETENCY_CARDS_DEFAULT;
   const bottomCTA = content?.bottomCTA ?? 'Explore all Seven Responses together →';
+  const responsesCTALabel = content?.responsesCTALabel;
+  const responsesCTATo = content?.responsesCTATo;
 
   useEffect(() => {
     setActiveTag(carouselIndex);
@@ -936,6 +940,8 @@ function SectionCarousel({
         tags={responseTags}
         cards={responseCards}
         itemLabel="Perspective"
+        ctaLabel={responsesCTALabel}
+        ctaTo={responsesCTATo}
       />
     );
   }
@@ -969,6 +975,8 @@ function SectionCarousel({
       tags={responseTags}
       cards={responseCards}
       itemLabel="Response"
+      ctaLabel={responsesCTALabel}
+      ctaTo={responsesCTATo}
     />
   );
 }
@@ -1128,6 +1136,8 @@ function SevenResponsesRailCarousel({
   tags,
   cards,
   itemLabel = 'Response',
+  ctaLabel,
+  ctaTo,
 }: {
   id: string;
   title: string;
@@ -1137,10 +1147,13 @@ function SevenResponsesRailCarousel({
   tags: string[];
   cards: CompetencyCard[];
   itemLabel?: string;
+  ctaLabel?: string;
+  ctaTo?: string;
 }) {
   const [emblaRef, emblaApi] = useEmblaCarousel({ loop: true, align: 'start' });
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
+  const navigate = useNavigate();
 
   const onSelect = useCallback(() => {
     if (!emblaApi) return;
@@ -1181,6 +1194,16 @@ function SevenResponsesRailCarousel({
   const scrollNext = useCallback(() => {
     emblaApi?.scrollNext();
   }, [emblaApi]);
+
+  const handleCTA = useCallback(() => {
+    if (!ctaTo) return;
+    const isExternal = /^https?:\/\//i.test(ctaTo);
+    if (isExternal) {
+      window.open(ctaTo, '_blank', 'noopener,noreferrer');
+      return;
+    }
+    navigate(ctaTo);
+  }, [ctaTo, navigate]);
 
   return (
     <section id={id} className="relative py-24 bg-white">
@@ -1293,6 +1316,20 @@ function SevenResponsesRailCarousel({
                   />
                 ))}
               </div>
+
+              {ctaLabel && ctaTo ? (
+                <div className="mt-12 flex justify-center">
+                  <button
+                    type="button"
+                    onClick={handleCTA}
+                    className="inline-flex items-center gap-3 rounded-xl bg-[#151c2d] px-7 py-3.5 text-white font-semibold shadow-[0_10px_28px_rgba(12,20,40,0.28)] transition hover:-translate-y-0.5 hover:shadow-[0_14px_34px_rgba(12,20,40,0.32)]"
+                  >
+                    <BookOpen className="h-5 w-5" />
+                    <span className="text-base">{ctaLabel}</span>
+                    <ArrowRight className="h-5 w-5" />
+                  </button>
+                </div>
+              ) : null}
             </div>
           </div>
         </div>

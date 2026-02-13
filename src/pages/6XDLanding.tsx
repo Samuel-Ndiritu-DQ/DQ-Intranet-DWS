@@ -231,6 +231,8 @@ export default function SixXDLanding() {
           "Digital Accelerators",
         ],
         responseCards: SIXXD_CARDS,
+        responsesCTALabel: "Read the 6xD Books",
+        responsesCTATo: "/6xd-products#products",
         bottomCTA: "",
         actionCards: SIXXD_ACTIONS,
         finalHeadline: "Agile 6xD runs inside DQ first then becomes products you can deploy.",

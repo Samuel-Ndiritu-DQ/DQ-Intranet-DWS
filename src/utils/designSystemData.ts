@@ -24,7 +24,7 @@ export const DESIGN_SYSTEM_ITEMS: DesignSystemItem[] = [
   },
   {
     id: 'vds-framework',
-    title: 'V.DS (Video Design System)',
+    title: 'V.DS Framework',
     description: 'V.DS defines DQ\'s cinematic system for creating strategic, scalable, high-impact video content.',
     type: 'vds',
     imageUrl: '/images/vds.png',
@@ -34,7 +34,7 @@ export const DESIGN_SYSTEM_ITEMS: DesignSystemItem[] = [
   },
   {
     id: 'cds-campaigns-design-system',
-    title: 'Campaigns Design System (CDS)',
+    title: 'CDS Framework',
     description: 'CDS defines DQ\'s unified operating system for designing strategic, scalable, high-impact marketing campaigns.',
     type: 'cds',
     imageUrl: '/images/cds.png',

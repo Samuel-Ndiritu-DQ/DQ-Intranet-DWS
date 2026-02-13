@@ -1,4 +1,3 @@
-import { useMemo, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
   ArrowRight,
@@ -21,10 +20,13 @@ import {
   Workflow,
   Zap,
 } from 'lucide-react';
+import { useMemo, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
+import { SectionBadge } from '@/components/SectionBadge';
+import ComingSoonCard from '@/components/ComingSoonCard';
 
 const HERO_ORBS = [
   {
@@ -101,6 +103,14 @@ const FRAMEWORK_CARDS = [
   },
 ];
 
+const FILTER_OPTIONS = [
+  'All Offerings',
+  'Class 01 DBP Services',
+  'Class 02 DT 2.0',
+  'Class 03 DCO',
+  'Class 04 TxM',
+];
+
 type Product = {
   name: string;
   subtitle: string;
@@ -123,7 +133,7 @@ const PRODUCT_CLASSES: ProductClass[] = [
   {
     id: 'class-01',
     filter: 'Class 01 DBP Services',
-    label: 'Class 01 — DBP Services',
+    label: 'Class 01',
     title: 'DBP Services',
     intro:
       'Delivery services that design and deploy unified Digital Business Platforms with execution discipline built in.',
@@ -150,8 +160,8 @@ const PRODUCT_CLASSES: ProductClass[] = [
   {
     id: 'class-02',
     filter: 'Class 02 DT 2.0',
-    label: 'Class 02 — DT 2.0',
-    title: 'DT 2.0',
+    label: 'Class 02',
+    title: 'DT 2.0 Product',
     intro:
       'Digital Transformation 2.0 platforms industrialising strategy, design, deployment, and adoption as a continuous execution system.',
     icon: RotateCcw,
@@ -185,8 +195,8 @@ const PRODUCT_CLASSES: ProductClass[] = [
   {
     id: 'class-03',
     filter: 'Class 03 DCO',
-    label: 'Class 03 — DCO',
-    title: 'DCO',
+    label: 'Class 03',
+    title: 'DCO Product',
     intro:
       'Insight and capability systems anchoring how organisations understand, align, and scale digital transformation.',
     icon: Lightbulb,
@@ -219,8 +229,8 @@ const PRODUCT_CLASSES: ProductClass[] = [
   {
     id: 'class-04',
     filter: 'Class 04 TxM',
-    label: 'Class 04 — TxM',
-    title: 'TxM',
+    label: 'Class 04',
+    title: 'TxM Platform',
     intro:
       'Transaction ecosystems transforming complex journeys into orchestrated, governed, and repeatable economic execution.',
     icon: ArrowRightLeft,
@@ -245,47 +255,65 @@ const PRODUCT_CLASSES: ProductClass[] = [
   },
 ];
 
-const FILTER_OPTIONS = [
-  'All Offerings',
-  'Class 01 DBP Services',
-  'Class 02 DT 2.0',
-  'Class 03 DCO',
-  'Class 04 TxM',
-];
-
 const SECTOR_GROUPS = [
   {
-    title: 'Cross-Sector',
+    title: 'Cross-Sector Initiatives',
     description:
       'Common Digital Business Platforms enabling Experience, Agility, Intelligence, and Workspace transformation across industries.',
-    items: ['Experience 4.0', 'Agility 4.0', 'Intelligence 4.0', 'Workspace 4.0'],
+    items: [
+      { label: 'Experience 4.0', href: 'https://corp-web.qatalyst.tech/services/experience-4-0' },
+      { label: 'Agility 4.0', href: 'https://corp-web.qatalyst.tech/services/agility-4-0' },
+      { label: 'Intelligence 4.0', comingSoon: true },
+      { label: 'Workspace 4.0', comingSoon: true },
+      { label: 'Governance 4.0', comingSoon: true },
+      { label: 'BackOffice 4.0', comingSoon: true },
+    ],
+    symbol: '◆',
   },
   {
-    title: 'Primary',
+    title: 'Primary Sector',
     description: 'Field and resource industries accelerating digital harvesting and operational efficiency.',
-    items: ['Mining 4.0', 'Farming 4.0'],
+    items: [
+      { label: 'Mining 4.0', comingSoon: true },
+      { label: 'Farming 4.0', href: 'https://corp-web.qatalyst.tech/services/farming-4-0' },
+    ],
+    symbol: '▲',
   },
   {
-    title: 'Secondary',
+    title: 'Secondary Sector',
     description: 'Production and infrastructure sectors modernising facilities, logistics, and industrial systems.',
-    items: ['Plant 4.0', 'Logistics 4.0', 'Infrastructure 4.0'],
+    items: [
+      { label: 'Plant 4.0', href: 'https://corp-web.qatalyst.tech/services/plant-4-0' },
+      { label: 'Logistics 4.0', href: 'https://corp-web.qatalyst.tech/services/logistics-4-0' },
+      { label: 'Infrastructure 4.0', href: 'https://corp-web.qatalyst.tech/services/infrastructure-4-0' },
+    ],
+    symbol: '■',
   },
   {
-    title: 'Tertiary',
+    title: 'Tertiary Sector',
     description: 'Transaction-based industries transforming government, retail, and service ecosystems.',
-    items: ['Government 4.0', 'Services 4.0', 'Retail 4.0'],
+    items: [
+      { label: 'Government 4.0', href: 'https://corp-web.qatalyst.tech/services/government-4-0' },
+      { label: 'Services 4.0', href: 'https://corp-web.qatalyst.tech/services/service-4-0' },
+      { label: 'Retail 4.0', href: 'https://corp-web.qatalyst.tech/services/retail-4-0' },
+    ],
+    symbol: '●',
   },
   {
-    title: 'Quaternary',
+    title: 'Quaternary Sector',
     description: 'Life and wellbeing industries redefined through intelligent hospitality and wellness ecosystems.',
-    items: ['Hospitality 4.0', 'Wellness 4.0'],
+    items: [
+      { label: 'Hospitality 4.0', href: 'https://corp-web.qatalyst.tech/services/hospitality-4-0' },
+      { label: 'Wellness 4.0', href: 'https://corp-web.qatalyst.tech/services/wellness-4-0' },
+    ],
+    symbol: '✦',
   },
 ];
 
 const PATHS = [
   {
     label: 'New Joiners & Teams',
-    title: 'Learn via DTMA',
+    title: 'Start with DTMA',
     description: 'Structured onboarding and capability pathways built for high-velocity transformation teams.',
     cta: 'Start in DTMA',
     icon: GraduationCap,
@@ -299,10 +327,11 @@ const PATHS = [
   },
   {
     label: 'Delivery Teams',
-    title: 'Deploy via Product Marketplace',
+    title: 'Explore Product Marketplace',
     description: 'Move directly into platform delivery, accelerators, and deployment playbooks.',
     cta: 'Go to Marketplace',
     icon: Rocket,
+    comingSoon: true,
   },
 ];
 
@@ -310,9 +339,7 @@ export default function SixXDProductsLanding() {
   const [activeFilter, setActiveFilter] = useState(FILTER_OPTIONS[0]);
 
   const filteredClasses = useMemo(() => {
-    if (activeFilter === 'All Offerings') {
-      return PRODUCT_CLASSES;
-    }
+    if (activeFilter === 'All Offerings') return PRODUCT_CLASSES;
     return PRODUCT_CLASSES.filter((item) => item.filter === activeFilter);
   }, [activeFilter]);
 
@@ -333,14 +360,7 @@ export default function SixXDProductsLanding() {
         </div>
         <div className="relative z-10 flex min-h-[85vh] items-center justify-center px-4 py-24 text-center">
           <div className="max-w-4xl">
-            <motion.p
-              className="mb-6 text-xs font-medium uppercase tracking-[0.2em] text-white/60"
-              initial={{ opacity: 0, y: 24 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0 }}
-            >
-              DQ Products — Internal Knowledge Hub
-            </motion.p>
+            <SectionBadge label="DQ Products" variant="dark" />
             <motion.h1
               className="font-display text-4xl font-bold text-white sm:text-6xl lg:text-7xl"
               initial={{ opacity: 0, y: 28 }}
@@ -364,17 +384,33 @@ export default function SixXDProductsLanding() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.45 }}
             >
-              <Button size="lg" variant="ghost" className="!bg-white font-semibold !text-primary hover:!bg-white/90">
-                Explore Product Marketplace
-                <ArrowRight className="ml-2 h-4 w-4" />
+              <Button
+                size="lg"
+                variant="ghost"
+                className="!bg-white font-semibold !text-primary hover:!bg-white/90"
+                asChild
+              >
+                <a href="/marketplace/directory/products">
+                  Explore Product Marketplace
+                  <ArrowRight className="ml-2 h-4 w-4" />
+                </a>
               </Button>
               <Button
                 size="lg"
                 variant="outline"
-                className="!border-white !bg-transparent !text-white hover:!bg-white/10"
+                className="!border-white !bg-white !text-[#0B2B6B] hover:!bg-white/95 !rounded-xl"
+                asChild
               >
-                <BookOpen className="mr-2 h-4 w-4" />
-                Read the Agile 6xD Storybook
+                <a
+                  href="https://digital-qatalyst.shorthandstories.com/4d9b256d-1632-4c32-bc0c-73d9cdfa57fc/index.html"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex items-center"
+                >
+                  <BookOpen className="mr-2 h-4 w-4" />
+                  Read the Agile 6xD Storybook
+                  <ArrowRight className="ml-2 h-4 w-4" />
+                </a>
               </Button>
             </motion.div>
           </div>
@@ -384,15 +420,7 @@ export default function SixXDProductsLanding() {
       <section id="clarity" className="bg-[#f0f6ff] py-24">
         <div className="mx-auto max-w-6xl px-4">
           <div className="mb-10 text-center">
-            <motion.p
-              className="text-xs font-medium uppercase tracking-[0.2em] text-primary"
-              initial={{ opacity: 0, y: 14 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.45, delay: 0 }}
-              viewport={{ once: true, margin: '-50px' }}
-            >
-              Section 02 — The DQ Impact
-            </motion.p>
+            <SectionBadge label="The DQ Impact" />
             <motion.h2
               className="mt-2 font-display text-3xl font-bold sm:text-4xl"
               initial={{ opacity: 0, y: 14 }}
@@ -442,7 +470,7 @@ export default function SixXDProductsLanding() {
       <section id="framework" className="bg-white py-24">
         <div className="mx-auto max-w-6xl px-4">
           <div className="text-center">
-            <p className="text-xs font-medium uppercase tracking-[0.2em] text-primary">Section 03 — Structure</p>
+            <SectionBadge label="Structure" className="mx-auto" />
             <h2 className="mt-2 font-display text-3xl font-bold sm:text-4xl">Built on the 6x Digital Framework</h2>
             <p className="mx-auto mt-4 max-w-2xl text-sm text-muted-foreground sm:text-base">
               The Six Dimensions of Digital Transformation (6xD) redefines digital transformation, unlocking growth and
@@ -501,15 +529,7 @@ export default function SixXDProductsLanding() {
       <section id="products" className="bg-[#f0f6ff] py-24">
         <div className="mx-auto max-w-6xl px-4">
           <div className="mb-10 text-center">
-            <motion.p
-              className="text-xs font-medium uppercase tracking-[0.2em] text-primary"
-              initial={{ opacity: 0, y: 14 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.45, delay: 0 }}
-              viewport={{ once: true, margin: '-50px' }}
-            >
-              Section 04 — Architecture
-            </motion.p>
+            <SectionBadge label="Architecture" className="mx-auto" />
             <motion.h2
               className="mt-2 font-display text-3xl font-bold sm:text-4xl"
               initial={{ opacity: 0, y: 14 }}
@@ -619,73 +639,80 @@ export default function SixXDProductsLanding() {
         </div>
       </section>
 
-      <section id="sectors" className="bg-white py-24">
+      <section id="sectors" className="bg-section-muted py-24">
         <div className="mx-auto max-w-6xl px-4">
           <div className="mb-10 text-center">
-            <motion.p
-              className="text-xs font-medium uppercase tracking-[0.2em] text-primary"
-              initial={{ opacity: 0, y: 14 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.45, delay: 0 }}
-              viewport={{ once: true, margin: '-50px' }}
-            >
-              Section 05 — Coverage
-            </motion.p>
+            <SectionBadge label="Coverage" className="mx-auto" />
             <motion.h2
               className="mt-2 font-display text-3xl font-bold sm:text-4xl"
-              initial={{ opacity: 0, y: 14 }}
+              initial={{ opacity: 0, y: 15 }}
               whileInView={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.45, delay: 0.05 }}
-              viewport={{ once: true, margin: '-50px' }}
+              viewport={{ once: true }}
             >
               Driving Transformation Across Sectors
             </motion.h2>
             <motion.p
               className="mx-auto mt-4 max-w-3xl text-sm text-muted-foreground sm:text-base"
-              initial={{ opacity: 0, y: 14 }}
+              initial={{ opacity: 0, y: 15 }}
               whileInView={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.45, delay: 0.1 }}
-              viewport={{ once: true, margin: '-50px' }}
+              viewport={{ once: true }}
             >
               DQ Blueprints accelerate structured digital transformation across cross-sector and industry-specific domains.
             </motion.p>
           </div>
 
-          <div className="space-y-4">
+          <div className="space-y-5">
             {SECTOR_GROUPS.map((group, index) => (
               <motion.div
                 key={group.title}
-                className="group relative overflow-hidden rounded-2xl border bg-[#f9fbff] p-6 shadow-sm transition-all duration-300 hover:shadow-lg"
-                style={{ borderColor: 'hsl(var(--primary) / 0.12)' }}
-                initial={{ opacity: 0, y: 20 }}
+                className="group relative overflow-hidden rounded-2xl border border-border/60 bg-card p-6 md:p-8 transition-all duration-300 hover:shadow-lg"
+                initial={{ opacity: 0, y: 24 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5, delay: index * 0.08 }}
-                viewport={{ once: true, margin: '-50px' }}
+                viewport={{ once: true }}
               >
                 <div className="absolute left-0 right-0 top-0 h-1 opacity-0 transition-opacity duration-300 group-hover:opacity-100 gradient-hero" />
-                <h3 className="text-sm font-bold uppercase tracking-[0.2em] text-primary">{group.title}</h3>
-                <p className="mt-2 text-sm text-muted-foreground">{group.description}</p>
-                <div className="mt-4 flex flex-wrap gap-2.5">
-                  {group.items.map((item) => (
-                    <span
-                      key={item}
-                      className="rounded-lg border px-5 py-2.5 text-sm font-medium text-primary transition-transform duration-200 hover:scale-110 hover:bg-[hsl(var(--primary)/0.15)]"
-                      style={{
-                        backgroundColor: 'hsl(var(--primary) / 0.08)',
-                        borderColor: 'hsl(var(--primary) / 0.2)',
-                      }}
+                <div className="absolute right-[-40px] top-[-40px] h-32 w-32 rounded-full bg-primary/5 blur-3xl opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+                <div className="flex items-center gap-3 text-sm font-bold uppercase tracking-widest text-primary">
+                  <span className="text-primary/70">{group.symbol}</span>
+                  <span>{group.title}</span>
+                </div>
+                <p className="mt-3 text-sm text-muted-foreground">{group.description}</p>
+                <div className="mt-5 flex flex-wrap gap-2.5">
+                  {group.items.map((item, tagIndex) => (
+                    // Sector tag with optional coming soon styling
+                    <motion.a
+                      key={item.label}
+                      href={item.href ?? '#'}
+                      target={item.href ? '_blank' : undefined}
+                      rel={item.href ? 'noreferrer' : undefined}
+                      onClick={item.comingSoon ? (event) => event.preventDefault() : undefined}
+                      aria-disabled={item.comingSoon ? 'true' : undefined}
+                      className={`
+                        group/tag inline-flex items-center rounded-xl px-5 py-2.5 text-xs font-semibold transition-all duration-200
+                        ${item.comingSoon
+                          ? 'cursor-not-allowed border border-muted-foreground/20 bg-muted text-muted-foreground'
+                          : 'border border-primary/15 bg-primary/[0.06] text-primary hover:-translate-y-0.5 hover:border-primary/30 hover:bg-primary/[0.14] hover:shadow-md hover:shadow-primary/5'}
+                      `}
+                      initial={{ opacity: 0, scale: 0.9 }}
+                      whileInView={{ opacity: 1, scale: 1 }}
+                      transition={{ duration: 0.35, delay: index * 0.08 + tagIndex * 0.04 }}
+                      viewport={{ once: true }}
                     >
-                      {item}
-                    </span>
+                      {item.label}
+                      {item.comingSoon && (
+                        <span className="ml-2 rounded-full border border-muted-foreground/30 bg-white/40 px-2 py-0.5 text-[10px] font-semibold text-muted-foreground">
+                          Coming Soon
+                        </span>
+                      )}
+                      {!item.comingSoon && (
+                        <ArrowRight className="ml-2 h-3.5 w-3.5 -translate-x-2 opacity-0 transition-all duration-200 group-hover/tag:translate-x-0 group-hover/tag:opacity-100" />
+                      )}
+                    </motion.a>
                   ))}
                 </div>
-                <a
-                  href="#products"
-                  className="mt-4 inline-flex items-center gap-1.5 text-sm font-semibold text-primary opacity-0 transition-all duration-200 group-hover:opacity-100 group-hover:gap-2.5"
-                >
-                  Read More
-                  <ArrowRight className="h-3.5 w-3.5" />
-                </a>
               </motion.div>
             ))}
           </div>
@@ -695,15 +722,7 @@ export default function SixXDProductsLanding() {
       <section id="paths" className="bg-[#f0f6ff] py-24">
         <div className="mx-auto max-w-6xl px-4">
           <div className="mb-10 text-center">
-            <motion.p
-              className="text-xs font-medium uppercase tracking-[0.2em] text-primary"
-              initial={{ opacity: 0, y: 14 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.45, delay: 0 }}
-              viewport={{ once: true, margin: '-50px' }}
-            >
-              Section 06 — When
-            </motion.p>
+            <SectionBadge label="When" className="mx-auto" />
             <motion.h2
               className="mt-2 font-display text-3xl font-bold sm:text-4xl"
               initial={{ opacity: 0, y: 14 }}
@@ -728,40 +747,51 @@ export default function SixXDProductsLanding() {
             {PATHS.map((path, index) => {
               const Icon = path.icon;
               return (
-                <motion.div
-                  key={path.title}
-                  className="group relative overflow-hidden rounded-2xl border bg-card p-10 text-center"
-                  style={{ borderColor: 'hsl(var(--border))' }}
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.5, delay: index * 0.12 }}
-                  viewport={{ once: true, margin: '-50px' }}
-                >
-                  <div className="absolute inset-0 opacity-0 transition-opacity duration-500 gradient-hero group-hover:opacity-100" />
-                  <div className="relative z-10 flex flex-col items-center">
-                    <div className="relative flex h-14 w-14 items-center justify-center rounded-xl">
-                      <div className="absolute inset-0 rounded-xl gradient-hero transition-opacity duration-500 group-hover:opacity-0" />
-                      <div className="absolute inset-0 rounded-xl bg-white/20 opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
-                      <Icon className="relative h-6 w-6 text-white" />
+                path.comingSoon ? (
+                  <ComingSoonCard
+                    key={path.title}
+                    icon={Icon}
+                    audience={path.label}
+                    title={path.title}
+                    desc={path.description}
+                    index={index}
+                  />
+                ) : (
+                  <motion.div
+                    key={path.title}
+                    className="group relative flex h-full flex-col overflow-hidden rounded-2xl border bg-card p-10 text-center"
+                    style={{ borderColor: 'hsl(var(--border))' }}
+                    initial={{ opacity: 0, y: 20 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.5, delay: index * 0.12 }}
+                    viewport={{ once: true, margin: '-50px' }}
+                  >
+                    <div className="absolute inset-0 opacity-0 transition-opacity duration-500 gradient-hero group-hover:opacity-100" />
+                    <div className="relative z-10 flex h-full flex-col items-center">
+                      <div className="relative flex h-14 w-14 items-center justify-center rounded-xl">
+                        <div className="absolute inset-0 rounded-xl gradient-hero transition-opacity duration-500 group-hover:opacity-0" />
+                        <div className="absolute inset-0 rounded-xl bg-white/20 opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
+                        <Icon className="relative h-6 w-6 text-white" />
+                      </div>
+                      <p className="mt-6 text-xs font-semibold uppercase tracking-[0.2em] text-[hsl(var(--primary)/0.6)] transition-colors duration-500 group-hover:text-white/70">
+                        {path.label}
+                      </p>
+                      <h3 className="mt-3 font-display text-xl font-semibold transition-colors duration-500 group-hover:text-white">
+                        {path.title}
+                      </h3>
+                      <p className="mt-3 text-sm text-muted-foreground transition-colors duration-500 group-hover:text-white/80">
+                        {path.description}
+                      </p>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="mt-auto w-full transition-colors duration-500 group-hover:border-transparent group-hover:bg-white/90 group-hover:text-primary sm:w-auto"
+                      >
+                        {path.cta}
+                      </Button>
                     </div>
-                    <p className="mt-6 text-xs font-semibold uppercase tracking-[0.2em] text-[hsl(var(--primary)/0.6)] transition-colors duration-500 group-hover:text-white/70">
-                      {path.label}
-                    </p>
-                    <h3 className="mt-3 font-display text-xl font-semibold transition-colors duration-500 group-hover:text-white">
-                      {path.title}
-                    </h3>
-                    <p className="mt-3 text-sm text-muted-foreground transition-colors duration-500 group-hover:text-white/80">
-                      {path.description}
-                    </p>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="mt-6 transition-colors duration-500 group-hover:border-white/60 group-hover:text-white"
-                    >
-                      {path.cta}
-                    </Button>
-                  </div>
-                </motion.div>
+                  </motion.div>
+                )
               );
             })}
           </div>
@@ -787,15 +817,7 @@ export default function SixXDProductsLanding() {
         <div className="relative z-10 mx-auto max-w-7xl px-6 md:px-12 lg:px-20">
           <div className="grid gap-12 lg:grid-cols-2 lg:items-center">
             <div className="text-white">
-              <motion.p
-                className="text-[11px] font-medium uppercase tracking-[0.25em] text-white/35"
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: 0 }}
-                viewport={{ once: true }}
-              >
-                Section 07 — System
-              </motion.p>
+              <SectionBadge label="System" variant="dark" />
               <motion.h2
                 className="mt-5 text-3xl font-bold leading-[1.3] sm:text-4xl lg:text-[3.25rem]"
                 initial={{ opacity: 0, y: 20 }}
@@ -829,9 +851,8 @@ export default function SixXDProductsLanding() {
 
             <div className="flex flex-col gap-4">
               {[
-                { label: 'Explore Product Marketplace', icon: ShoppingBag },
-                { label: 'Explore the 6xD Framework', icon: BookOpen },
-                { label: 'Explore Sector Platforms', icon: Globe },
+                { label: 'Explore DQ Products', icon: ShoppingBag, href: 'https://corp-web.qatalyst.tech/products' },
+                { label: 'Explore DQ Services', icon: BookOpen, href: 'https://corp-web.qatalyst.tech/services' },
               ].map((item, index) => {
                 const Icon = item.icon;
                 return (
@@ -843,12 +864,17 @@ export default function SixXDProductsLanding() {
                     transition={{ duration: 0.5, delay: index * 0.08 }}
                     viewport={{ once: true }}
                   >
-                    <div className="flex items-center gap-4">
+                    <a
+                      href={item.href}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="flex flex-1 items-center gap-4 no-underline"
+                    >
                       <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/10">
                         <Icon className="h-5 w-5 text-white" />
                       </div>
                       <span className="text-[15px] font-semibold text-white">{item.label}</span>
-                    </div>
+                    </a>
                     <ArrowRight className="h-4 w-4 text-white transition-transform duration-300 group-hover:translate-x-1" />
                   </motion.div>
                 );

@@ -90,6 +90,10 @@ html {
   background-color: hsl(var(--muted));
 }
 
+.bg-section-muted {
+  background-color: hsl(var(--muted));
+}
+
 .text-foreground {
   color: hsl(var(--foreground));
 }

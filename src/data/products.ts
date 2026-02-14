@@ -34,6 +34,7 @@ export const PRODUCTS: Product[] = [
   { id: 'txm-b2b2c', name: 'TxM (B2B2C)', what: 'Transaction platform for consumer and experience ecosystems.', why: 'Makes execution scalable across high-volume journeys and service interactions.', cta: 'Open TxM (B2B2C)', classId: 'class-04' },
   { id: 'txm-b2b2b', name: 'TxM (B2B2B)', what: 'Transaction platform for transformation and enterprise ecosystems.', why: 'Standardises handoffs and execution across partners, teams, and enterprise workflows.', cta: 'Open TxM (B2B2B)', classId: 'class-04' },
 ];
+
 // Product detail data for Product Details pages
 // Each product includes comprehensive information for the detail view
 

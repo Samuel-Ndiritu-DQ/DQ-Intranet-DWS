@@ -38,6 +38,7 @@ interface Props {
   onChange: (next: URLSearchParams) => void
   activeTab: 'guidelines' | 'strategy' | 'blueprints' | 'testimonials' | 'glossary' | 'faqs'
 }
+type ActiveTab = Props['activeTab']
 
 const TESTIMONIAL_CATEGORIES: Facet[] = [
   { id: 'journey-transformation-story', name: 'Journey / Transformation Story' },
@@ -154,6 +155,51 @@ const STRATEGY_LOCATIONS: Facet[] = [
   { id: 'KSA', name: 'KSA' },
   { id: 'NBO', name: 'NBO' }
 ]
+
+// Tab-specific cleanup rules to keep URL params compatible when switching sections
+const TAB_KEYS_TO_DELETE: Record<ActiveTab, string[]> = {
+  strategy: ['guide_type', 'sub_domain', 'domain'],
+  blueprints: ['guide_type', 'sub_domain', 'unit', 'domain'],
+  testimonials: ['guide_type', 'sub_domain', 'domain'],
+  guidelines: [],
+  glossary: [],
+  faqs: [],
+}
+
+const TAB_ALLOWED_LOCATIONS: Partial<Record<ActiveTab, string[]>> = {
+  strategy: STRATEGY_LOCATIONS.map((opt) => opt.id),
+  blueprints: BLUEPRINT_LOCATIONS.map((opt) => opt.id),
+  testimonials: TESTIMONIAL_LOCATIONS.map((opt) => opt.id),
+}
+
+const shouldCleanupTab = (tab: ActiveTab) =>
+  tab === 'strategy' || tab === 'blueprints' || tab === 'testimonials'
+
+const buildCleanedParams = (activeTab: ActiveTab, query: URLSearchParams) => {
+  const next = new URLSearchParams(query.toString())
+  let changed = false
+
+  const keysToDelete = TAB_KEYS_TO_DELETE[activeTab] ?? []
+  keysToDelete.forEach((key) => {
+    if (next.has(key)) {
+      next.delete(key)
+      changed = true
+    }
+  })
+
+  const allowedLocationIds = TAB_ALLOWED_LOCATIONS[activeTab]
+  if (allowedLocationIds) {
+    const current = parseCsv(next.get('location'))
+    const filtered = current.filter((val) => allowedLocationIds.includes(val))
+    if (filtered.length !== current.length) {
+      changed = true
+      if (filtered.length) next.set('location', filtered.join(','))
+      else next.delete('location')
+    }
+  }
+
+  return { next, changed }
+}
 
 const STRATEGY_UNITS: Facet[] = [
   { id: 'deals', name: 'Deals' },
@@ -275,43 +321,13 @@ export const GuidesFilters: React.FC<Props> = ({ facets, query, onChange, active
   }, [query])
   // Clean up incompatible filters when switching tabs (only run on actual tab change, not on query changes)
   useEffect(() => {
-    // Only run if tab actually changed
     if (prevTabRef.current === activeTab) return
     prevTabRef.current = activeTab
-    
-    if (!(isStrategySelected || isBlueprintSelected || isTestimonialsSelected)) return
-    const next = new URLSearchParams(query.toString())
-    let changed = false
-    const keysToDelete = isStrategySelected 
-      ? ['guide_type', 'sub_domain', 'domain']
-      : isTestimonialsSelected
-        ? ['guide_type', 'sub_domain', 'domain']
-        : ['guide_type', 'sub_domain', 'unit', 'domain']
-    keysToDelete.forEach(key => {
-      if (next.has(key)) {
-        next.delete(key)
-        changed = true
-      }
-    })
-    const allowedLocationIds = isStrategySelected
-      ? STRATEGY_LOCATIONS.map(opt => opt.id)
-      : isBlueprintSelected
-        ? BLUEPRINT_LOCATIONS.map(opt => opt.id)
-        : isTestimonialsSelected
-          ? TESTIMONIAL_LOCATIONS.map(opt => opt.id)
-          : undefined
-    if (allowedLocationIds) {
-      const current = parseCsv(next.get('location'))
-      const filtered = current.filter(val => allowedLocationIds.includes(val))
-      if (filtered.length !== current.length) {
-        changed = true
-        if (filtered.length) next.set('location', filtered.join(','))
-        else next.delete('location')
-      }
-    }
-    if (!changed) return
-    onChange(next)
-  }, [activeTab, isStrategySelected, isBlueprintSelected, isTestimonialsSelected, query, onChange])
+    if (!shouldCleanupTab(activeTab)) return
+
+    const { next, changed } = buildCleanedParams(activeTab, query)
+    if (changed) onChange(next)
+  }, [activeTab, query, onChange])
   const toggleCollapsed = (key: string) => {
     const nextSet = new Set(collapsedSet)
     if (nextSet.has(key)) nextSet.delete(key); else nextSet.add(key)

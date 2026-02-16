@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState, useMemo } from 'react';
 import { useSearchParams, useNavigate, Link } from 'react-router-dom';
 import { FilterSidebar, FilterConfig } from './FilterSidebar.js';
 import { MarketplaceGrid } from './MarketplaceGrid.js';
-import type { MarketplaceItem, PromoCardData } from './MarketplaceGrid.js';
+import type { MarketplaceItem, PromoCardData as PromoCardDataImport } from './MarketplaceGrid.js';
 import { SearchBar } from '../SearchBar.js';
 import { FilterIcon, XIcon, HomeIcon, ChevronRightIcon } from 'lucide-react';
 import { ErrorDisplay, CourseCardSkeleton } from '../SkeletonLoader.js';
@@ -27,7 +27,6 @@ import GuidesGrid from '../guides/GuidesGrid';
 import TestimonialsGrid from '../guides/TestimonialsGrid';
 import GlossaryGrid from '../guides/GlossaryGrid';
 import { supabaseClient } from '../../lib/supabaseClient';
-import type { PostgrestSingleResponse } from '@supabase/supabase-js';
 import { track } from '../../utils/analytics';
 import FAQsPageContent from '@/pages/guides/FAQsPageContent.tsx';
 import { glossaryTerms, GlossaryTerm } from '@/pages/guides/glossaryData.ts';
@@ -312,16 +311,8 @@ const COURSE_FILTER_CONFIG: FilterConfig[] = [
 
 type ComparisonItem = Pick<MarketplaceItem, 'id' | 'title'>;
 
-interface PromoCardData {
-  id: string;
-  title: string;
-  description: string;
-  icon: React.ReactNode;
-  path: string;
-  gradientFrom: string;
-  gradientTo: string;
-  type?: string;
-}
+// Use the imported type from MarketplaceGrid
+type PromoCardData = PromoCardDataImport;
 
 interface GuideResult {
   id: string;
@@ -949,13 +940,13 @@ export const MarketplacePage: React.FC<MarketplacePageProps> = ({ // NOSONAR typ
           if (statuses.length)   facetQ = facetQ.in('status', statuses);
 
           const [guideResp, facetResp] = await Promise.all([
-            listPromise as Promise<PostgrestSingleResponse<GuideResult[]>>,
-            facetQ as Promise<PostgrestSingleResponse<GuideResult[]>>,
+            listPromise,
+            facetQ,
           ]);
-          const rows = (guideResp.data ?? []) as GuideResult[];
+          const rows = guideResp.data ?? [];
           const count = guideResp.count ?? null;
           const error = guideResp.error;
-          const facetRows = (facetResp.data ?? []) as GuideResult[];
+          const facetRows = facetResp.data ?? [];
           const facetError = facetResp.error;
           if (error) {
             console.error('Guides query error:', error);
@@ -1255,7 +1246,7 @@ export const MarketplacePage: React.FC<MarketplacePageProps> = ({ // NOSONAR typ
           };
 
           type SimpleFacet = { domain?: string | null; guide_type?: string | null; [key: string]: unknown };
-          const facetRowsTyped = (facetRows as SimpleFacet[] | null) || [];
+          const facetRowsTyped = (facetRows as unknown as SimpleFacet[] | null) || [];
           // Filter facet rows for Guidelines tab to exclude Strategy/Blueprint/Testimonial
           let filteredFacetRows: SimpleFacet[] = facetRowsTyped;
           if (isGuidelinesTab) {
@@ -1967,7 +1958,7 @@ export const MarketplacePage: React.FC<MarketplacePageProps> = ({ // NOSONAR typ
                       provider: {
                         name: course.provider,
                         logoUrl: '/DWS-Logo.png',
-                        description: course.providerDescription || course.summary || ''
+                        description: course.summary || ''
                       },
                       description: course.summary
                     } as MarketplaceItem;

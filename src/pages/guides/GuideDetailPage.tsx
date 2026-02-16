@@ -659,6 +659,28 @@ const useRelatedGuides = (
   }, [guide, guide?.id, guide?.domain, guide?.guideType, guide?.slug, setRelated])
 }
 
+// Helper to create intersection observer for a single TOC item
+const createTocItemObserver = (
+  item: { id: string; label: string },
+  sectionRefs: React.MutableRefObject<Record<string, HTMLDivElement | null>>,
+  setActiveTOCSection: React.Dispatch<React.SetStateAction<string>>,
+  observerOptions: IntersectionObserverInit
+): IntersectionObserver | null => {
+  const element = sectionRefs.current[item.id]
+  if (!element) return null
+  
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach((entry) => {
+      if (entry.isIntersecting) {
+        setActiveTOCSection(item.id)
+      }
+    })
+  }, observerOptions)
+  
+  observer.observe(element)
+  return observer
+}
+
 const useBlueprintTocObserver = (
   actualIsBlueprintDomain: boolean,
   guide: GuideRecord | null,
@@ -670,27 +692,15 @@ const useBlueprintTocObserver = (
   useEffect(() => {
     if (!actualIsBlueprintDomain || !guide) return
 
-    const observers: IntersectionObserver[] = []
-    const observerOptions = {
+    const observerOptions: IntersectionObserverInit = {
       root: null,
       rootMargin: '-20% 0px -60% 0px',
       threshold: 0
     }
 
-    tocItems.forEach((item) => {
-      const element = sectionRefs.current[item.id]
-      if (element) {
-        const observer = new IntersectionObserver((entries) => { // NOSONAR: acceptable nesting for observer pattern
-          entries.forEach((entry) => { // NOSONAR: acceptable nesting for observer pattern
-            if (entry.isIntersecting) {
-              setActiveTOCSection(item.id)
-            }
-          })
-        }, observerOptions)
-        observer.observe(element)
-        observers.push(observer)
-      }
-    })
+    const observers = tocItems
+      .map(item => createTocItemObserver(item, sectionRefs, setActiveTOCSection, observerOptions))
+      .filter((obs): obs is IntersectionObserver => obs !== null)
 
     return () => {
       observers.forEach(obs => obs.disconnect())
@@ -871,8 +881,6 @@ const TAB_LABELS: Record<GuideTabKey, string> = {
     derivedKey === 'blueprints' || isBlueprintSlug,
     [derivedKey, isBlueprintSlug]
   )
-  const actualIsGuidelinesDomain = useMemo(() => derivedKey === 'guidelines', [derivedKey])
-  const actualIsStrategyDomain = useMemo(() => derivedKey === 'strategy', [derivedKey])
   const actualIsTestimonialsDomain = useMemo(() => derivedKey === 'testimonials', [derivedKey])
 
   // Parse blueprint sections - MOVED TO TOP (using derived values)
@@ -1248,7 +1256,7 @@ const TAB_LABELS: Record<GuideTabKey, string> = {
                   <ExternalLink size={16} className="opacity-90" />
                 </a>
               )}
-              {actualIsGuidelinesDomain && (
+              {derivedKey === 'guidelines' && (
                 <a
                   href={primaryDocUrl || '#'}
                   target={primaryDocUrl && primaryDocUrl !== '#' ? '_blank' : undefined}
@@ -1262,7 +1270,7 @@ const TAB_LABELS: Record<GuideTabKey, string> = {
                   <ExternalLink size={16} className="opacity-90" />
                 </a>
               )}
-              {actualIsStrategyDomain && (
+              {derivedKey === 'strategy' && (
                 <a
                   href={primaryDocUrl || '#'}
                   target={primaryDocUrl && primaryDocUrl !== '#' ? '_blank' : undefined}

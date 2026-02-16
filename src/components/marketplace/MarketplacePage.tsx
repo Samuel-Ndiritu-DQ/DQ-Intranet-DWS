@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState, useMemo } from 'react';
 import { useSearchParams, useNavigate, Link } from 'react-router-dom';
 import { FilterSidebar, FilterConfig } from './FilterSidebar.js';
 import { MarketplaceGrid } from './MarketplaceGrid.js';
+import type { MarketplaceItem } from './MarketplaceGrid.js';
 import { SearchBar } from '../SearchBar.js';
 import { FilterIcon, XIcon, HomeIcon, ChevronRightIcon } from 'lucide-react';
 import { ErrorDisplay, CourseCardSkeleton } from '../SkeletonLoader.js';
@@ -31,9 +32,11 @@ import FAQsPageContent from '@/pages/guides/FAQsPageContent.tsx';
 import { glossaryTerms, GlossaryTerm } from '@/pages/guides/glossaryData.ts';
 
 const normalizeString = (value: string, pattern: RegExp) =>
-  value.toLowerCase().replaceAll(pattern, '');
+  value.toLowerCase().replace(pattern, ''); // pattern is expected to be global
 
-const toStringArray = (input: string | string[] | null | undefined): string[] => {
+const toStringArray = (
+  input: string | string[] | null | undefined,
+): string[] => {
   if (input == null) return [];
   if (Array.isArray(input)) return input;
   return [input];
@@ -54,7 +57,7 @@ const normalizeDeliveryMode = (mode: string) => {
   return cleaned.includes('person') ? 'inperson' : cleaned;
 };
 
-const filterByActiveTabCategory = (items: any[], activeServiceTab: string) => {
+const filterByActiveTabCategory = (items: MarketplaceItem[], activeServiceTab: string) => {
   const tabCategoryMap: Record<string, string> = {
     technology: 'Technology',
     business: 'Employee Services',
@@ -67,13 +70,17 @@ const filterByActiveTabCategory = (items: any[], activeServiceTab: string) => {
   return items.filter((item) => (item.category || '') === activeTabCategory);
 };
 
-const filterBySearch = (items: any[], query: string, fields: Array<(item: any) => string | string[] | undefined>) => {
+const filterBySearch = (
+  items: MarketplaceItem[],
+  query: string,
+  fields: Array<(item: MarketplaceItem) => string | string[] | undefined>,
+) => {
   if (!query) return items;
   const q = query.toLowerCase();
   return items.filter((item) => {
     const text = fields
       .map((fn) => fn(item))
-      .flatMap((val) => toStringArray(val as any))
+      .flatMap((val) => toStringArray(val))
       .filter(Boolean)
       .join(' ')
       .toLowerCase();
@@ -82,7 +89,7 @@ const filterBySearch = (items: any[], query: string, fields: Array<(item: any) =
 };
 
 const applyServiceCenterFilters = (
-  items: any[],
+  items: MarketplaceItem[],
   filters: Record<string, string | string[]>,
   activeServiceTab: string,
   searchQuery: string,
@@ -91,9 +98,9 @@ const applyServiceCenterFilters = (
 
   const serviceTypes = toStringArray(filters.serviceType);
   if (serviceTypes.length) {
-    const normalizedFilters = serviceTypes.map((t) => normalizeString(t, /[\s-]/g));
+    const normalizedFilters = new Set(serviceTypes.map((t) => normalizeString(t, /[\s-]/g)));
     filtered = filtered.filter((item) =>
-      normalizedFilters.includes(normalizeString((item.serviceType || '').toLowerCase(), /[\s-]/g)),
+      normalizedFilters.has(normalizeString((item.serviceType || '').toLowerCase(), /[\s-]/g)),
     );
   }
 
@@ -228,9 +235,9 @@ const slugify = (value: string): string =>
   value
     .toLowerCase()
     .trim()
-    .replaceAll(/[^a-z0-9]+/g, '-')
+    .replace(/[^a-z0-9]+/g, '-')
     // Group regex parts: (start with hyphens) OR (end with hyphens)
-    .replaceAll(/(^-+)|(-+$)/g, '');
+    .replace(/(^-+)|(-+$)/g, '');
 
 const prependLearningTypeFilter = (marketplaceType: string, configs: FilterConfig[]): FilterConfig[] => {
   if (marketplaceType !== 'courses') {
@@ -302,17 +309,40 @@ const COURSE_FILTER_CONFIG: FilterConfig[] = [
   }
 ];
 
-interface ComparisonItem {
+type ComparisonItem = Pick<MarketplaceItem, 'id' | 'title'>;
+
+interface GuideResult {
   id: string;
+  slug: string;
   title: string;
-  [key: string]: any;
+  summary?: string | null;
+  hero_image_url?: string | null;
+  heroImageUrl?: string | null;
+  estimated_time_min?: number | null;
+  estimatedTimeMin?: number | null;
+  last_updated_at?: string | null;
+  lastUpdatedAt?: string | null;
+  author_name?: string | null;
+  author_org?: string | null;
+  is_editors_pick?: boolean | null;
+  download_count?: number | null;
+  guide_type?: string | null;
+  guideType?: string | null;
+  domain?: string | null;
+  function_area?: string | null;
+  unit?: string | null;
+  sub_domain?: string | null;
+  subDomain?: string | null;
+  location?: string | null;
+  status?: string | null;
+  complexity_level?: string | null;
 }
 
 export interface MarketplacePageProps {
   marketplaceType: 'courses' | 'financial' | 'non-financial' | 'knowledge-hub' | 'onboarding' | 'guides';
   title: string;
   description: string;
-  promoCards?: any[];
+  promoCards?: unknown[];
 }
 
 const SUBDOMAIN_BY_DOMAIN: Record<string, string[]> = {
@@ -499,8 +529,6 @@ const computeFilteredGlossaryTerms = (queryParams: URLSearchParams, terms: Gloss
 // NOSONAR: Cognitive complexity acceptable for main component
 export const MarketplacePage: React.FC<MarketplacePageProps> = ({
   marketplaceType,
-  title: _title,
-  description: _description,
   promoCards = []
 }) => {
   const isGuides = marketplaceType === 'guides';
@@ -545,13 +573,14 @@ export const MarketplacePage: React.FC<MarketplacePageProps> = ({
   }, [isServicesCenter, searchParams, activeServiceTab, setSearchParams]);
 
   // Items & filters state (stored in ref because value is not read in render)
-  const itemsRef = useRef<any[]>([]);
-  const setItems = (value: any[]) => { itemsRef.current = value; };
-  const [filteredItems, setFilteredItems] = useState<any[]>([]);
+  const itemsRef = useRef<MarketplaceItem[]>([]);
+  const setItems = (value: MarketplaceItem[]) => { itemsRef.current = value; };
+  const [filteredItems, setFilteredItems] = useState<MarketplaceItem[]>([]);
   const [totalCount, setTotalCount] = useState<number>(0);
   const [searchQuery, setSearchQuery] = useState('');
   const [filters, setFilters] = useState<Record<string, string | string[]>>({});
   const [filterConfig, setFilterConfig] = useState<FilterConfig[]>([]);
+  const filterSignature = useMemo(() => JSON.stringify(filters), [filters]);
 
   // Guides facets + URL state
   const [facets, setFacets] = useState<GuidesFacets>({});
@@ -734,7 +763,7 @@ export const MarketplacePage: React.FC<MarketplacePageProps> = ({
       }
     };
     loadFilterOptions();
-  }, [marketplaceType, config, isCourses, isGuides, isKnowledgeHub, isServicesCenter, activeServiceTab, filterConfig.length, Object.keys(filters).length]);
+  }, [marketplaceType, config, isCourses, isGuides, isKnowledgeHub, isServicesCenter, activeServiceTab, filterSignature, filters, filterConfig.length]);
   
   // Fetch items based on marketplace type
   useEffect(() => {
@@ -919,26 +948,27 @@ export const MarketplacePage: React.FC<MarketplacePageProps> = ({
           
           // Debug logging
           if (isGuides) {
+            const guideRows = (rows as GuideResult[] | null) || [];
             console.log('[Guides Debug]', {
               activeTab,
               currentActiveTab,
               isStrategyTab,
               isBlueprintTab,
               isGuidelinesTab,
-              rowsCount: rows?.length || 0,
+              rowsCount: guideRows.length,
               totalCount: count,
               qStr,
               hasError: !!error,
-              sampleRows: rows?.slice(0, 3).map((r: any) => ({ 
+              sampleRows: guideRows.slice(0, 3).map((r) => ({ 
                 title: r.title, 
                 domain: r.domain, 
-                guide_type: r.guide_type,
+                guide_type: r.guide_type ?? r.guideType,
                 status: r.status
               }))
             });
           }
 
-          const mapped = (rows || []).map((r: any) => {
+          const mapped = ((rows as GuideResult[]) || []).map((r) => {
             const unitValue = r.unit ?? r.function_area ?? null;
             const subDomainValue = r.sub_domain ?? r.subDomain ?? null;
             return {
@@ -1193,11 +1223,11 @@ export const MarketplacePage: React.FC<MarketplacePageProps> = ({
           }
 
           // facets query (unchanged)
-          const countBy = (arr: any[] | null | undefined, key: string) => {
+          const countBy = (arr: ReadonlyArray<Record<string, unknown>> | null | undefined, key: string) => {
             const m = new Map<string, number>();
             const items = arr || [];
             for (const r of items) {
-              const v = (r as Record<string, unknown>)[key];
+              const v = r?.[key];
               if (v) {
                 m.set(String(v), (m.get(String(v)) || 0) + 1);
               }
@@ -1207,12 +1237,14 @@ export const MarketplacePage: React.FC<MarketplacePageProps> = ({
               .sort((a, b) => a.name.localeCompare(b.name));
           };
 
+          type SimpleFacet = { domain?: string | null; guide_type?: string | null; [key: string]: unknown };
+          const facetRowsTyped = (facetRows as SimpleFacet[] | null) || [];
           // Filter facet rows for Guidelines tab to exclude Strategy/Blueprint/Testimonial
-          let filteredFacetRows = facetRows;
+          let filteredFacetRows: SimpleFacet[] = facetRowsTyped;
           if (isGuidelinesTab) {
-            filteredFacetRows = (facetRows || []).filter((r: any) => {
-              const domain = ((r.domain || '').toLowerCase().trim());
-              const guideType = ((r.guide_type || '').toLowerCase().trim());
+            filteredFacetRows = facetRowsTyped.filter((r) => {
+              const domain = (r.domain ?? '').toString().toLowerCase().trim();
+              const guideType = (r.guide_type ?? '').toString().toLowerCase().trim();
               const hasStrategy = domain.includes('strategy') || guideType.includes('strategy');
               const hasBlueprint = domain.includes('blueprint') || guideType.includes('blueprint');
               const hasTestimonial = domain.includes('testimonial') || guideType.includes('testimonial');
@@ -1263,14 +1295,23 @@ export const MarketplacePage: React.FC<MarketplacePageProps> = ({
       setLoading(true);
       setError(null);
       try {
-        const itemsData = await fetchMarketplaceItems(
+        const itemsData = (await fetchMarketplaceItems(
           marketplaceType,
-          Object.fromEntries(Object.entries(filters).map(([k, v]) => [k, Array.isArray(v) ? v.join(',') : (v || '')])),
-          searchQuery
-        );
-        const finalItems = itemsData?.length ? itemsData : getFallbackItems(marketplaceType);
+          Object.fromEntries(
+            Object.entries(filters).map(([k, v]) => [
+              k,
+              Array.isArray(v) ? v.join(',') : v || '',
+            ]),
+          ),
+          searchQuery,
+        )) as MarketplaceItem[] | null | undefined;
+
+        const fallbackItems = getFallbackItems(marketplaceType) as MarketplaceItem[];
+        const finalItems: MarketplaceItem[] =
+          itemsData && itemsData.length ? itemsData : fallbackItems;
+
         setItems(finalItems);
-        
+
         const filtered = isServicesCenter
           ? applyServiceCenterFilters(finalItems, filters, activeServiceTab, searchQuery)
           : filterBySearch(finalItems, searchQuery, [
@@ -1286,9 +1327,9 @@ export const MarketplacePage: React.FC<MarketplacePageProps> = ({
       } catch (err) {
         console.error(`Error fetching ${marketplaceType} items:`, err);
         setError(`Failed to load ${marketplaceType}`);
-        const fallbackItems = getFallbackItems(marketplaceType);
+        const fallbackItems = getFallbackItems(marketplaceType) as MarketplaceItem[];
         setItems(fallbackItems);
-        
+
         const filteredFallback = isServicesCenter
           ? applyServiceCenterFilters(fallbackItems, filters, activeServiceTab, searchQuery)
           : filterBySearch(fallbackItems, searchQuery, [
@@ -1308,7 +1349,7 @@ export const MarketplacePage: React.FC<MarketplacePageProps> = ({
 
     run();
     // Keep deps lean; no need to include functions like isGuides
-  }, [marketplaceType, filters, searchQuery, queryParams, isCourses, isKnowledgeHub, currentPage, pageSize, isServicesCenter, activeServiceTab, activeTab]);
+  }, [marketplaceType, filters, filterSignature, filterConfig.length, searchQuery, queryParams, isCourses, isKnowledgeHub, isGuides, currentPage, pageSize, isServicesCenter, activeServiceTab, activeTab, searchFilteredItems.length]);
 
   // Handle filter changes
   const handleFilterChange = useCallback((filterType: string, value: string) => {
@@ -1330,7 +1371,7 @@ export const MarketplacePage: React.FC<MarketplacePageProps> = ({
         return { ...prev, [filterType]: value === prev[filterType] ? '' : value };
       }
     });
-  }, [isCourses, isGuides, marketplaceType, toggleFilter]);
+  }, [isCourses, isGuides, toggleFilter]);
   
   // Reset all filters
   const resetFilters = useCallback(() => {
@@ -1353,7 +1394,7 @@ export const MarketplacePage: React.FC<MarketplacePageProps> = ({
       setFilters(empty);
       setSearchQuery('');
     }
-  }, [isCourses, isKnowledgeHub, isGuides, marketplaceType, filterConfig, setSearchParams]);
+  }, [isCourses, isKnowledgeHub, isGuides, filterConfig, setSearchParams]);
   
   // Knowledge Hub filter handlers
   const handleKnowledgeHubFilterChange = useCallback((filter: string) => {
@@ -1375,9 +1416,9 @@ export const MarketplacePage: React.FC<MarketplacePageProps> = ({
   const toggleBookmark = useCallback((itemId: string) => {
     setBookmarkedItems(prev => prev.includes(itemId) ? prev.filter(id => id !== itemId) : [...prev, itemId]);
   }, []);
-  const handleAddToComparison = useCallback((item: any) => {
+  const handleAddToComparison = useCallback((item: MarketplaceItem) => {
     if (compareItems.length < 3 && !compareItems.some(c => c.id === item.id)) {
-      setCompareItems(prev => [...prev, item]);
+      setCompareItems(prev => [...prev, { id: item.id, title: item.title }]);
     }
   }, [compareItems]);
   const handleRemoveFromComparison = useCallback((itemId: string) => {

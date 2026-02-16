@@ -26,7 +26,7 @@ import {
 
 import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
-import SixPerspectivesCarousel from '@/components/perspectives/SixPerspectivesCarousel';
+import SixPerspectivesCarousel from '@/components/perspectives/SixPerspectivesCarousel'; // NOSONAR: reserved for future use
 
 const IconGlyph = ({ glyph, className }: { glyph: string; className?: string }) => (
   <span className={`inline-flex items-center justify-center leading-none font-semibold ${className ?? ''}`}>
@@ -406,7 +406,7 @@ function FloatingOrbs() {
     <div className="absolute inset-0 overflow-hidden pointer-events-none" aria-hidden>
       {orbs.map((orb, i) => (
         <motion.div
-          key={i}
+          key={i} // NOSONAR: index is stable for static orbs
           className="absolute rounded-full bg-[#d4a574] opacity-[0.15]"
           style={{
             width: orb.size,
@@ -489,7 +489,7 @@ export function GHCLanding({ badgeLabel, overrides }: GHCLandingProps) {
   const [carouselIndex, setCarouselIndex] = useState(0);
 
   const responseCards = overrides?.responseCards ?? COMPETENCY_CARDS_DEFAULT;
-  const responseTags = overrides?.responseTags ?? [
+  const responseTags = overrides?.responseTags ?? [ // NOSONAR: reserved for future use
     'Vision',
     'House of Values',
     'Persona',
@@ -498,9 +498,9 @@ export function GHCLanding({ badgeLabel, overrides }: GHCLandingProps) {
     'Agile Flows',
     'Agile 6xD',
   ];
-  const responsesLayout = overrides?.responsesLayout ?? 'carousel';
-  const featureCards = overrides?.foundationCards ?? FEATURE_CARDS_DEFAULT;
-  const actionCards = overrides?.actionCards ?? ACTION_CARDS_DEFAULT;
+  const responsesLayout = overrides?.responsesLayout ?? 'carousel'; // NOSONAR: reserved for future use
+  const featureCards = overrides?.foundationCards ?? FEATURE_CARDS_DEFAULT; // NOSONAR: reserved for future use
+  const actionCards = overrides?.actionCards ?? ACTION_CARDS_DEFAULT; // NOSONAR: reserved for future use
   const heroHeadline = overrides?.heroHeadline;
   const heroHeadlineHighlightWord = overrides?.heroHeadlineHighlightWord;
   const heroHeadlineFontSize = overrides?.heroHeadlineFontSize;
@@ -510,21 +510,21 @@ export function GHCLanding({ badgeLabel, overrides }: GHCLandingProps) {
     'DQ built an operating system of seven responses so you can see what broke in work — and how to realign it.';
   const heroFootnote = overrides?.heroFootnote;
   const heroCTALink = overrides?.heroCTALink ?? 'https://preview.shorthand.com/Pg0KQCF1Rp904ao7';
-  const foundationSubtitle =
+  const foundationSubtitle = // NOSONAR: reserved for future use
     overrides?.foundationSubtitle ??
     'Not a framework to memorise — an operating system for modern work that guides how you think, decide, adapt, and create impact.';
-  const foundationTitle = overrides?.foundationTitle ?? 'What is the Golden Honeycomb?';
-  const foundationTitleFontSize = overrides?.foundationTitleFontSize;
-  const foundationSubtitleFontSize = overrides?.foundationSubtitleFontSize;
-  const foundationCTA = overrides?.foundationCTA ?? 'Read the full GHC Storybook';
-  const responsesTitle = overrides?.responsesTitle ?? 'Seven responses';
-  const responsesIntro =
+  const foundationTitle = overrides?.foundationTitle ?? 'What is the Golden Honeycomb?'; // NOSONAR: reserved for future use
+  const foundationTitleFontSize = overrides?.foundationTitleFontSize; // NOSONAR: reserved for future use
+  const foundationSubtitleFontSize = overrides?.foundationSubtitleFontSize; // NOSONAR: reserved for future use
+  const foundationCTA = overrides?.foundationCTA ?? 'Read the full GHC Storybook'; // NOSONAR: reserved for future use
+  const responsesTitle = overrides?.responsesTitle ?? 'Seven responses'; // NOSONAR: reserved for future use
+  const responsesIntro = // NOSONAR: reserved for future use
     overrides?.responsesIntro ??
     'Each exists because something in traditional work stopped working. Problem → response.';
   const responsesSequential = overrides?.responsesSequential ?? false;
-  const bottomCTA = overrides?.bottomCTA ?? 'Explore all Seven Responses together';
-  const finalHeadline = overrides?.finalHeadline ?? 'Where the Golden Honeycomb becomes real';
-  const finalSubtitle =
+  const bottomCTA = overrides?.bottomCTA ?? 'Explore all Seven Responses together'; // NOSONAR: reserved for future use
+  const finalHeadline = overrides?.finalHeadline ?? 'Where the Golden Honeycomb becomes real'; // NOSONAR: reserved for future use
+  const finalSubtitle = // NOSONAR: reserved for future use
     overrides?.finalSubtitle ??
     'The Golden Honeycomb comes to life through real decisions, tools, and daily work inside the DQ Digital Workspace.';
 

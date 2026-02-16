@@ -33,8 +33,11 @@ import { glossaryTerms, GlossaryTerm } from '@/pages/guides/glossaryData.ts';
 const normalizeString = (value: string, pattern: RegExp) =>
   value.toLowerCase().replaceAll(pattern, '');
 
-const toStringArray = (input: string | string[] | null | undefined): string[] =>
-  input == null ? [] : Array.isArray(input) ? input : [input];
+const toStringArray = (input: string | string[] | null | undefined): string[] => {
+  if (input == null) return [];
+  if (Array.isArray(input)) return input;
+  return [input];
+};
 
 const hasNormalizedOverlap = (
   items: string[],
@@ -42,8 +45,8 @@ const hasNormalizedOverlap = (
   pattern: RegExp,
 ): boolean => {
   if (!filters.length) return true;
-  const normalizedFilters = filters.map((f) => normalizeString(f, pattern));
-  return items.some((item) => normalizedFilters.includes(normalizeString(item, pattern)));
+  const normalizedFilters = new Set(filters.map((f) => normalizeString(f, pattern)));
+  return items.some((item) => normalizedFilters.has(normalizeString(item, pattern)));
 };
 
 const normalizeDeliveryMode = (mode: string) => {
@@ -51,6 +54,156 @@ const normalizeDeliveryMode = (mode: string) => {
   return cleaned.includes('person') ? 'inperson' : cleaned;
 };
 
+const filterByActiveTabCategory = (items: any[], activeServiceTab: string) => {
+  const tabCategoryMap: Record<string, string> = {
+    technology: 'Technology',
+    business: 'Employee Services',
+    digital_worker: 'Digital Worker',
+    prompt_library: 'Prompt Library',
+    ai_tools: 'AI Tools',
+  };
+  const activeTabCategory = tabCategoryMap[activeServiceTab];
+  if (!activeTabCategory) return items;
+  return items.filter((item) => (item.category || '') === activeTabCategory);
+};
+
+const filterBySearch = (items: any[], query: string, fields: Array<(item: any) => string | string[] | undefined>) => {
+  if (!query) return items;
+  const q = query.toLowerCase();
+  return items.filter((item) => {
+    const text = fields
+      .map((fn) => fn(item))
+      .flatMap((val) => toStringArray(val as any))
+      .filter(Boolean)
+      .join(' ')
+      .toLowerCase();
+    return text.includes(q);
+  });
+};
+
+const applyServiceCenterFilters = (
+  items: any[],
+  filters: Record<string, string | string[]>,
+  activeServiceTab: string,
+  searchQuery: string,
+) => {
+  let filtered = filterByActiveTabCategory(items, activeServiceTab);
+
+  const serviceTypes = toStringArray(filters.serviceType);
+  if (serviceTypes.length) {
+    const normalizedFilters = serviceTypes.map((t) => normalizeString(t, /[\s-]/g));
+    filtered = filtered.filter((item) =>
+      normalizedFilters.includes(normalizeString((item.serviceType || '').toLowerCase(), /[\s-]/g)),
+    );
+  }
+
+  const userCategories = toStringArray(filters.userCategory);
+  if (userCategories.length) {
+    filtered = filtered.filter((item) =>
+      toStringArray(item.userCategory).some((cat) => userCategories.includes((cat || '').toLowerCase())),
+    );
+  }
+
+  const technicalCategories = toStringArray(filters.technicalCategory);
+  if (technicalCategories.length) {
+    filtered = filtered.filter((item) =>
+      toStringArray(item.technicalCategory).some((cat) => technicalCategories.includes((cat || '').toLowerCase())),
+    );
+  }
+
+  const deviceOwnerships = toStringArray(filters.deviceOwnership);
+  if (deviceOwnerships.length) {
+    filtered = filtered.filter((item) => hasNormalizedMatch(item.deviceOwnership, deviceOwnerships, /[\s-]/g));
+  }
+
+  const services = toStringArray(filters.services);
+  if (services.length) {
+    filtered = filtered.filter((item) => hasNormalizedMatch(item.services, services, /[\s_]/g));
+  }
+
+  const documentTypes = toStringArray(filters.documentType);
+  if (documentTypes.length) {
+    filtered = filtered.filter((item) =>
+      toStringArray(item.documentType).some((doc) => documentTypes.includes((doc || '').toLowerCase())),
+    );
+  }
+
+  const serviceDomains = toStringArray(filters.serviceDomains);
+  if (serviceDomains.length) {
+    filtered = filtered.filter((item) => hasNormalizedMatch(item.serviceDomains, serviceDomains, /[\s_&]/g));
+  }
+
+  const aiMaturityLevels = toStringArray(filters.aiMaturityLevel);
+  if (aiMaturityLevels.length) {
+    filtered = filtered.filter((item) => hasNormalizedMatch(item.aiMaturityLevel, aiMaturityLevels, /[\s_()]/g));
+  }
+
+  const toolCategories = toStringArray(filters.toolCategory);
+  if (toolCategories.length) {
+    filtered = filtered.filter((item) => hasNormalizedMatch(item.toolCategory, toolCategories, /[\s_]/g));
+  }
+
+  const deliveryModes = toStringArray(filters.deliveryMode);
+  if (deliveryModes.length) {
+    filtered = filtered.filter((item) => {
+      const normalizedItemMode = normalizeDeliveryMode((item.deliveryMode || '').toLowerCase().trim());
+      return deliveryModes.some(
+        (filterMode) => normalizeDeliveryMode(filterMode.toLowerCase().trim()) === normalizedItemMode,
+      );
+    });
+  }
+
+  const providers = toStringArray(filters.provider);
+  if (providers.length) {
+    const providerMap: Record<string, string[]> = {
+      it_support: ['it support', 'itsupport'],
+      hr: ['hr'],
+      finance: ['finance'],
+      admin: ['admin', 'administrative'],
+    };
+    filtered = filtered.filter((item) => {
+      const itemProvider = (item.provider?.name || '').toLowerCase();
+      return providers.some((filterProvider) => {
+        const normalizedFilter = filterProvider.toLowerCase();
+        const possibleNames = providerMap[normalizedFilter] || [normalizedFilter];
+        return possibleNames.some(
+          (name) => itemProvider === name || itemProvider.includes(name) || name.includes(itemProvider),
+        );
+      });
+    });
+  }
+
+  const locations = toStringArray(filters.location);
+  if (locations.length) {
+    const normalizeLocation = (loc: string) => {
+      const map: Record<string, string> = { dubai: 'Dubai', nairobi: 'Nairobi', riyadh: 'Riyadh' };
+      return map[loc.toLowerCase()] || loc;
+    };
+    filtered = filtered.filter((item) => {
+      const itemLocation = item.location || '';
+      return locations.some((filterLocation) => {
+        const normalizedFilter = normalizeLocation(filterLocation);
+        return (
+          itemLocation === normalizedFilter ||
+          itemLocation.toLowerCase().includes(normalizedFilter.toLowerCase()) ||
+          normalizedFilter.toLowerCase().includes(itemLocation.toLowerCase())
+        );
+      });
+    });
+  }
+
+  filtered = filterBySearch(filtered, searchQuery, [
+    (it) => it.title,
+    (it) => it.description,
+    (it) => it.category,
+    (it) => it.serviceType,
+    (it) => it.deliveryMode,
+    (it) => it.provider?.name,
+    (it) => it.tags,
+  ]);
+
+  return filtered;
+};
 const hasNormalizedMatch = (
   values: string | string[] | null | undefined,
   filters: string[],
@@ -58,8 +211,8 @@ const hasNormalizedMatch = (
 ) => {
   const valueArr = toStringArray(values);
   if (!filters.length || !valueArr.length) return false;
-  const normalizedFilters = filters.map((f) => normalizeString(f, pattern));
-  return valueArr.some((v) => normalizedFilters.includes(normalizeString(v, pattern)));
+  const normalizedFilters = new Set(filters.map((f) => normalizeString(f, pattern)));
+  return valueArr.some((v) => normalizedFilters.has(normalizeString(v, pattern)));
 };
 const LEARNING_TYPE_FILTER: FilterConfig = {
   id: 'learningType',
@@ -303,20 +456,20 @@ const computeFilteredGlossaryTerms = (queryParams: URLSearchParams, terms: Gloss
 
   const matchesGhc = (term: GlossaryTerm) =>
     term.knowledgeSystem !== 'ghc' ||
-    (hasNormalizedOverlap([term.ghcDimension || ''], ghcDimensions, /[\s]/g) &&
-      hasNormalizedOverlap([term.ghcTermType || ''], ghcTermTypes, /[\s]/g));
+    (hasNormalizedOverlap([term.ghcDimension || ''], ghcDimensions, /\s/g) &&
+      hasNormalizedOverlap([term.ghcTermType || ''], ghcTermTypes, /\s/g));
 
   const matchesSixXd = (term: GlossaryTerm) =>
     term.knowledgeSystem !== '6xd' ||
-    (hasNormalizedOverlap([term.sixXdDimension || ''], sixXdDimensions, /[\s]/g) &&
-      hasNormalizedOverlap([term.sixXdTermType || ''], sixXdTermTypes, /[\s]/g));
+    (hasNormalizedOverlap([term.sixXdDimension || ''], sixXdDimensions, /\s/g) &&
+      hasNormalizedOverlap([term.sixXdTermType || ''], sixXdTermTypes, /\s/g));
 
   const matchesOrigin = (term: GlossaryTerm) =>
     !termOrigins.length || (term.termOrigin && termOrigins.includes(term.termOrigin));
 
   const matchesUsage = (term: GlossaryTerm) =>
-    hasNormalizedOverlap(term.usedIn || [], usedIn, /[\s]/g) &&
-    hasNormalizedOverlap(term.whoUsesIt || [], whoUsesIt, /[\s]/g);
+    hasNormalizedOverlap(term.usedIn || [], usedIn, /\s/g) &&
+    hasNormalizedOverlap(term.whoUsesIt || [], whoUsesIt, /\s/g);
 
   const matchesLetter = (term: GlossaryTerm) =>
     !letters.length || letters.includes(term.letter.toUpperCase());
@@ -391,9 +544,9 @@ export const MarketplacePage: React.FC<MarketplacePageProps> = ({
     }
   }, [isServicesCenter, searchParams, activeServiceTab, setSearchParams]);
 
-  // Items & filters state
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const [, setItems] = useState<any[]>([]);
+  // Items & filters state (stored in ref because value is not read in render)
+  const itemsRef = useRef<any[]>([]);
+  const setItems = (value: any[]) => { itemsRef.current = value; };
   const [filteredItems, setFilteredItems] = useState<any[]>([]);
   const [totalCount, setTotalCount] = useState<number>(0);
   const [searchQuery, setSearchQuery] = useState('');
@@ -1118,242 +1271,15 @@ export const MarketplacePage: React.FC<MarketplacePageProps> = ({
         const finalItems = itemsData?.length ? itemsData : getFallbackItems(marketplaceType);
         setItems(finalItems);
         
-        // Apply filters for non-financial services
-        // NOSONAR: Deep nesting acceptable for filter logic
-        let filtered = finalItems;
-        if (isServicesCenter) {
-          // Filter by active tab (category)
-          const tabCategoryMap: Record<string, string> = {
-            'technology': 'Technology',
-            'business': 'Employee Services',
-            'digital_worker': 'Digital Worker',
-            'prompt_library': 'Prompt Library',
-            'ai_tools': 'AI Tools'
-          };
-          
-          const activeTabCategory = tabCategoryMap[activeServiceTab];
-          if (activeTabCategory) {
-            filtered = filtered.filter(item => {
-              const itemCategory = item.category || '';
-              return itemCategory === activeTabCategory;
-            });
-          }
-          
-          // Filter by serviceType
-          const serviceTypeFilter = filters.serviceType;
-          if (serviceTypeFilter) {
-            const serviceTypes = Array.isArray(serviceTypeFilter) ? serviceTypeFilter : [serviceTypeFilter];
-            if (serviceTypes.length > 0) {
-              const normalizedFilters = serviceTypes.map((t) => normalizeString(t, /[\s-]/g));
-              filtered = filtered.filter((item) => {
-                const normalizedItem = normalizeString((item.serviceType || '').toLowerCase(), /[\s-]/g);
-                return normalizedFilters.includes(normalizedItem);
-              });
-            }
-          }
-          
-          // Filter by userCategory (Technology-specific)
-          const userCategoryFilter = filters.userCategory;
-          if (userCategoryFilter) {
-            const userCategories = Array.isArray(userCategoryFilter) ? userCategoryFilter : [userCategoryFilter];
-            if (userCategories.length > 0) {
-              filtered = filtered.filter(item => {
-                const itemUserCategories = item.userCategory || [];
-                const itemUserCategoriesArray = Array.isArray(itemUserCategories) ? itemUserCategories : [itemUserCategories];
-                return userCategories.some(filterCategory => 
-                  itemUserCategoriesArray.some(itemCat => 
-                    itemCat.toLowerCase() === filterCategory.toLowerCase()
-                  )
-                );
-              });
-            }
-          }
-          
-          // Filter by technicalCategory (Technology-specific)
-          const technicalCategoryFilter = filters.technicalCategory;
-          if (technicalCategoryFilter) {
-            const technicalCategories = Array.isArray(technicalCategoryFilter) ? technicalCategoryFilter : [technicalCategoryFilter];
-            if (technicalCategories.length > 0) {
-              filtered = filtered.filter(item => {
-                const itemTechnicalCategories = item.technicalCategory || [];
-                const itemTechnicalCategoriesArray = Array.isArray(itemTechnicalCategories) ? itemTechnicalCategories : [itemTechnicalCategories];
-                return technicalCategories.some(filterCategory => 
-                  itemTechnicalCategoriesArray.some(itemCat => 
-                    itemCat.toLowerCase() === filterCategory.toLowerCase()
-                  )
-                );
-              });
-            }
-          }
-          
-          // Filter by deviceOwnership (Technology-specific)
-          const deviceOwnershipFilter = filters.deviceOwnership;
-          if (deviceOwnershipFilter) {
-            const deviceOwnerships = Array.isArray(deviceOwnershipFilter) ? deviceOwnershipFilter : [deviceOwnershipFilter];
-            if (deviceOwnerships.length > 0) {
-              filtered = filtered.filter(item => {
-                return hasNormalizedMatch(item.deviceOwnership, deviceOwnerships, /[\s-]/g);
-              });
-            }
-          }
-          
-          // Filter by services (Business-specific)
-          const servicesFilter = filters.services;
-          if (servicesFilter) {
-            const services = Array.isArray(servicesFilter) ? servicesFilter : [servicesFilter];
-            if (services.length > 0) {
-              filtered = filtered.filter(item => {
-                return hasNormalizedMatch(item.services, services, /[\s_]/g);
-              });
-            }
-          }
-          
-          // Filter by documentType (Business-specific)
-          const documentTypeFilter = filters.documentType;
-          if (documentTypeFilter) {
-            const documentTypes = Array.isArray(documentTypeFilter) ? documentTypeFilter : [documentTypeFilter];
-            if (documentTypes.length > 0) {
-              filtered = filtered.filter(item => {
-                const itemDocumentTypes = item.documentType || [];
-                const itemDocumentTypesArray = Array.isArray(itemDocumentTypes) ? itemDocumentTypes : [itemDocumentTypes];
-                return documentTypes.some(filterDocType => 
-                  itemDocumentTypesArray.some(itemDocType => 
-                    itemDocType.toLowerCase() === filterDocType.toLowerCase()
-                  )
-                );
-              });
-            }
-          }
-          
-          // Filter by serviceDomains (Digital Worker-specific)
-          const serviceDomainsFilter = filters.serviceDomains;
-          if (serviceDomainsFilter) {
-            const serviceDomains = Array.isArray(serviceDomainsFilter) ? serviceDomainsFilter : [serviceDomainsFilter];
-            if (serviceDomains.length > 0) {
-              filtered = filtered.filter(item => {
-                return hasNormalizedMatch(item.serviceDomains, serviceDomains, /[\s_&]/g);
-              });
-            }
-          }
-          
-          // Filter by aiMaturityLevel (Digital Worker-specific)
-          const aiMaturityLevelFilter = filters.aiMaturityLevel;
-          if (aiMaturityLevelFilter) {
-            const aiMaturityLevels = Array.isArray(aiMaturityLevelFilter) ? aiMaturityLevelFilter : [aiMaturityLevelFilter];
-            if (aiMaturityLevels.length > 0) {
-              filtered = filtered.filter(item => {
-                return hasNormalizedMatch(item.aiMaturityLevel, aiMaturityLevels, /[\s_()]/g);
-              });
-            }
-          }
-          
-          // Filter by toolCategory (AI Tools-specific)
-          const toolCategoryFilter = filters.toolCategory;
-          if (toolCategoryFilter) {
-            const toolCategories = Array.isArray(toolCategoryFilter) ? toolCategoryFilter : [toolCategoryFilter];
-            if (toolCategories.length > 0) {
-              filtered = filtered.filter(item =>
-                hasNormalizedMatch(item.toolCategory, toolCategories, /[\s_]/g)
-              );
-            }
-          }
-          
-          // Filter by deliveryMode
-          const deliveryModeFilter = filters.deliveryMode;
-          if (deliveryModeFilter) {
-            const deliveryModes = Array.isArray(deliveryModeFilter) ? deliveryModeFilter : [deliveryModeFilter];
-            if (deliveryModes.length > 0) {
-              filtered = filtered.filter(item => {
-                const itemMode = (item.deliveryMode || '').toLowerCase().trim();
-                return deliveryModes.some(filterMode => {
-                  const normalizedFilter = filterMode.toLowerCase().trim();
-                  const normalizedItemMode = normalizeDeliveryMode(itemMode);
-                  const normalizedFilterMode = normalizeDeliveryMode(normalizedFilter);
-                  return normalizedItemMode === normalizedFilterMode;
-                });
-              });
-            }
-          }
-          
-          // Filter by provider
-          const providerFilter = filters.provider;
-          if (providerFilter) {
-            const providers = Array.isArray(providerFilter) ? providerFilter : [providerFilter];
-            if (providers.length > 0) {
-              filtered = filtered.filter(item => {
-                const itemProvider = (item.provider?.name || '').toLowerCase();
-                return providers.some(filterProvider => {
-                  const normalizedFilter = filterProvider.toLowerCase();
-                  // Map filter IDs to provider names
-                  const providerMap: Record<string, string[]> = {
-                    'it_support': ['it support', 'itsupport'],
-                    'hr': ['hr'],
-                    'finance': ['finance'],
-                    'admin': ['admin', 'administrative']
-                  };
-                  const possibleNames = providerMap[normalizedFilter] || [normalizedFilter];
-                  return possibleNames.some(name => itemProvider === name || itemProvider.includes(name) || name.includes(itemProvider));
-                });
-              });
-            }
-          }
-          
-          // Filter by location
-          const locationFilter = filters.location;
-          if (locationFilter) {
-            const locations = Array.isArray(locationFilter) ? locationFilter : [locationFilter];
-            if (locations.length > 0) {
-              const normalizeLocation = (loc: string) => {
-                const map: Record<string, string> = {
-                  'dubai': 'Dubai',
-                  'nairobi': 'Nairobi',
-                  'riyadh': 'Riyadh'
-                };
-                return map[loc.toLowerCase()] || loc;
-              };
-              filtered = filtered.filter(item => {
-                const itemLocation = item.location || '';
-                return locations.some(filterLocation => {
-                  const normalizedFilter = normalizeLocation(filterLocation);
-                  // Match exact or case-insensitive partial match
-                  return itemLocation === normalizedFilter || 
-                         itemLocation.toLowerCase().includes(normalizedFilter.toLowerCase()) ||
-                         normalizedFilter.toLowerCase().includes(itemLocation.toLowerCase());
-                });
-              });
-            }
-          }
-          
-          // Apply search query
-          if (searchQuery) {
-            const query = searchQuery.toLowerCase();
-            filtered = filtered.filter(item => {
-              const searchableText = [
-                item.title,
-                item.description,
-                item.category,
-                item.serviceType,
-                item.deliveryMode,
-                item.provider?.name,
-                ...(item.tags || [])
-              ].filter(Boolean).join(' ').toLowerCase();
-              return searchableText.includes(query);
-            });
-          }
-        } else if (searchQuery) {
-          // For other marketplaces, apply search query if provided
-          const query = searchQuery.toLowerCase();
-          filtered = filtered.filter(item => {
-            const searchableText = [
-              item.title,
-              item.description,
-              item.category,
-              item.provider?.name,
-              ...(item.tags || [])
-            ].filter(Boolean).join(' ').toLowerCase();
-            return searchableText.includes(query);
-          });
-        }
+        const filtered = isServicesCenter
+          ? applyServiceCenterFilters(finalItems, filters, activeServiceTab, searchQuery)
+          : filterBySearch(finalItems, searchQuery, [
+              (it) => it.title,
+              (it) => it.description,
+              (it) => it.category,
+              (it) => it.provider?.name,
+              (it) => it.tags,
+            ]);
         
         setFilteredItems(filtered);
         setTotalCount(filtered.length);
@@ -1363,27 +1289,16 @@ export const MarketplacePage: React.FC<MarketplacePageProps> = ({
         const fallbackItems = getFallbackItems(marketplaceType);
         setItems(fallbackItems);
         
-        // Apply filters to fallback items for Services Center
-        let filteredFallback = fallbackItems;
-        if (isServicesCenter) {
-          // Filter by active tab (category)
-          const tabCategoryMap: Record<string, string> = {
-            'technology': 'Technology',
-            'business': 'Employee Services',
-            'digital_worker': 'Digital Worker',
-            'prompt_library': 'Prompt Library',
-            'ai_tools': 'AI Tools'
-          };
-          
-          const activeTabCategory = tabCategoryMap[activeServiceTab];
-          if (activeTabCategory) {
-            filteredFallback = filteredFallback.filter((item: any) => {
-              const itemCategory = item.category || '';
-              return itemCategory === activeTabCategory;
-            });
-          }
-        }
-        
+        const filteredFallback = isServicesCenter
+          ? applyServiceCenterFilters(fallbackItems, filters, activeServiceTab, searchQuery)
+          : filterBySearch(fallbackItems, searchQuery, [
+              (it) => it.title,
+              (it) => it.description,
+              (it) => it.category,
+              (it) => it.provider?.name,
+              (it) => it.tags,
+            ]);
+
         setFilteredItems(filteredFallback);
         setTotalCount(filteredFallback.length);
       } finally {

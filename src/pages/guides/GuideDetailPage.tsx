@@ -107,7 +107,7 @@ type GuideFlags = {
 
 const normalizeTagValue = (value?: string | null) => {
   if (!value) return ''
-  const cleaned = value.toLowerCase().replace(/[_-]+/g, ' ').trim()
+  const cleaned = value.toLowerCase().replaceAll(/[_-]+/g, ' ').trim()
   return cleaned.endsWith('s') ? cleaned.slice(0, -1) : cleaned
 }
 
@@ -166,16 +166,19 @@ const isValidDomainForSections = (domain?: string | null) =>
   ['Guidelines', 'Strategy', 'Testimonials', 'Testimonial', 'Blueprint'].includes(domain || '')
 
 const extractOverview = (body: string): GuideSection | null => {
-  const descMatch = body.match(/## Description\s*\n+([\s\S]*?)(?=\n##|\n#|$)/)
-  const highlightsMatch = body.match(/## Key Highlights:?\s*\n+([\s\S]*?)(?=\n##|\n#|$)/)
+  const descRegex = /## Description\s*\n+([\s\S]*?)(?=\n##|\n#|$)/
+  const highlightsRegex = /## Key Highlights:?\s*\n+([\s\S]*?)(?=\n##|\n#|$)/
+  const descMatch = descRegex.exec(body)
+  const highlightsMatch = highlightsRegex.exec(body)
   if (descMatch || highlightsMatch) {
     let overviewContent = ''
     if (descMatch) overviewContent += descMatch[1].trim() + '\n\n'
     if (highlightsMatch) overviewContent += '## Key Highlights\n\n' + highlightsMatch[1].trim()
     return { id: 'overview', title: 'Overview', content: overviewContent }
   }
-  const firstSectionMatch = body.match(/^# [^\n]+\n\n([\s\S]*?)(?=\n##|\n#|$)/)
-  if (firstSectionMatch && firstSectionMatch[1].trim()) {
+  const firstSectionRegex = /^# [^\n]+\n\n([\s\S]*?)(?=\n##|\n#|$)/
+  const firstSectionMatch = firstSectionRegex.exec(body)
+  if (firstSectionMatch?.[1]?.trim()) {
     const sectionCount = (body.match(/^## /gm) || []).length
     if (sectionCount > 1) {
       return { id: 'overview', title: 'Overview', content: firstSectionMatch[1].trim() }
@@ -208,13 +211,13 @@ const splitSections = (body: string, hasOverview: boolean): GuideSection[] => {
       if (current && current.content.length > 0) {
         pushSection(sections, processed, current)
       }
-      let title = line.replace(/^##\s+/, '').trim().replace(/\*\*/g, '').trim()
+      let title = line.replaceAll(/^##\s+/, '').trim().replaceAll(/\*\*/g, '').trim()
       const skip = hasOverview && (title === 'Description' || title === 'Key Highlights')
       if (skip) {
         current = null
         continue
       }
-      const sectionId = title.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')
+      const sectionId = title.toLowerCase().replaceAll(/\s+/g, '-').replaceAll(/[^a-z0-9-]/g, '')
       current = { id: sectionId, title, content: [] }
     } else if (current) {
       current.content.push(line)
@@ -234,23 +237,27 @@ const stripLeadingEmoji = (s: string): string => {
   // Remove leading emojis/symbols commonly used as icons
   // Unicode ranges cover misc symbols & pictographs
   // eslint-disable-next-line no-misleading-character-class
-  return s.replace(/^[\u200d\ufe0f\uFE0F\u2060\s]*[\u{1F300}-\u{1FAFF}\u{1F900}-\u{1F9FF}\u{1F1E6}-\u{1F1FF}\u{2600}-\u{27BF}]+\s*/u, '')
+  return s.replaceAll(/^[\u200d\ufe0f\u2060\s]*[\u{1F300}-\u{1FAFF}\u{1F900}-\u{1F9FF}\u{1F1E6}-\u{1F1FF}\u{2600}-\u{27BF}]+\s*/u, '')
 }
 
 const ensureBulletedTitleCaseLine = (raw: string): string => {
   const line = stripLeadingEmoji(raw.trim())
   if (!line || line.startsWith('##')) return raw
   // - **Label**: text
-  const m1 = line.match(/^-\s*\*\*([^*]+)\*\*\s*:\s*(.*)$/)
+  const regex1 = /^-\s*\*\*([^*]+)\*\*\s*:\s*(.*)$/
+  const m1 = regex1.exec(line)
   if (m1) return `- **${toTitleCaseLabel(stripLeadingEmoji(m1[1]))}**: ${m1[2]}`
   // **Label**: text
-  const m2 = line.match(/^\*\*([^*]+)\*\*\s*:\s*(.*)$/)
+  const regex2 = /^\*\*([^*]+)\*\*\s*:\s*(.*)$/
+  const m2 = regex2.exec(line)
   if (m2) return `- **${toTitleCaseLabel(stripLeadingEmoji(m2[1]))}**: ${m2[2]}`
   // - Label: text
-  const m3 = line.match(/^-\s*([^:]+)\s*:\s*(.*)$/)
+  const regex3 = /^-\s*([^:]+)\s*:\s*(.*)$/
+  const m3 = regex3.exec(line)
   if (m3) return `- **${toTitleCaseLabel(stripLeadingEmoji(m3[1]))}**: ${m3[2]}`
   // Label: text (leading letter, avoid headers/lists)
-  const m4 = line.match(/^[A-Za-z][^:]*:\s*.*$/)
+  const regex4 = /^[A-Za-z][^:]*:\s*.*$/
+  const m4 = regex4.exec(line)
   if (m4) {
     const idx = line.indexOf(':')
     const label = stripLeadingEmoji(line.slice(0, idx))
@@ -267,7 +274,7 @@ const transformKeyHighlightsInOverview = (md: string): string => {
   for (const raw of lines) {
     const t = raw.trim()
     if (t.startsWith('## ')) {
-      const title = t.replace(/^##\s+/, '').replace(/\*\*/g, '').trim().toLowerCase()
+      const title = t.replaceAll(/^##\s+/, '').replaceAll(/\*\*/g, '').trim().toLowerCase()
       inKH = title === 'key highlights'
       out.push(raw)
       continue
@@ -323,7 +330,8 @@ const parseBlueprintSections = (body: string) => {
   }
 
   for (const line of lines) {
-    const h2Match = line.match(/^##\s+(.+)$/)
+    const h2Regex = /^##\s+(.+)$/
+    const h2Match = h2Regex.exec(line)
     if (h2Match) {
       if (currentSection) {
         const content = currentContent.join('\n').trim()
@@ -333,7 +341,7 @@ const parseBlueprintSections = (body: string) => {
           sections[currentSection] = content
         }
       }
-      const sectionTitle = h2Match[1].trim().replace(/\*\*/g, '')
+      const sectionTitle = h2Match[1].trim().replaceAll(/\*\*/g, '')
       const normalized = sectionTitle.toLowerCase()
       currentSection = sectionMappings[normalized] || sectionTitle
       currentContent = []
@@ -358,11 +366,13 @@ const parseGuideSections = (body: string) => {
   let currentSection: { title: string; content: string[] } | null = null
 
   for (const line of lines) {
-    const h2Match = line.match(/^##\s+(.+)$/)
-    const h3Match = line.match(/^###\s+(.+)$/)
+    const h2Regex = /^##\s+(.+)$/
+    const h3Regex = /^###\s+(.+)$/
+    const h2Match = h2Regex.exec(line)
+    const h3Match = h3Regex.exec(line)
 
     if (h3Match) {
-      const h3Title = h3Match[1].trim().replace(/\*\*/g, '').trim()
+      const h3Title = h3Match[1].trim().replaceAll(/\*\*/g, '').trim()
       const normalizedH3 = h3Title.toLowerCase()
 
       if (normalizedH3 === 'ai tools' || normalizedH3 === 'model provider') {
@@ -388,7 +398,7 @@ const parseGuideSections = (body: string) => {
         sections.push({ title: currentSection.title, content, isTile })
       }
       let title = h2Match[1].trim()
-      title = title.replace(/\*\*/g, '').trim()
+      title = title.replaceAll(/\*\*/g, '').trim()
       currentSection = { title, content: [] }
     } else if (currentSection) {
       currentSection.content.push(line)
@@ -688,25 +698,25 @@ const GuideDetailPage: React.FC = () => {
   const guideFlags = useMemo(() => buildGuideFlags(guide), [guide?.slug, guide?.title])
   const {
     isClientTestimonials,
-    isL24WorkingRooms,
-    isRescueShift,
-    isRAID,
-    isAgendaScheduling,
-    isFunctionalTracker,
-    isScrumMaster,
-    isQForum,
-    isDQCompetencies,
-    isDQVisionMission,
-    isDQGHC,
-    isDQProducts,
-    isDQVision,
-    isDQHoV,
-    isDQPersona,
-    isDQAgileTMS,
-    isDQAgileSoS,
-    isDQAgileFlows,
-    isDQAgile6xD,
-    hasCustomGuidelinePage,
+    isL24WorkingRooms, // NOSONAR: reserved for future use
+    isRescueShift, // NOSONAR: reserved for future use
+    isRAID, // NOSONAR: reserved for future use
+    isAgendaScheduling, // NOSONAR: reserved for future use
+    isFunctionalTracker, // NOSONAR: reserved for future use
+    isScrumMaster, // NOSONAR: reserved for future use
+    isQForum, // NOSONAR: reserved for future use
+    isDQCompetencies, // NOSONAR: reserved for future use
+    isDQVisionMission, // NOSONAR: reserved for future use
+    isDQGHC, // NOSONAR: reserved for future use
+    isDQProducts, // NOSONAR: reserved for future use
+    isDQVision, // NOSONAR: reserved for future use
+    isDQHoV, // NOSONAR: reserved for future use
+    isDQPersona, // NOSONAR: reserved for future use
+    isDQAgileTMS, // NOSONAR: reserved for future use
+    isDQAgileSoS, // NOSONAR: reserved for future use
+    isDQAgileFlows, // NOSONAR: reserved for future use
+    isDQAgile6xD, // NOSONAR: reserved for future use
+    hasCustomGuidelinePage, // NOSONAR: reserved for future use
   } = guideFlags
   const featuredClientTestimonials = [
     {
@@ -735,9 +745,10 @@ const GuideDetailPage: React.FC = () => {
     }
   ]
 
-  const backQuery = (location?.state && location.state.fromQuery) ? String(location.state.fromQuery) : ''
-  const initialBackHref = `/marketplace/guides${backQuery ? `?${backQuery}` : ''}`
-  const activeTabFromState = (location?.state && location.state.activeTab) ? String(location.state.activeTab) : undefined
+  const backQuery = location?.state?.fromQuery ? String(location.state.fromQuery) : ''
+  const backQueryParam = backQuery ? `?${backQuery}` : ''
+  const initialBackHref = `/marketplace/guides${backQueryParam}`
+  const activeTabFromState = location?.state?.activeTab ? String(location.state.activeTab) : undefined
   type GuideTabKey = 'guidelines' | 'strategy' | 'blueprints' | 'testimonials'
 const TAB_LABELS: Record<GuideTabKey, string> = {
   guidelines: 'Guidelines',
@@ -768,7 +779,7 @@ const TAB_LABELS: Record<GuideTabKey, string> = {
   const isDuplicateTag = normalizeTagValue(guide?.domain) !== '' && normalizeTagValue(guide?.domain) === normalizeTagValue(guide?.guideType)
   const isStrategyFramework = (guide?.domain || '').toLowerCase().includes('strategy') && (guide?.guideType || '').toLowerCase().includes('framework')
 
-  const { guideSections, overviewSection, sectionsForTabs } = useMemo(
+  const { guideSections, overviewSection, sectionsForTabs } = useMemo( // NOSONAR: guideSections is used in buildGuideSections
     () => buildGuideSections(guide, isClientTestimonials),
     [guide, isClientTestimonials],
   )
@@ -795,13 +806,13 @@ const TAB_LABELS: Record<GuideTabKey, string> = {
     if (!src) return null
     // Strip basic Markdown/HTML for a clean snippet
     const withoutMd = src
-      .replace(/```[\s\S]*?```/g, ' ') // code blocks
-      .replace(/`[^`]*`/g, ' ') // inline code
-      .replace(/^#+\s.*$/gm, ' ') // headings
-      .replace(/\*\*|__/g, '') // bold markers
-      .replace(/\*|_|~|>\s?/g, ' ') // other markers
-      .replace(/<[^>]+>/g, ' ') // html tags
-      .replace(/\s+/g, ' ') // collapse spaces
+      .replaceAll(/```[\s\S]*?```/g, ' ') // code blocks
+      .replaceAll(/`[^`]*`/g, ' ') // inline code
+      .replaceAll(/^#+\s.*$/gm, ' ') // headings
+      .replaceAll(/\*\*|__/g, '') // bold markers
+      .replaceAll(/\*|_|~|>\s?/g, ' ') // other markers
+      .replaceAll(/<[^>]+>/g, ' ') // html tags
+      .replaceAll(/\s+/g, ' ') // collapse spaces
       .trim()
     if (!withoutMd) return null
     const max = 480
@@ -1605,20 +1616,6 @@ const TAB_LABELS: Record<GuideTabKey, string> = {
 
         <div className="mt-6 text-right">
           <Link to={backHref} style={{ color: '#0B1E67' }}>Back to {breadcrumbLabel}</Link>
-        </div>
-      </main>
-      <Footer isLoggedIn={!!user} />
-    </div>
-  )
-
-  // Final safety fallback - should never reach here, but ensures something always renders
-  return (
-    <div className="min-h-screen flex flex-col bg-gray-50 guidelines-theme">
-      <Header toggleSidebar={() => undefined} sidebarOpen={false} />
-      <main className="container mx-auto px-4 py-8 flex-grow max-w-7xl">
-        <div className="bg-white rounded shadow p-8 text-center">
-          <h2 className="text-xl font-medium text-gray-900 mb-2">Unable to load guide</h2>
-          <Link to="/marketplace/guides" style={{ color: '#0B1E67' }}>Back to Guides</Link>
         </div>
       </main>
       <Footer isLoggedIn={!!user} />

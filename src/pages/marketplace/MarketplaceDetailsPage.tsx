@@ -16,7 +16,7 @@ import { sanitizeHtml } from '@/utils/sanitizeHtml';
 import LeaveRequestForm from '../../components/marketplace/LeaveRequestForm';
 import { TechSupportForm } from '../../components/marketplace/TechSupportForm';
 import { INITIAL_APPROVERS } from '../../utils/mockApprovers';
-import { ServiceHeroSection } from '../../components/marketplace/ServiceHeroSection';
+import { ServiceHeroSection, ServiceHeroSectionProps } from '../../components/marketplace/ServiceHeroSection';
 import { ServiceDetailsSidebar } from '../../components/marketplace/ServiceDetailsSidebar';
 interface MarketplaceDetailsPageProps {
   marketplaceType: 'courses' | 'financial' | 'non-financial' | 'knowledge-hub' | 'onboarding';
@@ -184,14 +184,19 @@ const MarketplaceDetailsPage: React.FC<MarketplaceDetailsPageProps> = ({
           // We'll handle this below by using fallback data
         }
         // If item data is available, use it, otherwise use fallback data
-        const finalItemData = itemData || getFallbackItemDetails(marketplaceType, itemId || 'fallback-1');
+        const finalItemData = (itemData ?? getFallbackItemDetails(marketplaceType, itemId ?? 'fallback-1')) as Record<string, any>;
         if (finalItemData) {
           setItem(finalItemData);
           // setIsBookmarked(bookmarkedItems.includes(finalItemData.id));
           // Fetch related items
           let relatedItemsData: any[] = [];
           try {
-            relatedItemsData = await fetchRelatedMarketplaceItems(marketplaceType, finalItemData.id, finalItemData.category ?? '', finalItemData.provider?.name ?? '');
+            relatedItemsData = await fetchRelatedMarketplaceItems(
+              marketplaceType, 
+              finalItemData.id as string, 
+              (finalItemData.category as string) ?? '', 
+              ((finalItemData.provider as Record<string, any>)?.name as string) ?? ''
+            );
           } catch (relatedError) {
             console.error('Error fetching related items:', relatedError);
             // Use fallback related items on error
@@ -222,7 +227,7 @@ const MarketplaceDetailsPage: React.FC<MarketplaceDetailsPageProps> = ({
           }
         } else {
           // Item not found - use generic fallback
-          const genericFallback = getFallbackItemDetails(marketplaceType, 'generic-fallback');
+          const genericFallback = getFallbackItemDetails(marketplaceType, 'generic-fallback') as Record<string, any>;
           setItem(genericFallback);
           setError(null); // Clear any error since we're showing fallback data
           // Set a redirect timer with a longer delay (5 seconds)
@@ -234,7 +239,7 @@ const MarketplaceDetailsPage: React.FC<MarketplaceDetailsPageProps> = ({
       } catch (err) {
         console.error(`Error in marketplace details page:`, err);
         // Use fallback data even on general errors
-        const fallbackItem = getFallbackItemDetails(marketplaceType, 'generic-fallback');
+        const fallbackItem = getFallbackItemDetails(marketplaceType, 'generic-fallback') as Record<string, any>;
         setItem(fallbackItem);
         setRelatedItems(getFallbackItems(marketplaceType));
         setError(null); // Clear error since we're showing fallback data
@@ -1746,9 +1751,11 @@ const MarketplaceDetailsPage: React.FC<MarketplaceDetailsPageProps> = ({
 
         {/* Hero Section - full-width background */}
         <div ref={heroRef} className="w-full bg-gray-50">
-          <ServiceHeroSection 
-            item={item}
-          />
+          {item && (
+            <ServiceHeroSection 
+              item={item as ServiceHeroSectionProps['item']}
+            />
+          )}
         </div>
         {/* Tabs Navigation */}
         <div className="border-b border-gray-200 w-full bg-white">

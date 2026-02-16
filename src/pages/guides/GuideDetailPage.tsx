@@ -471,7 +471,7 @@ const useGuideLoader = (
   setLoading: React.Dispatch<React.SetStateAction<boolean>>,
   setError: React.Dispatch<React.SetStateAction<string | null>>,
 ) => {
-  useEffect(() => { // NOSONAR: acceptable complexity for guide data loading and transformation
+  useEffect(() => {
     let cancelled = false
     ;(async () => {
       setLoading(true)
@@ -479,46 +479,13 @@ const useGuideLoader = (
       try {
         const res = await fetch(`/api/guides/${encodeURIComponent(itemId || '')}`)
         const ct = res.headers.get('content-type') || ''
+
         if (res.ok && ct.includes('application/json')) {
           const data = await res.json()
           if (!cancelled) setGuide(data)
         } else {
-          const key = String(itemId || '')
-          const { data: slugRow, error: err1 } = await supabaseClient.from('guides').select('*').eq('slug', key).maybeSingle()
-          if (err1) throw err1
-          let row = slugRow
-          if (!row) {
-            const { data: row2, error: err2 } = await supabaseClient.from('guides').select('*').eq('id', key).maybeSingle()
-            if (err2) throw err2
-            row = row2
-          }
-          if (!row) throw new Error('Not found')
-          const mapped: GuideRecord = {
-            id: row.id,
-            slug: row.slug,
-            title: row.title,
-            summary: row.summary ?? undefined,
-            heroImageUrl: row.hero_image_url ?? row.heroImageUrl ?? null,
-            domain: row.domain ?? null,
-            guideType: row.guide_type ?? row.guideType ?? null,
-            functionArea: row.function_area ?? null,
-            subDomain: row.sub_domain ?? row.subDomain ?? null,
-            unit: row.unit ?? null,
-            location: row.location ?? null,
-            status: row.status ?? null,
-            complexityLevel: row.complexity_level ?? null,
-            skillLevel: row.skill_level ?? row.skillLevel ?? null,
-            estimatedTimeMin: row.estimated_time_min ?? row.estimatedTimeMin ?? null,
-            lastUpdatedAt: row.last_updated_at ?? row.lastUpdatedAt ?? null,
-            authorName: row.author_name ?? row.authorName ?? null,
-            authorOrg: row.author_org ?? row.authorOrg ?? null,
-            isEditorsPick: row.is_editors_pick ?? row.isEditorsPick ?? null,
-            downloadCount: row.download_count ?? row.downloadCount ?? null,
-            documentUrl: row.document_url ?? row.documentUrl ?? null,
-            body: row.body ?? null,
-            steps: [], attachments: [], templates: [],
-          }
-          if (!cancelled) setGuide(mapped)
+          const guide = await fetchGuideFromDatabase(String(itemId || ''))
+          if (!cancelled) setGuide(guide)
         }
       } catch (e: any) {
         if (!cancelled) {
@@ -532,6 +499,50 @@ const useGuideLoader = (
     return () => { cancelled = true }
   }, [itemId, setGuide, setLoading, setError])
 }
+// Helper function to map database row to GuideRecord
+const mapRowToGuideRecord = (row: any): GuideRecord => ({
+  id: row.id,
+  slug: row.slug,
+  title: row.title,
+  summary: row.summary ?? undefined,
+  heroImageUrl: row.hero_image_url ?? row.heroImageUrl ?? null,
+  domain: row.domain ?? null,
+  guideType: row.guide_type ?? row.guideType ?? null,
+  functionArea: row.function_area ?? null,
+  subDomain: row.sub_domain ?? row.subDomain ?? null,
+  unit: row.unit ?? null,
+  location: row.location ?? null,
+  status: row.status ?? null,
+  complexityLevel: row.complexity_level ?? null,
+  skillLevel: row.skill_level ?? row.skillLevel ?? null,
+  estimatedTimeMin: row.estimated_time_min ?? row.estimatedTimeMin ?? null,
+  lastUpdatedAt: row.last_updated_at ?? row.lastUpdatedAt ?? null,
+  authorName: row.author_name ?? row.authorName ?? null,
+  authorOrg: row.author_org ?? row.authorOrg ?? null,
+  isEditorsPick: row.is_editors_pick ?? row.isEditorsPick ?? null,
+  downloadCount: row.download_count ?? row.downloadCount ?? null,
+  documentUrl: row.document_url ?? row.documentUrl ?? null,
+  body: row.body ?? null,
+  steps: [],
+  attachments: [],
+  templates: [],
+})
+
+// Helper function to fetch guide from database
+const fetchGuideFromDatabase = async (key: string): Promise<GuideRecord> => {
+  const { data: slugRow, error: err1 } = await supabaseClient.from('guides').select('*').eq('slug', key).maybeSingle()
+  if (err1) throw err1
+
+  if (slugRow) return mapRowToGuideRecord(slugRow)
+
+  const { data: idRow, error: err2 } = await supabaseClient.from('guides').select('*').eq('id', key).maybeSingle()
+  if (err2) throw err2
+  if (!idRow) throw new Error('Not found')
+
+  return mapRowToGuideRecord(idRow)
+}
+
+
 
 const useGuideViewTracking = (guide: GuideRecord | null) => {
   useEffect(() => { if (guide?.slug) track('Guides.ViewDetail', { slug: guide.slug }) }, [guide?.slug])
@@ -1057,10 +1068,11 @@ const TAB_LABELS: Record<GuideTabKey, string> = {
                         e.preventDefault()
                         return
                       }
-                      let category = 'view_guide_clicked' // NOSONAR: false positive - conditions are valid
-                      if (actualIsBlueprintDomain) category = 'view_blueprint_clicked'
-                      else if (actualIsGuidelinesDomain) category = 'view_guideline_clicked'
-                      else if (actualIsStrategyDomain) category = 'view_strategy_clicked'
+                      let category = 'view_guide_clicked'
+                      const key = derivedKey || 'guidelines'
+                      if (key === 'blueprints' || isBlueprintSlug) category = 'view_blueprint_clicked'
+                      else if (key === 'guidelines') category = 'view_guideline_clicked'
+                      else if (key === 'strategy') category = 'view_strategy_clicked'
                       track('Guides.CTA', { category, slug: guide.slug || guide.id, title: guide.title })
                     }}
                     className={`px-6 py-3 text-white font-semibold rounded-full transition-all flex items-center justify-center gap-2 whitespace-nowrap ${primaryDocUrl ? '' : 'opacity-50 cursor-not-allowed'} focus:outline-none focus:ring-2 focus:ring-[var(--guidelines-ring-color)]`}
@@ -1080,10 +1092,11 @@ const TAB_LABELS: Record<GuideTabKey, string> = {
                   >
                     <ExternalLink size={18} />
                     <span>
-                      {(() => { // NOSONAR: false positive - conditions are valid
-                        if (actualIsBlueprintDomain) return 'View Blueprint'
-                        if (actualIsGuidelinesDomain) return 'View Guideline'
-                        if (actualIsStrategyDomain) return 'View Strategy'
+                      {(() => {
+                        const key = derivedKey || 'guidelines'
+                        if (key === 'blueprints' || isBlueprintSlug) return 'View Blueprint'
+                        if (key === 'guidelines') return 'View Guideline'
+                        if (key === 'strategy') return 'View Strategy'
                         return 'View Guide'
                       })()}
                     </span>

@@ -368,6 +368,10 @@ const NewsDetailPage: React.FC = () => {
 
   const overview = article ? buildOverview(article) : [];
   const isBlogArticle = article?.type === 'Thought Leadership' && article.format !== 'Podcast';
+  // Check if article should use the new layout (blogs, news, announcements, podcasts)
+  const shouldUseNewLayout = isBlogArticle || 
+    article?.type === 'Announcement' || 
+    (article?.format === 'Podcast' || article?.tags?.some(tag => tag.toLowerCase().includes('podcast')));
 
   // Load likes and views, and interaction state from localStorage
   useEffect(() => {
@@ -530,7 +534,7 @@ const NewsDetailPage: React.FC = () => {
       <Header toggleSidebar={() => {}} sidebarOpen={false} />
       <main className="flex-1">
         {/* Hero Section with Blurred Background */}
-        <section className="relative min-h-[320px] md:min-h-[400px] flex items-center" aria-labelledby="article-title">
+        <section className="relative min-h-[320px] md:min-h-[400px] flex flex-col" aria-labelledby="article-title">
           {/* Background Image */}
           <div 
             className="absolute inset-0 bg-cover bg-center"
@@ -542,113 +546,147 @@ const NewsDetailPage: React.FC = () => {
           {/* Dark Overlay */}
           <div className="absolute inset-0 bg-gradient-to-b from-slate-900/90 via-slate-800/85 to-slate-900/90" />
           
+          {/* Breadcrumb Navigation - For blogs, news, announcements, and podcasts */}
+          {shouldUseNewLayout && (
+            <div className="relative z-10 w-full pt-4">
+              <div className="mx-auto max-w-7xl px-6 py-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2 text-sm text-white/90">
+                    <Link 
+                      to="/"
+                      className="hover:text-white hover:underline transition-colors"
+                    >
+                      Home
+                    </Link>
+                    <ChevronRightIcon size={16} />
+                    <Link 
+                      to={(() => {
+                        const params = new URLSearchParams(location.search);
+                        const tab = params.get('tab');
+                        return tab ? `/marketplace/opportunities?tab=${tab}` : '/marketplace/opportunities';
+                      })()}
+                      className="hover:text-white hover:underline transition-colors"
+                    >
+                      DQ Media Center
+                    </Link>
+                    <ChevronRightIcon size={16} />
+                    <span className="text-white font-medium">{generateTitle(article)}</span>
+                  </div>
+                  <div className="flex gap-2 text-sm">
+                    <button 
+                      type="button"
+                      onClick={() => {
+                        if (navigator.share) {
+                          navigator.share({
+                            title: article.title,
+                            text: article.excerpt,
+                            url: window.location.href,
+                          }).catch(() => {
+                            // User cancelled or error occurred
+                          });
+                        } else {
+                          navigator.clipboard.writeText(window.location.href).then(() => {
+                            // Optional: Show a toast notification
+                            alert('Link copied to clipboard!');
+                          }).catch(() => {
+                            // Clipboard error
+                          });
+                        }
+                      }}
+                      className="inline-flex items-center gap-1 rounded-lg border border-white/30 bg-white/10 backdrop-blur-sm px-3 py-2 text-white hover:bg-white/20 transition-colors cursor-pointer"
+                      aria-label="Share article"
+                    >
+                      <Share2 size={16} />
+                      Share
+                    </button>
+                    <button 
+                      type="button"
+                      onClick={() => setIsBookmarked(!isBookmarked)}
+                      className={`inline-flex items-center gap-1 rounded-lg border border-white/30 backdrop-blur-sm px-3 py-2 transition-colors cursor-pointer ${
+                        isBookmarked 
+                          ? 'bg-white/20 text-white border-white/40' 
+                          : 'bg-white/10 text-white hover:bg-white/20'
+                      }`}
+                      aria-label={isBookmarked ? 'Remove bookmark' : 'Save article'}
+                    >
+                      <BookmarkIcon size={16} fill={isBookmarked ? 'currentColor' : 'none'} />
+                      Save
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+          
           {/* Content */}
-          <div className="relative z-10 mx-auto max-w-7xl px-6 py-20 md:py-24 w-full">
-            <div className="max-w-4xl">
+          <div className="relative z-10 mx-auto max-w-7xl px-6 py-20 md:py-24 w-full flex-1 flex items-center">
+            <div className="max-w-4xl w-full">
               {/* Category Tag */}
               <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium bg-white/20 backdrop-blur-sm text-white mb-4">
                 {getNewsTypeDisplay(article).label}
               </span>
               
               {/* Date */}
-              <div className="text-white/90 text-sm mb-4">
+              <div className="text-white/90 text-sm mb-2">
                 {announcementDate}
               </div>
 
               {/* Title */}
-              <h1 id="article-title" className="text-4xl md:text-5xl lg:text-6xl font-bold text-white leading-tight mb-4">
+              <h1 id="article-title" className="text-4xl md:text-5xl lg:text-6xl font-bold text-white leading-tight mb-4 break-words">
                 {generateTitle(article)}
               </h1>
-
-              {/* Author Info */}
-              <div className="text-white/90 text-sm">
-                HRA
-              </div>
             </div>
           </div>
         </section>
 
-        {/* Breadcrumb Navigation - Only for blog articles */}
-        {isBlogArticle && (
-          <div className="bg-white border-b border-gray-200">
-            <div className="mx-auto max-w-7xl px-6 py-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2 text-sm text-gray-600">
-                  <span>DQ Media Center</span>
-                  <ChevronRightIcon size={16} />
-                  <span>{getNewsTypeDisplay(article).label}</span>
-                  <ChevronRightIcon size={16} />
-                  <span className="text-gray-900 font-medium">{generateTitle(article)}</span>
-                </div>
-                <div className="flex gap-2 text-sm text-gray-500">
-                  <button 
-                    type="button"
-                    className="inline-flex items-center gap-1 rounded-lg border border-gray-200 px-3 py-2 hover:text-[#1A2E6E]"
-                  >
-                    <Share2 size={16} />
-                    Share
-                  </button>
-                  <button 
-                    type="button"
-                    className="inline-flex items-center gap-1 rounded-lg border border-gray-200 px-3 py-2 hover:text-[#1A2E6E]"
-                  >
-                    <BookmarkIcon size={16} />
-                    Save
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        <section className="bg-gray-50 py-8">
+        <section className="bg-white py-6">
           <div className="mx-auto max-w-7xl px-6">
-            <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
+            <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
               {/* Main Content Area */}
-              <div className="lg:col-span-4 space-y-6">
+              <div className="lg:col-span-3 space-y-6">
                 {/* Audio Player for Podcasts */}
                 {hasAudio && article.audioUrl && (
                   <AudioPlayer audioUrl={article.audioUrl} />
                 )}
 
-                {/* Article Content - Different layout for blogs vs announcements */}
-                {isBlogArticle ? (
+                {/* Article Content - Different layout for blogs, news, announcements, podcasts vs other content */}
+                {shouldUseNewLayout ? (
                   <>
                     {/* Side-by-Side Tabs */}
-                    <div className="bg-white rounded-lg shadow-sm p-6">
-                      <div className="border-b border-gray-200 mb-6">
-                        <div className="flex flex-col sm:flex-row gap-0">
-                          <button
-                            type="button"
-                            onClick={() => setActiveTab('overview')}
-                            className={`px-4 py-3 font-medium text-sm transition-colors border-b-2 ${
-                              activeTab === 'overview'
-                                ? 'text-gray-900 border-gray-900'
-                                : 'text-gray-500 border-transparent hover:text-gray-700'
-                            }`}
-                          >
-                            Overview
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => setActiveTab('related')}
-                            className={`px-4 py-3 font-medium text-sm transition-colors border-b-2 ${
-                              activeTab === 'related'
-                                ? 'text-gray-900 border-gray-900'
-                                : 'text-gray-500 border-transparent hover:text-gray-700'
-                            }`}
-                          >
-                            Related News and Announcements
-                          </button>
-                        </div>
+                    <div>
+                      <div className="flex flex-col sm:flex-row gap-0 -mx-6 px-6">
+                        <button
+                          type="button"
+                          onClick={() => setActiveTab('overview')}
+                          className={`px-4 py-1 font-medium text-sm transition-colors border-b-2 relative ${
+                            activeTab === 'overview'
+                              ? 'text-gray-900 border-gray-900'
+                              : 'text-gray-500 border-transparent hover:text-gray-700'
+                          }`}
+                        >
+                          Overview
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setActiveTab('related')}
+                          className={`px-4 py-1 font-medium text-sm transition-colors border-b-2 relative ${
+                            activeTab === 'related'
+                              ? 'text-gray-900 border-gray-900'
+                              : 'text-gray-500 border-transparent hover:text-gray-700'
+                          }`}
+                        >
+                          Related Blogs
+                        </button>
                       </div>
+                      {/* Full-width border line - extends from left edge to right edge */}
+                      <div className="border-b border-gray-200 w-screen relative left-1/2 -translate-x-1/2"></div>
+                      <div className="pt-4">
 
                       {/* Tab Content */}
                       {activeTab === 'overview' ? (
-                        <div className="space-y-6">
+                        <div className="space-y-4">
                           {/* Overview Content */}
                           <div>
-                            <h2 className="text-xl font-semibold text-gray-900 mb-5">Overview</h2>
                             <div className="space-y-4">
                               {generateBlogSummary(article).map((paragraph, index) => (
                                 <p key={index} className="text-gray-700 text-base leading-relaxed">
@@ -657,24 +695,9 @@ const NewsDetailPage: React.FC = () => {
                               ))}
                             </div>
                           </div>
-                          
-                          {/* View Full Blog Button */}
-                          <div className="pt-6 border-t border-gray-200">
-                            <button 
-                              type="button"
-                              className="inline-flex items-center gap-2 px-6 py-3 bg-[#030f35] text-white rounded-lg hover:opacity-90 transition-colors focus:outline-none focus:ring-2 focus:ring-[#030f35] font-medium"
-                              onClick={() => {
-                                // Navigate to full blog or expand content
-                                window.open(`/marketplace/news/${article.id}${location.search || ''}`, '_blank');
-                              }}
-                            >
-                              View Full Blog
-                            </button>
-                          </div>
                         </div>
                       ) : (
-                        <section aria-label="Related News and Announcements">
-                          <h2 className="text-xl font-semibold text-gray-900 mb-5">Related News and Announcements</h2>
+                        <section aria-label="Related Blogs">
                           <div className="space-y-3">
                             {related && related.length > 0 ? (
                               related.slice(0, 5).map((item) => {
@@ -684,13 +707,15 @@ const NewsDetailPage: React.FC = () => {
                                   <Link
                                     key={item.id}
                                     to={`/marketplace/news/${item.id}${location.search || ''}`}
-                                    className="block border border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    className="block rounded-lg p-4 hover:bg-gray-50 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500"
                                   >
                                     <div className="flex items-start justify-between gap-3">
                                       <div className="flex-1 min-w-0">
                                         <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium mb-1.5 bg-white border border-gray-200 text-gray-700">
-                                          <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: newsTypeDisplay.color }} />
-                                          {newsTypeDisplay.label}
+                                          {newsTypeDisplay?.color && (
+                                            <span className="h-1.5 w-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: newsTypeDisplay.color }} />
+                                          )}
+                                          <span>{newsTypeDisplay?.label || 'Announcement'}</span>
                                         </span>
                                         <h3 className="text-sm font-medium text-gray-900 line-clamp-2 leading-snug">
                                           {item.title || 'Untitled'}
@@ -709,60 +734,6 @@ const NewsDetailPage: React.FC = () => {
                           </div>
                         </section>
                       )}
-                    </div>
-
-                    {/* Engagement Metrics - Only for blog articles */}
-                    <div className="bg-white rounded-lg shadow-sm p-4">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-6">
-                          <div className="flex items-center gap-1.5 text-sm text-gray-600">
-                            <span>{views} views</span>
-                          </div>
-                          <button 
-                            type="button"
-                            onClick={handleLike}
-                            className={`flex items-center gap-1.5 text-sm transition-colors ${
-                              hasLiked 
-                                ? 'text-red-600 hover:text-red-700' 
-                                : 'text-gray-600 hover:text-red-600'
-                            }`}
-                            aria-label={hasLiked ? 'Liked' : 'Like this article'}
-                          >
-                            <Heart size={16} fill={hasLiked ? 'currentColor' : 'none'} />
-                            <span>{likes}</span>
-                          </button>
-                        </div>
-                        <div className="flex items-center gap-3">
-                          <button
-                            onClick={() => setIsBookmarked(!isBookmarked)}
-                            className={`p-1.5 rounded hover:bg-gray-100 transition-colors ${isBookmarked ? 'text-blue-600' : 'text-gray-600'}`}
-                            aria-label="Bookmark"
-                          >
-                            <BookmarkIcon size={18} fill={isBookmarked ? 'currentColor' : 'none'} />
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              if (navigator.share) {
-                                navigator.share({
-                                  title: article.title,
-                                  text: article.excerpt,
-                                  url: window.location.href,
-                                }).catch(() => {
-                                  // User cancelled or error occurred
-                                });
-                              } else {
-                                navigator.clipboard.writeText(window.location.href).catch(() => {
-                                  // Clipboard error
-                                });
-                              }
-                            }}
-                            className="p-1.5 rounded hover:bg-gray-100 transition-colors text-gray-600"
-                            aria-label="Share"
-                          >
-                            <Share2 size={18} />
-                          </button>
-                        </div>
                       </div>
                     </div>
                   </>
@@ -800,44 +771,71 @@ const NewsDetailPage: React.FC = () => {
 
               {/* Right Sidebar */}
               <div className="lg:col-span-1">
-                <div className="sticky top-8">
+                <div className="sticky top-8 lg:pt-[41px]">
                   {/* Article Summary Section */}
-                  <section className="bg-white rounded-lg shadow-sm p-6" aria-label="Article Summary">
-                    <h3 className="text-lg font-semibold text-gray-900 mb-5">Article Summary</h3>
-                    <div className="space-y-4">
-                      <div>
-                        <span className="text-sm font-medium text-gray-600 block mb-1">Author</span>
-                        <span className="text-sm text-gray-900">{displayAuthor}</span>
+                  <section className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden" aria-label="Article Summary">
+                    <div className="bg-gray-50 px-4 py-3 border-b border-gray-200">
+                      <h3 className="text-lg font-semibold text-gray-900">Article Summary</h3>
+                    </div>
+                    <div className="p-4 space-y-4">
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-600">Author</span>
+                        <span className="text-gray-900 font-medium">{displayAuthor}</span>
                       </div>
-                      <div>
-                        <span className="text-sm font-medium text-gray-600 block mb-1">Date</span>
-                        <span className="text-sm text-gray-900">{announcementDate}</span>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-600">Date</span>
+                        <span className="text-gray-900 font-medium">{announcementDate}</span>
                       </div>
-                      <div>
-                        <span className="text-sm font-medium text-gray-600 block mb-1">Reading Time</span>
-                        <span className="text-sm text-gray-900">{article.readingTime || '5–10'} min</span>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-600">Reading Time</span>
+                        <span className="text-gray-900 font-medium">{article.readingTime || '5–10'} min</span>
                       </div>
-                      <div>
-                        <span className="text-sm font-medium text-gray-600 block mb-1">Category</span>
-                        <span className="text-sm text-gray-900">{getNewsTypeDisplay(article).label}</span>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-600">Category</span>
+                        <span className="text-gray-900 font-medium">{getNewsTypeDisplay(article).label}</span>
                       </div>
-                      {article.tags && article.tags.length > 0 && (
-                        <div className="pt-2">
-                          <span className="text-sm font-medium text-gray-600 block mb-2">Tags</span>
-                          <div className="flex flex-wrap gap-2">
-                            {article.tags.map((tag, index) => (
-                              <span key={index} className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-700">
-                                {tag}
-                              </span>
-                            ))}
-                          </div>
-                        </div>
-                      )}
+                    </div>
+                    <div className="px-4 pb-4">
+                      <button 
+                        type="button"
+                        className="w-full px-4 py-3 text-white font-semibold rounded-md transition-colors shadow-md hover:opacity-90" 
+                        style={{ backgroundColor: '#030F35' }}
+                        onClick={() => {
+                          // Navigate to full blog or expand content
+                          window.open(`/marketplace/news/${article.id}${location.search || ''}`, '_blank');
+                        }}
+                      >
+                        View Full Blog
+                      </button>
                     </div>
                   </section>
                 </div>
               </div>
             </div>
+
+            {/* Engagement Metrics - Stretches full width below article summary */}
+            {shouldUseNewLayout && (
+              <div className="mt-4 bg-white rounded-lg shadow-sm p-4 border border-gray-200">
+                <div className="flex items-center gap-6">
+                  <div className="flex items-center gap-1.5 text-sm text-gray-600">
+                    <span>{views} views</span>
+                  </div>
+                  <button 
+                    type="button"
+                    onClick={handleLike}
+                    className={`flex items-center gap-1.5 text-sm transition-colors ${
+                      hasLiked 
+                        ? 'text-red-600 hover:text-red-700' 
+                        : 'text-gray-600 hover:text-red-600'
+                    }`}
+                    aria-label={hasLiked ? 'Liked' : 'Like this article'}
+                  >
+                    <Heart size={16} fill={hasLiked ? 'currentColor' : 'none'} />
+                    <span>{likes}</span>
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </section>
 

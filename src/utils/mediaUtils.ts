@@ -455,11 +455,11 @@ export const createDummyRemoteStream = async (): Promise<MediaStream> => {
  * @param peerConnection WebRTC peer connection
  */
 export const handleIncomingOffer = async (
-  offer: RTCSessionDescription,
+  offer: RTCSessionDescriptionInit,
   peerConnection: RTCPeerConnection
 ) => {
   // Set remote description (received offer)
-  await peerConnection.setRemoteDescription(new RTCSessionDescription(offer));
+  await peerConnection.setRemoteDescription(offer);
 
   // Create and send answer
   const answer = await peerConnection.createAnswer();
@@ -475,11 +475,11 @@ export const handleIncomingOffer = async (
  * @param peerConnection WebRTC peer connection
  */
 export const handleIncomingAnswer = async (
-  answer: RTCSessionDescription,
+  answer: RTCSessionDescriptionInit,
   peerConnection: RTCPeerConnection
 ) => {
   // Set remote description (received answer)
-  await peerConnection.setRemoteDescription(new RTCSessionDescription(answer));
+  await peerConnection.setRemoteDescription(answer);
 };
 
 /**
@@ -496,7 +496,7 @@ export const sendIceCandidate = (candidate: RTCIceCandidate) => {
  * Send the offer to the remote peer
  * @param offer The SDP offer
  */
-export const sendOffer = (offer: RTCSessionDescription) => {
+export const sendOffer = (offer: RTCSessionDescriptionInit) => {
   // Send the offer via signaling server
   // signalingChannel.send({ type: 'offer', offer });
   console.log("Sending offer:", offer);
@@ -506,7 +506,7 @@ export const sendOffer = (offer: RTCSessionDescription) => {
  * Send the answer to the remote peer
  * @param answer The SDP answer
  */
-export const sendAnswer = (answer: RTCSessionDescription) => {
+export const sendAnswer = (answer: RTCSessionDescriptionInit) => {
   // Send the answer via signaling server
   // signalingChannel.send({ type: 'answer', answer });
   console.log("Sending answer:", answer);

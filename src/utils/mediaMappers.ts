@@ -13,6 +13,12 @@ type MediaLike = MediaItem & {
   title: string;
   description?: string;
   mediaType?: string | null;
+  domain?: string | null;
+  author?: string | null;
+  readTime?: string | number | null;
+  views?: number | null;
+  language?: string | null;
+  license?: string | null;
   provider?: { name?: string; logoUrl?: string | null };
   source?: string;
   tags?: unknown[];

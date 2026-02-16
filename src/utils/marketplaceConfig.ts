@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { ReactNode } from 'react';
+import { ReactNode, ElementType } from 'react';
 import { DollarSign, Calendar, Clock, Users, MapPin, CheckCircle, BarChart, Award, FileText, Info, BookOpen, ClipboardList, Building, FileType, Bookmark, TrendingUp, Compass } from 'lucide-react';
 import { mockCourses, providers, mockOnboardingFlowsData } from './mockData';
 import { mockFinancialServices, mockNonFinancialServices, mockKnowledgeHubItems, mockKnowledgeHubFilterOptions } from './mockMarketplaceData';
@@ -7,7 +7,7 @@ import { mockFinancialServices, mockNonFinancialServices, mockKnowledgeHubItems,
 export interface MarketplaceTab {
   id: string;
   label: string;
-  icon?: React.ReactNode;
+  icon?: ElementType;
   iconBgColor?: string;
   iconColor?: string;
   renderContent?: (item: Record<string, unknown>, marketplaceType: string) => React.ReactNode;
@@ -22,7 +22,7 @@ export interface AttributeConfig {
 export interface TabConfig {
   id: string;
   label: string;
-  icon?: React.ReactNode;
+  icon?: ElementType;
   iconBgColor?: string;
   iconColor?: string;
   renderContent?: (item: Record<string, unknown>, marketplaceType: string) => React.ReactNode;
@@ -50,9 +50,9 @@ export interface MarketplaceConfig {
   summarySticky?: boolean;
   filterCategories: FilterCategoryConfig[];
   // New fields for GraphQL integration
-  mapListResponse?: (data: unknown[]) => unknown[];
-  mapDetailResponse?: (data: unknown) => unknown;
-  mapFilterResponse?: (data: Record<string, unknown>) => FilterCategoryConfig[];
+  mapListResponse?: (data: Record<string, any>[]) => Record<string, any>[];
+  mapDetailResponse?: (data: Record<string, any>) => Record<string, any>;
+  mapFilterResponse?: (data: Record<string, any>) => FilterCategoryConfig[];
   // Mock data for fallback and schema reference
   mockData?: {
     items: unknown[];

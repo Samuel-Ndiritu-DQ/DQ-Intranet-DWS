@@ -33,9 +33,9 @@ export const getFallbackItemDetails = (
   marketplaceType: string,
   itemId: string,
 ): unknown => {
-  const items = getFallbackItems(marketplaceType)
+  const items = getFallbackItems<Record<string, unknown>>(marketplaceType)
   // Try to find the item with the matching ID
-  const item = items.find((item) => item.id === itemId)
+  const item = items.find((entry) => entry.id === itemId)
   // If item is found, return it
   if (item) {
     return item

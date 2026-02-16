@@ -246,38 +246,41 @@ const removeExistingVoiceflow = (isAlreadyInitialized: boolean) => {
   }
 };
 
-const injectVoiceflowScript = (onLoad: () => void) => {
-  const script = document.createElement("script");
-  script.id = VOICEFLOW_SCRIPT_ID;
-  script.src = VOICEFLOW_BUNDLE_URL;
-  script.onload = onLoad;
-  document.body.appendChild(script);
-};
+const loadVoiceflowScript = () =>
+  new Promise<void>((resolve, reject) => {
+    const script = document.createElement("script");
+    script.id = VOICEFLOW_SCRIPT_ID;
+    script.src = VOICEFLOW_BUNDLE_URL;
+    script.onload = () => resolve();
+    script.onerror = (error) => reject(error);
+    document.body.appendChild(script);
+  });
 
 const ChatBot = () => {
   const pathname = window.location.pathname;
   const isInitialized = useRef(false);
 
   useEffect(() => {
-    const initializeVoiceflow = () => {
+    let isCancelled = false;
+
+    const initializeVoiceflow = async () => {
       removeExistingVoiceflow(isInitialized.current);
 
-      const onLoad = () => {
-        handleVoiceflowLoad(pathname)
-          .then(() => {
-            isInitialized.current = true;
-          })
-          .catch((error) => {
-            console.error("Failed to load Voiceflow:", error);
-          });
-      };
+      try {
+        await loadVoiceflowScript();
+        if (isCancelled) return;
 
-      injectVoiceflowScript(onLoad);
+        await handleVoiceflowLoad(pathname);
+        isInitialized.current = true;
+      } catch (error) {
+        console.error("Failed to load Voiceflow:", error);
+      }
     };
 
     initializeVoiceflow();
 
     return () => {
+      isCancelled = true;
       if (window.voiceflow?.chat) {
         window.voiceflow.chat.close?.();
       }

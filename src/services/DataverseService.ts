@@ -3,13 +3,21 @@
  */
 // Configuration values - in a real implementation, these would come from environment variables
 // For demo purposes, we'll use placeholder values
-const DATAVERSE_API_URL = "https://your-org.api.crm.dynamics.com/api/data/v9.2";
-const DOCUMENT_ENTITY_NAME = "cr123_document"; // Replace with your actual entity name
+const _DATAVERSE_API_URL = "https://your-org.api.crm.dynamics.com/api/data/v9.2";
+const _DOCUMENT_ENTITY_NAME = "cr123_document"; // Replace with your actual entity name
 // Get the authentication token (this would be handled by your auth provider)
-const getAuthToken = async () => {
+const _getAuthToken = async () => {
   // In a real implementation, this would get a token from your auth provider
   // For example, using MSAL.js, Azure AD, etc.
   return "dummy-token";
+};
+type SectionFields = Record<string, string>;
+type SectionData = { fields?: SectionFields };
+type ProfileSections = Record<string, SectionData>;
+type ProfileData = {
+  companyStage?: string;
+  sections?: ProfileSections;
+  [key: string]: unknown;
 };
 /**
  * Interface for document metadata
@@ -323,7 +331,7 @@ export const getDocumentVersions = async (documentId: string) => {
 // Mock implementation of Dataverse API service
 // In a real implementation, this would make actual API calls to Dataverse
 // Mock cache to simulate API data
-let dataCache = null;
+let dataCache: ProfileData | null = null;
 // Simulate API call to fetch business profile data
 export const fetchBusinessProfileData = async () => {
   // Simulate API latency
@@ -342,7 +350,7 @@ export const fetchBusinessProfileData = async () => {
   return mockData;
 };
 // Save profile data to Dataverse
-export const saveProfileData = async (profileData) => {
+export const saveProfileData = async (profileData: ProfileData) => {
   // Simulate API latency
   await new Promise((resolve) => setTimeout(resolve, 800));
   // In a real implementation, this would be:
@@ -355,13 +363,15 @@ export const saveProfileData = async (profileData) => {
   // });
   // const data = await response.json();
   // For now, we'll just update our cache
+  const cachedSections = dataCache?.sections || {};
+  const incomingSections = profileData.sections || {};
   dataCache = {
-    ...dataCache,
+    ...(dataCache || {}),
     ...profileData,
     // Merge sections rather than replacing them
     sections: {
-      ...(dataCache?.sections || {}),
-      ...profileData.sections,
+      ...cachedSections,
+      ...incomingSections,
     },
   };
   // Store in localStorage for persistence across page reloads
@@ -369,23 +379,18 @@ export const saveProfileData = async (profileData) => {
   return dataCache;
 };
 // Calculate completion percentage for a section based on field values
-export const calculateSectionCompletion = (sectionData) => {
-  if (
-    !sectionData ||
-    !sectionData.fields ||
-    Object.keys(sectionData.fields).length === 0
-  ) {
+export const calculateSectionCompletion = (sectionData?: SectionData | null) => {
+  const fields = sectionData?.fields;
+  if (!fields || Object.keys(fields).length === 0) {
     return 0;
   }
   let completedFields = 0;
   let totalFields = 0;
   // Count completed fields across all groups
-  Object.keys(sectionData.fields).forEach((fieldKey) => {
+  Object.keys(fields).forEach((fieldKey) => {
     totalFields++;
-    if (
-      sectionData.fields[fieldKey] &&
-      sectionData.fields[fieldKey].trim() !== ""
-    ) {
+    const value = fields[fieldKey];
+    if (value && value.trim() !== "") {
       completedFields++;
     }
   });
@@ -393,12 +398,13 @@ export const calculateSectionCompletion = (sectionData) => {
 };
 // Calculate mandatory fields completion for a section based on company stage
 export const calculateMandatoryCompletion = (
-  sectionData,
-  sectionId,
-  companyStage,
-  config
+  sectionData: SectionData | null | undefined,
+  sectionId: string,
+  companyStage: string,
+  config: { tabs: Array<{ id: string; groups: Array<{ fields: Array<{ fieldName: string; mandatory?: string[] }> }> }> }
 ) => {
-  if (!sectionData || !sectionData.fields || !config) {
+  const fields = sectionData?.fields;
+  if (!fields || !config) {
     return { completed: 0, total: 0, percentage: 0 };
   }
   const sectionConfig = config.tabs.find((tab) => tab.id === sectionId);
@@ -407,15 +413,13 @@ export const calculateMandatoryCompletion = (
   let completedMandatory = 0;
   sectionConfig.groups.forEach((group) => {
     group.fields.forEach((field) => {
-      if (field.mandatory && field.mandatory.includes(companyStage)) {
-        mandatoryFields++;
-        if (
-          sectionData.fields[field.fieldName] &&
-          sectionData.fields[field.fieldName].trim() !== ""
-        ) {
-          completedMandatory++;
-        }
-      }
+          if (field.mandatory?.includes(companyStage)) {
+            mandatoryFields++;
+            const value = fields[field.fieldName];
+            if (value && value.trim() !== "") {
+              completedMandatory++;
+            }
+          }
     });
   });
   return {
@@ -453,7 +457,7 @@ export const isOnboardingCompleted = () => {
       const parsedData = JSON.parse(storedData);
       dataCache = parsedData; // Update cache
       // Same check as above
-      const { companyStage, sections } = parsedData;
+      const { companyStage, sections } = parsedData as ProfileData;
       if (!companyStage || !sections) {
         return false;
       }

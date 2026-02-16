@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
-import { Calendar, MapPin, CheckCircleIcon, ExternalLinkIcon, ChevronRightIcon, HomeIcon, FileText, ChevronLeft, ChevronRight, MoreHorizontal, XIcon, Plus, Minus } from 'lucide-react';
+import { useParams, useNavigate, useSearchParams, Link } from 'react-router-dom';
+import { Calendar, MapPin, CheckCircleIcon, ExternalLinkIcon, ChevronRightIcon, HomeIcon, FileText, ChevronLeft, ChevronRight, MoreHorizontal, Plus, Minus } from 'lucide-react';
 import { Header } from '../../components/Header';
 import { Footer } from '../../components/Footer';
 import { getMarketplaceConfig } from '../../utils/marketplaceConfig';
@@ -8,7 +8,6 @@ import { getServiceTabContent, getCustomTabs } from '../../utils/serviceDetailsC
 import type { ContentBlock } from '../../utils/serviceDetailsContent';
 import { fetchMarketplaceItemDetails, fetchRelatedMarketplaceItems } from '../../services/marketplace';
 import { ErrorDisplay } from '../../components/SkeletonLoader';
-import { Link } from 'react-router-dom';
 import { getFallbackItemDetails, getFallbackItems } from '../../utils/fallbackData';
 import { getAIToolDataById } from '../../utils/aiToolsData';
 import { getDigitalWorkerServiceById } from '../../utils/digitalWorkerData';
@@ -62,9 +61,9 @@ const MarketplaceDetailsPage: React.FC<MarketplaceDetailsPageProps> = ({
     }
     return config.route;
   };
-  const [item, setItem] = useState<any | null>(null);
+  const [item, setItem] = useState<Record<string, any> | null>(null);
   const [relatedItems, setRelatedItems] = useState<any[]>([]);
-  const [_isBookmarked, _setIsBookmarked] = useState(false);
+  const [isBookmarked, setIsBookmarked] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -192,13 +191,13 @@ const MarketplaceDetailsPage: React.FC<MarketplaceDetailsPageProps> = ({
           // Fetch related items
           let relatedItemsData: any[] = [];
           try {
-            relatedItemsData = await fetchRelatedMarketplaceItems(marketplaceType, finalItemData.id, finalItemData.category || '', finalItemData.provider?.name || '');
+            relatedItemsData = await fetchRelatedMarketplaceItems(marketplaceType, finalItemData.id, finalItemData.category ?? '', finalItemData.provider?.name ?? '');
           } catch (relatedError) {
             console.error('Error fetching related items:', relatedError);
             // Use fallback related items on error
           }
           // Use fetched related items if available, otherwise use fallback
-          setRelatedItems(relatedItemsData && relatedItemsData.length > 0 ? relatedItemsData : getFallbackItems(marketplaceType));
+          setRelatedItems(relatedItemsData?.length > 0 ? relatedItemsData : getFallbackItems(marketplaceType));
           if (shouldTakeAction) {
             setTimeout(() => {
               const actionSection = document.getElementById('action-section');

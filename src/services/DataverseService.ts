@@ -367,11 +367,16 @@ export const saveProfileData = async (profileData: ProfileData) => {
   const cachedSections = dataCache?.sections;
   const incomingSections = profileData.sections;
   const baseCache = dataCache ? { ...dataCache } : undefined;
-  dataCache = {
-    ...(baseCache || {}),
-    ...profileData,
-    sections: mergeSections(cachedSections, incomingSections),
-  };
+  dataCache = baseCache
+    ? {
+        ...baseCache,
+        ...profileData,
+        sections: mergeSections(cachedSections, incomingSections),
+      }
+    : {
+        ...profileData,
+        sections: mergeSections(cachedSections, incomingSections),
+      };
   // Store in localStorage for persistence across page reloads
   localStorage.setItem("profileData", JSON.stringify(dataCache));
   return dataCache;

@@ -12,6 +12,7 @@ type EventName =
   | 'Guides.Share'
   | 'Guides.Print'
   | 'Guides.TabChanged'
+  | 'Guides.ViewAll'
 
 export const track = (name: EventName, payload: Record<string, unknown>) => {
   try {

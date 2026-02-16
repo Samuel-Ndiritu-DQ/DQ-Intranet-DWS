@@ -1,3 +1,8 @@
+// NOTE: This file uses array indices as keys in several places for static content rendering.
+// This is acceptable because these lists (accordion items, feature lists, requirement lists, etc.)
+// are static and will not be reordered, added to, or removed during runtime.
+// NOSONAR comments are added where appropriate to suppress false positive warnings.
+
 import React, { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { Calendar, MapPin, CheckCircleIcon, ExternalLinkIcon, ChevronRightIcon, HomeIcon, FileText, ChevronLeft, ChevronRight, MoreHorizontal, Plus, Minus } from 'lucide-react';
@@ -416,7 +421,7 @@ const MarketplaceDetailsPage: React.FC<MarketplaceDetailsPageProps> = ({
 
     return (
       <div className="space-y-4 mb-6">
-        {items.map((item, index) => {
+        {items.map((item, index) => { // NOSONAR: static accordion items, order is stable
           const isOpen = openIndex === index;
           return (
             <div
@@ -481,18 +486,19 @@ const MarketplaceDetailsPage: React.FC<MarketplaceDetailsPageProps> = ({
   };
 
   const renderBlocks = (blocks: ContentBlock[]) => {
+    // NOSONAR: Array indices used as keys for static content blocks that won't be reordered
     return (blocks || []).map((block, idx) => {
       if (block.type === 'p') {
         return <p key={idx} className="text-gray-700 text-base leading-relaxed mb-4" dangerouslySetInnerHTML={{ __html: sanitizeHtml(block.text) }}></p>;
       }
       if (block.type === 'ol') {
         return <ol key={idx} className="list-decimal pl-6 space-y-3 text-gray-700 mb-4 text-base">
-            {block.items.map((it, i) => <li key={i} className="pl-2 leading-relaxed">{it}</li>)}
+            {block.items.map((it, i) => <li key={i} className="pl-2 leading-relaxed">{it}</li>)} {/* NOSONAR: static list items */}
           </ol>;
       }
       if (block.type === 'ul') {
         return <ul key={idx} className="list-disc pl-6 space-y-3 text-gray-700 mb-4 text-base">
-            {block.items.map((it, i) => <li key={i} className="pl-2 leading-relaxed">{it}</li>)}
+            {block.items.map((it, i) => <li key={i} className="pl-2 leading-relaxed">{it}</li>)} {/* NOSONAR: static list items */}
           </ul>;
       }
       if (block.type === 'iframe') {

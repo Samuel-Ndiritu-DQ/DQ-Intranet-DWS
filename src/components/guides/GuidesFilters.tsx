@@ -421,67 +421,8 @@ export const GuidesFilters: React.FC<Props> = ({ facets, query, onChange, active
         <button onClick={clearAll} className="text-[var(--guidelines-primary)] text-sm font-medium">Clear all</button>
       </div>
       {isGlossarySelected ? (() => {
-        const selectedKnowledgeSystems = parseCsv(query.get('glossary_knowledge_system'))
-        const hasGHC = selectedKnowledgeSystems.includes('ghc')
-        const has6xD = selectedKnowledgeSystems.includes('6xd')
-
         return (
           <>
-            {/* PRIMARY FILTER: Knowledge System (e.g., GHC, Agile 6xD) */}
-            <Section
-              idPrefix={instanceId}
-              title="Knowledge System"
-              category="glossary_knowledge_system"
-              collapsed={collapsedSet.has('glossary_knowledge_system')}
-              onToggle={toggleCollapsed}
-            >
-              <CheckboxList
-                idPrefix={instanceId}
-                name="glossary_knowledge_system"
-                options={KNOWLEDGE_SYSTEMS}
-                query={query}
-                onChange={onChange}
-              />
-            </Section>
-
-            {/* SECONDARY FILTER: GHC Dimension (shown only when GHC is selected AND 6xD is NOT selected) */}
-            {hasGHC && !has6xD && (
-              <Section
-                idPrefix={instanceId}
-                title="GHC Dimension"
-                category="glossary_ghc_dimension"
-                collapsed={collapsedSet.has('glossary_ghc_dimension')}
-                onToggle={toggleCollapsed}
-              >
-                <CheckboxList
-                  idPrefix={instanceId}
-                  name="glossary_ghc_dimension"
-                  options={GHC_DIMENSIONS}
-                  query={query}
-                  onChange={onChange}
-                />
-              </Section>
-            )}
-
-            {/* SECONDARY FILTER: 6xD Perspective (shown only when Agile 6xD is selected) */}
-            {has6xD && (
-              <Section
-                idPrefix={instanceId}
-                title="6xD Perspective"
-                category="glossary_6xd_perspective"
-                collapsed={collapsedSet.has('glossary_6xd_perspective')}
-                onToggle={toggleCollapsed}
-              >
-                <CheckboxList
-                  idPrefix={instanceId}
-                  name="glossary_6xd_perspective"
-                  options={SIX_XD_PERSPECTIVES}
-                  query={query}
-                  onChange={onChange}
-                />
-              </Section>
-            )}
-
             {/* ALPHABETICAL FILTER: A–Z browsing for fast scanning */}
             <Section
               idPrefix={instanceId}
@@ -645,7 +586,7 @@ export const GuidesFilters: React.FC<Props> = ({ facets, query, onChange, active
     )}
     {isStrategySelected && (
       <>
-          <Section idPrefix={instanceId} title="GHC Types" category="strategy_framework" collapsed={collapsedSet.has('strategy_framework')} onToggle={toggleCollapsed}>
+          <Section idPrefix={instanceId} title="GHC Elements" category="strategy_framework" collapsed={collapsedSet.has('strategy_framework')} onToggle={toggleCollapsed}>
             <CheckboxList idPrefix={instanceId} name="strategy_framework" options={availableStrategyFrameworks.length > 0 ? availableStrategyFrameworks : STRATEGY_FRAMEWORKS} query={query} onChange={onChange} />
           </Section>
       </>

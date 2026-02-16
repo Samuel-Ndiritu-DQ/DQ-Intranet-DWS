@@ -75,17 +75,11 @@ const TestimonialsDetailPage: React.FC = () => {
             <div className="absolute inset-0 bg-[#030E31] bg-opacity-75" />
           </div>
           <div className="relative z-10 h-full flex flex-col justify-center px-4 md:px-6 lg:px-8 text-white max-w-full">
-            <span
-              className="inline-flex self-start px-4 py-1.5 rounded-full bg-white/15 backdrop-blur-sm text-sm font-medium mb-4"
-              style={{ width: 'fit-content' }}
-            >
-              Testimonials
-            </span>
             <h1 className="text-4xl md:text-5xl font-bold mb-4 leading-tight">
               Client Feedback
             </h1>
             <p className="text-white/85 max-w-2xl">
-              Highlights from DFSA, ADIB, and Khalifa Fund showcasing how Digital Qatalyst engagements accelerate transformation outcomes.
+              Highlights from leading financial, regulatory, and government institutions showcasing how Digital Qatalyst engagements accelerate transformation outcomes.
             </p>
           </div>
         </div>
@@ -95,13 +89,6 @@ const TestimonialsDetailPage: React.FC = () => {
 
         {/* Featured Clients Section */}
         <div className="mb-8">
-          <div className="mb-6">
-            <h2 className="text-3xl font-bold text-gray-900 mb-3">Why organizations choose DQ</h2>
-            <p className="text-gray-600">
-              Stories from DFSA, ADIB, and Khalifa Fund demonstrate how DQ engagements translate into measurable outcomes.
-            </p>
-          </div>
-
           {/* Featured Testimonial Cards Grid */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {featuredTestimonialsData.map((testimonial) => (

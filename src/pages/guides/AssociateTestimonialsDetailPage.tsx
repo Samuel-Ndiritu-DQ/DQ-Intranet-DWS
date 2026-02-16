@@ -81,17 +81,11 @@ const AssociateTestimonialsDetailPage: React.FC = () => {
             <div className="absolute inset-0 bg-[#030E31] bg-opacity-75" />
           </div>
           <div className="relative z-10 h-full flex flex-col justify-center px-4 md:px-6 lg:px-8 text-white max-w-full">
-            <span
-              className="inline-flex self-start px-4 py-1.5 rounded-full bg-white/15 backdrop-blur-sm text-sm font-medium mb-4"
-              style={{ width: 'fit-content' }}
-            >
-              Testimonials
-            </span>
             <h1 className="text-4xl md:text-5xl font-bold mb-4 leading-tight">
               Associate Testimonials
             </h1>
             <p className="text-white/85 max-w-2xl">
-              Stories from DQ associates showcasing how Digital Qatalyst's values and culture have supported their professional and personal growth.
+              Voices of DQ: Real stories of growth, culture, and transformation from the people who make it happen.
             </p>
           </div>
         </div>
@@ -101,19 +95,12 @@ const AssociateTestimonialsDetailPage: React.FC = () => {
 
         {/* Featured Associates Section */}
         <div className="mb-8">
-          <div className="mb-6">
-            <h2 className="text-3xl font-bold text-gray-900 mb-3">Real Stories: How Our Values Drive Growth</h2>
-            <p className="text-gray-600">
-              Our values are the heartbeat of everything we do. Hear directly from our team about how embracing collaboration, ownership, and a love for learning has helped them grow professionally and make a meaningful impact every day.
-            </p>
-          </div>
-
           {/* Associate Testimonial Cards Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {associateTestimonialsData.map((testimonial) => (
               <div
                 key={testimonial.id}
-                className="bg-white rounded-lg shadow-sm p-6 hover:shadow-md transition-shadow"
+                className="bg-white rounded-lg shadow-sm p-6 hover:shadow-md transition-shadow flex flex-col"
               >
                 <div className="flex flex-col items-center mb-4">
                   <div className="w-16 h-16 rounded-full bg-gray-200 flex items-center justify-center mb-3">
@@ -125,10 +112,10 @@ const AssociateTestimonialsDetailPage: React.FC = () => {
                   <p className="font-semibold text-gray-900 text-center">{testimonial.name}</p>
                   <p className="text-xs text-gray-500 text-center mt-1">{testimonial.organization}</p>
                 </div>
-                <p className="text-sm text-gray-600 leading-relaxed">
+                <p className="text-sm text-gray-600 leading-relaxed flex-grow">
                   "{testimonial.quote}"
-                  <span className="block text-xs text-gray-500 italic mt-2">{disclaimer}</span>
                 </p>
+                <p className="text-xs text-gray-500 italic mt-4">{disclaimer}</p>
               </div>
             ))}
           </div>

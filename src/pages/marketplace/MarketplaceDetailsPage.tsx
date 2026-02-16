@@ -63,7 +63,6 @@ const MarketplaceDetailsPage: React.FC<MarketplaceDetailsPageProps> = ({
   };
   const [item, setItem] = useState<Record<string, any> | null>(null);
   const [relatedItems, setRelatedItems] = useState<any[]>([]);
-  const [isBookmarked, setIsBookmarked] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -497,8 +496,7 @@ const MarketplaceDetailsPage: React.FC<MarketplaceDetailsPageProps> = ({
               src={block.src}
               width={block.width || '640'}
               height={block.height || '360'}
-              frameBorder="0"
-              scrolling="no"
+              style={{ border: 0, overflow: 'hidden' }}
               allowFullScreen
               title={block.title || 'Embedded video'}
               className="rounded-lg shadow-md"
@@ -586,7 +584,7 @@ const MarketplaceDetailsPage: React.FC<MarketplaceDetailsPageProps> = ({
                   {Object.entries(requirements.minimum).map(([key, value]) => (
                     <li key={key} className="flex items-start gap-3">
                       <span className="text-xs font-semibold text-gray-500 uppercase w-24 flex-shrink-0 pt-0.5">
-                        {key.replace(/([A-Z])/g, ' $1').trim()}:
+                        {key.replaceAll(/([A-Z])/g, ' $1').trim()}:
                       </span>
                       <span className="text-sm text-gray-700 flex-1">{value}</span>
                     </li>
@@ -601,7 +599,7 @@ const MarketplaceDetailsPage: React.FC<MarketplaceDetailsPageProps> = ({
                   {Object.entries(requirements.recommended).map(([key, value]) => (
                     <li key={key} className="flex items-start gap-3">
                       <span className="text-xs font-semibold text-gray-500 uppercase w-24 flex-shrink-0 pt-0.5">
-                        {key.replace(/([A-Z])/g, ' $1').trim()}:
+                        {key.replaceAll(/([A-Z])/g, ' $1').trim()}:
                       </span>
                       <span className="text-sm text-gray-700 flex-1">{value}</span>
                     </li>
@@ -1201,15 +1199,7 @@ const MarketplaceDetailsPage: React.FC<MarketplaceDetailsPageProps> = ({
               </div>}
           </div>;
       }
-      case 'self_service_faq': {
-        const content = getServiceTabContent(marketplaceType, item?.id, tabId);
-        return <div className="space-y-6">
-            <div className="prose max-w-none">
-              {content?.heading && <h3 className="text-xl font-bold text-gray-900 mb-2">{content.heading}</h3>}
-              {renderBlocks(content?.blocks || [])}
-            </div>
-          </div>;
-      }
+      case 'self_service_faq':
       case 'contact_sla': {
         const content = getServiceTabContent(marketplaceType, item?.id, tabId);
         return <div className="space-y-6">

@@ -8,10 +8,10 @@ import { mockDocumentData } from '../../../components/DocumentWallet/mockDocumen
 import { BurgerMenuButton } from '../../../components/Sidebar';
 
 export function DocumentsPage({
-  isOpen,
+  isOpen: _isOpen,
   setIsOpen,
   isLoggedIn,
-  setIsLoggedIn
+  setIsLoggedIn: _setIsLoggedIn
 }: {
   isOpen: boolean;
   setIsOpen: (isOpen: boolean) => void;
@@ -100,7 +100,7 @@ export function DocumentsPage({
       {isUploadModalOpen && (
         <DocumentUpload
           onClose={() => setIsUploadModalOpen(false)}
-          onUpload={(newDoc) => {
+          onUpload={(_newDoc) => {
             // Handle document upload logic here
             setIsUploadModalOpen(false);
           }}

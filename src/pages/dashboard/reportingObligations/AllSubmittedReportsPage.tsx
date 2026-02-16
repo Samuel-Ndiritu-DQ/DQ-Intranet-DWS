@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { mockReportData } from './mockReportsData';
 import {
-    HomeIcon,
     ChevronRightIcon,
     EyeIcon,
     DownloadIcon,
@@ -18,12 +17,12 @@ export function AllSubmittedReportsPage() {
     const [reports, setReports] = useState([]);
     const [filteredReports, setFilteredReports] = useState([]);
     const [searchQuery, setSearchQuery] = useState('');
-    const [dateRange, setDateRange] = useState({
+    const [dateRange, setDateRange] = useState<{ startDate: string | null; endDate: string | null }>({
         startDate: null,
         endDate: null,
     });
     const [reportTypeFilter, setReportTypeFilter] = useState('all');
-    const [sidebarOpen, setSidebarOpen] = useState(false);
+    const [_sidebarOpen, _setSidebarOpen] = useState(false);
     const [currentPage, setCurrentPage] = useState(1);
     const reportsPerPage = 10;
     // Fetch data
@@ -87,7 +86,7 @@ export function AllSubmittedReportsPage() {
     );
     const totalPages = Math.ceil(filteredReports.length / reportsPerPage);
     // Status badge component
-    const getStatusBadge = (status) => {
+    const getStatusBadge = (status: string) => {
         switch (status.toLowerCase()) {
             case 'approved':
                 return (
@@ -209,7 +208,7 @@ export function AllSubmittedReportsPage() {
                                         searchQuery={searchQuery}
                                         onSearchChange={setSearchQuery}
                                         dateRange={dateRange}
-                                        onDateRangeChange={setDateRange as any}
+                                        onDateRangeChange={setDateRange}
                                     />
                                 </div>
                             </div>

@@ -33,7 +33,7 @@ const DashboardLayout = ({
   setIsLoggedIn: (isLoggedIn: boolean) => void;
 }) => {
   const navigate = useNavigate();
-  const [sidebarOpen] = useState(true);
+  const [_sidebarOpen] = useState(true);
   const [activeSection, setActiveSection] = useState("dashboard");
   const [activeCompany, setActiveCompany] = useState("1");
 

@@ -2,13 +2,13 @@ import { useState } from "react";
 // import { NeedsAssessmentFormSchema } from "../../components/Forms/form-schemas/NeedsAssessmentFormSchema";
 
 function NeedsAssessmentForm() {
-  const [formData, setFormData] = useState<any>({});
+  const [formData, setFormData] = useState<Record<string, unknown>>({});
 
-  const handleSubmit = async (data: any) => {
+  const handleSubmit = async (data: Record<string, unknown>) => {
     console.log("Form submitted:", data);
     alert("Form submitted successfully!");
   };
-  const handleSave = async (data: any) => {
+  const handleSave = async (data: Record<string, unknown>) => {
     console.log("Form saved:", data);
     setFormData(data);
     alert("Form saved successfully!");

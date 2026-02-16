@@ -1,10 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { mockReportData } from './mockReportsData';
 import {
-    HomeIcon,
     ChevronRightIcon,
     CalendarIcon,
-    UserIcon,
     ArrowUpRightIcon,
     AlertCircleIcon,
     ClockIcon,
@@ -18,12 +16,12 @@ export function AllUpcomingObligationsPage() {
     const [obligations, setObligations] = useState([]);
     const [filteredObligations, setFilteredObligations] = useState([]);
     const [searchQuery, setSearchQuery] = useState('');
-    const [dateRange, setDateRange] = useState({
+    const [dateRange, setDateRange] = useState<{ startDate: string | null; endDate: string | null }>({
         startDate: null,
         endDate: null,
     });
     const [reportTypeFilter, setReportTypeFilter] = useState('all');
-    const [sidebarOpen, setSidebarOpen] = useState(false);
+    const [_sidebarOpen, _setSidebarOpen] = useState(false);
     const [currentPage, setCurrentPage] = useState(1);
     const obligationsPerPage = 10;
     // Fetch data
@@ -89,7 +87,7 @@ export function AllUpcomingObligationsPage() {
     );
     const totalPages = Math.ceil(filteredObligations.length / obligationsPerPage);
     // Status badge component
-    const getStatusBadge = (status) => {
+    const getStatusBadge = (status: string) => {
         switch (status.toLowerCase()) {
             case 'overdue':
                 return (
@@ -116,7 +114,7 @@ export function AllUpcomingObligationsPage() {
         }
     };
     // Action button component
-    const getActionButton = (obligation) => {
+    const getActionButton = (obligation: { status: string }) => {
         switch (obligation.status.toLowerCase()) {
             case 'overdue':
                 return (
@@ -242,7 +240,7 @@ export function AllUpcomingObligationsPage() {
                                         searchQuery={searchQuery}
                                         onSearchChange={setSearchQuery}
                                         dateRange={dateRange}
-                                        onDateRangeChange={setDateRange as any}
+                                        onDateRangeChange={setDateRange}
                                     />
                                 </div>
                             </div>

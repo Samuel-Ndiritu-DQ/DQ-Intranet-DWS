@@ -6,7 +6,7 @@ interface MetricsOverviewProps {
 export const MetricsOverview: React.FC<MetricsOverviewProps> = ({
     isLoading,
 }) => {
-    const [activeFilter, setActiveFilter] = useState<string | null>(null);
+    const [_activeFilter, _setActiveFilter] = useState<string | null>(null);
     // Mock KPI data with trend information (no icons)
     const kpiCards = [
         {

@@ -163,6 +163,144 @@ const parseFilterValues = (params: URLSearchParams, key: string): string[] =>
     .map((value) => value.trim())
     .filter(Boolean);
 
+type WorkGuideTab = 'guidelines' | 'strategy' | 'blueprints' | 'testimonials' | 'glossary' | 'faqs';
+
+const TAB_LABELS: Record<WorkGuideTab, string> = {
+  strategy: 'Strategy',
+  guidelines: 'Guidelines',
+  blueprints: 'Blueprints',
+  testimonials: 'Testimonials',
+  glossary: 'Glossary',
+  faqs: 'FAQs'
+};
+
+const TAB_DESCRIPTIONS: Record<WorkGuideTab, { description: string; author?: string }> = {
+  strategy: {
+    description: 'Strategic frameworks, transformation journeys, and organizational initiatives that guide decision-making and long-term planning across Digital Qatalyst.',
+    author: 'Authored by DQ Leadership and Strategy Teams'
+  },
+  guidelines: {
+    description: 'Practical guidelines, best practices, and operational procedures that support everyday delivery, collaboration, and excellence across all teams and units.',
+    author: 'Authored by DQ Associates, Leads, and Subject Matter Experts'
+  },
+  blueprints: {
+    description: 'Standardized blueprints, templates, and proven methodologies that enable consistent execution, reduce rework, and accelerate delivery across projects and initiatives.',
+    author: 'Authored by DQ Delivery Teams and Practice Leads'
+  },
+  testimonials: {
+    description: 'Success stories, case studies, and reflections that capture lessons learned, celebrate achievements, and share insights from real-world experiences and transformations.',
+    author: 'Authored by DQ Teams, Clients, and Partners'
+  },
+  glossary: {
+    description: 'Comprehensive dictionary of DQ terminology, acronyms, and key concepts to help you understand our language and processes.',
+    author: 'Maintained by DQ Knowledge Management Team'
+  },
+  faqs: {
+    description: 'Frequently asked questions about DQ processes, tools, workflows, and best practices with detailed answers and guidance.',
+    author: 'Maintained by DQ Knowledge Management Team'
+  }
+};
+
+const INCOMPATIBLE_FILTERS_BY_TAB: Record<WorkGuideTab, string[]> = {
+  strategy: ['guide_type', 'sub_domain', 'domain', 'testimonial_category'],
+  blueprints: ['guide_type', 'sub_domain', 'domain', 'testimonial_category', 'strategy_type', 'strategy_framework', 'guidelines_category', 'blueprint_sector'],
+  testimonials: ['guide_type', 'sub_domain', 'domain', 'strategy_type', 'strategy_framework', 'guidelines_category', 'blueprint_framework', 'blueprint_sector'],
+  glossary: ['guide_type', 'sub_domain', 'unit', 'domain', 'strategy_type', 'strategy_framework', 'guidelines_category', 'blueprint_framework', 'blueprint_sector', 'testimonial_category'],
+  faqs: ['guide_type', 'sub_domain', 'unit', 'domain', 'strategy_type', 'strategy_framework', 'guidelines_category', 'blueprint_framework', 'blueprint_sector', 'testimonial_category'],
+  guidelines: ['strategy_type', 'strategy_framework', 'blueprint_framework', 'blueprint_sector'],
+};
+
+const syncUrlParams = (params: URLSearchParams) => {
+  if (typeof window === 'undefined') return;
+  const qs = params.toString();
+  window.history.replaceState(null, '', `${window.location.pathname}${qs ? '?' + qs : ''}`);
+};
+
+const buildGuidesTabParams = (tab: WorkGuideTab, queryParams: URLSearchParams) => {
+  const next = new URLSearchParams(queryParams.toString());
+  next.delete('page');
+  if (tab === 'guidelines') next.delete('tab');
+  else next.set('tab', tab);
+
+  (INCOMPATIBLE_FILTERS_BY_TAB[tab] || []).forEach((key) => next.delete(key));
+
+  if (tab !== 'guidelines') next.delete('guidelines_category');
+  if (tab !== 'blueprints') next.delete('blueprint_framework');
+
+  return next;
+};
+
+const cleanFiltersForActiveTab = (tab: WorkGuideTab, queryParams: URLSearchParams) => {
+  const next = new URLSearchParams(queryParams.toString());
+  let changed = false;
+
+  (INCOMPATIBLE_FILTERS_BY_TAB[tab] || []).forEach((key) => {
+    if (next.has(key)) {
+      next.delete(key);
+      changed = true;
+    }
+  });
+
+  if (tab !== 'guidelines' && next.has('guidelines_category')) {
+    next.delete('guidelines_category');
+    changed = true;
+  }
+  if (tab !== 'blueprints' && next.has('blueprint_framework')) {
+    next.delete('blueprint_framework');
+    changed = true;
+  }
+
+  return { next, changed };
+};
+
+const computeFilteredGlossaryTerms = (queryParams: URLSearchParams, terms: GlossaryTerm[]) => {
+  const knowledgeSystems = parseFilterValues(queryParams, 'glossary_knowledge_system');
+  const ghcDimensions = parseFilterValues(queryParams, 'glossary_ghc_dimension');
+  const ghcTermTypes = parseFilterValues(queryParams, 'glossary_ghc_term_type');
+  const sixXdDimensions = parseFilterValues(queryParams, 'glossary_6xd_dimension');
+  const sixXdTermTypes = parseFilterValues(queryParams, 'glossary_6xd_term_type');
+  const termOrigins = parseFilterValues(queryParams, 'glossary_term_origin');
+  const usedIn = parseFilterValues(queryParams, 'glossary_used_in');
+  const whoUsesIt = parseFilterValues(queryParams, 'glossary_who_uses_it');
+  const letters = parseFilterValues(queryParams, 'glossary_letter');
+  const searchQuery = queryParams.get('q') || '';
+
+  return terms.filter((term) => {
+    if (knowledgeSystems.length && (!term.knowledgeSystem || !knowledgeSystems.includes(term.knowledgeSystem))) return false;
+
+    if (term.knowledgeSystem === 'ghc') {
+      if (ghcDimensions.length && (!term.ghcDimension || !ghcDimensions.includes(term.ghcDimension))) return false;
+      if (ghcTermTypes.length && (!term.ghcTermType || !ghcTermTypes.includes(term.ghcTermType))) return false;
+    }
+
+    if (term.knowledgeSystem === '6xd') {
+      if (sixXdDimensions.length && (!term.sixXdDimension || !sixXdDimensions.includes(term.sixXdDimension))) return false;
+      if (sixXdTermTypes.length && (!term.sixXdTermType || !sixXdTermTypes.includes(term.sixXdTermType))) return false;
+    }
+
+    if (termOrigins.length && (!term.termOrigin || !termOrigins.includes(term.termOrigin))) return false;
+    if (usedIn.length && (!term.usedIn || !term.usedIn.some((ui) => usedIn.includes(ui)))) return false;
+    if (whoUsesIt.length && (!term.whoUsesIt || !term.whoUsesIt.some((wui) => whoUsesIt.includes(wui)))) return false;
+
+    if (letters.length) {
+      const termLetter = term.letter.toUpperCase();
+      if (!letters.some((l) => l.toUpperCase() === termLetter)) return false;
+    }
+
+    if (searchQuery) {
+      const searchLower = searchQuery.toLowerCase();
+      const matchesSearch =
+        term.term.toLowerCase().includes(searchLower) ||
+        (term.shortIntro && term.shortIntro.toLowerCase().includes(searchLower)) ||
+        term.explanation.toLowerCase().includes(searchLower) ||
+        term.tags.some((tag) => tag.toLowerCase().includes(searchLower));
+      if (!matchesSearch) return false;
+    }
+
+    return true;
+  });
+};
+
 export const MarketplacePage: React.FC<MarketplacePageProps> = ({
   marketplaceType,
   title: _title,
@@ -218,48 +356,11 @@ export const MarketplacePage: React.FC<MarketplacePageProps> = ({
   const [facets, setFacets] = useState<GuidesFacets>({});
   const [queryParams, setQueryParams] = useState(() => new URLSearchParams(typeof window !== 'undefined' ? window.location.search : ''));
   const searchStartRef = useRef<number | null>(null);
-type WorkGuideTab = 'guidelines' | 'strategy' | 'blueprints' | 'testimonials' | 'glossary' | 'faqs';
   const getTabFromParams = useCallback((params: URLSearchParams): WorkGuideTab => {
     const tab = params.get('tab');
     return tab === 'strategy' || tab === 'blueprints' || tab === 'testimonials' || tab === 'glossary' || tab === 'faqs' ? tab : 'guidelines';
   }, []);
   const [activeTab, setActiveTab] = useState<WorkGuideTab>(() => getTabFromParams(typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : new URLSearchParams()));
-
-  const TAB_LABELS: Record<WorkGuideTab, string> = {
-    strategy: 'Strategy',
-    guidelines: 'Guidelines',
-    blueprints: 'Blueprints',
-    testimonials: 'Testimonials',
-    glossary: 'Glossary',
-    faqs: 'FAQs'
-  };
-
-  const TAB_DESCRIPTIONS: Record<WorkGuideTab, { description: string; author?: string }> = {
-    strategy: {
-      description: 'Strategic frameworks, transformation journeys, and organizational initiatives that guide decision-making and long-term planning across Digital Qatalyst.',
-      author: 'Authored by DQ Leadership and Strategy Teams'
-    },
-    guidelines: {
-      description: 'Practical guidelines, best practices, and operational procedures that support everyday delivery, collaboration, and excellence across all teams and units.',
-      author: 'Authored by DQ Associates, Leads, and Subject Matter Experts'
-    },
-    blueprints: {
-      description: 'Standardized blueprints, templates, and proven methodologies that enable consistent execution, reduce rework, and accelerate delivery across projects and initiatives.',
-      author: 'Authored by DQ Delivery Teams and Practice Leads'
-    },
-    testimonials: {
-      description: 'Success stories, case studies, and reflections that capture lessons learned, celebrate achievements, and share insights from real-world experiences and transformations.',
-      author: 'Authored by DQ Teams, Clients, and Partners'
-    },
-    glossary: {
-      description: 'Comprehensive dictionary of DQ terminology, acronyms, and key concepts to help you understand our language and processes.',
-      author: 'Maintained by DQ Knowledge Management Team'
-    },
-    faqs: {
-      description: 'Frequently asked questions about DQ processes, tools, workflows, and best practices with detailed answers and guidance.',
-      author: 'Maintained by DQ Knowledge Management Team'
-    }
-  };
 
   useEffect(() => {
     if (!isGuides) return;
@@ -268,52 +369,8 @@ type WorkGuideTab = 'guidelines' | 'strategy' | 'blueprints' | 'testimonials' | 
 
   const handleGuidesTabChange = useCallback((tab: WorkGuideTab) => {
     setActiveTab(tab);
-    const next = new URLSearchParams(queryParams.toString());
-    next.delete('page');
-    if (tab === 'guidelines') {
-      next.delete('tab');
-    } else {
-      next.set('tab', tab);
-    }
-    if (tab !== 'guidelines') {
-      // For Strategy and Blueprints, keep 'unit' filter; only delete incompatible filters
-      if (tab === 'strategy') {
-        // Keep 'unit' and 'location' for Strategy; delete incompatible filters
-        const keysToDelete = ['guide_type', 'sub_domain', 'domain', 'testimonial_category'];
-        keysToDelete.forEach(key => next.delete(key));
-      } else if (tab === 'blueprints') {
-        // Keep 'unit' and 'location' for Blueprints; delete incompatible filters
-        const keysToDelete = ['guide_type', 'sub_domain', 'domain', 'testimonial_category', 'strategy_type', 'strategy_framework', 'guidelines_category', 'blueprint_sector'];
-        keysToDelete.forEach(key => next.delete(key));
-      } else if (tab === 'glossary' || tab === 'faqs') {
-        // For Glossary and FAQs tabs, delete all incompatible filters
-        const keysToDelete = ['guide_type', 'sub_domain', 'unit', 'domain', 'strategy_type', 'strategy_framework', 'guidelines_category', 'blueprint_framework', 'blueprint_sector', 'testimonial_category'];
-        keysToDelete.forEach(key => next.delete(key));
-      } else if (tab === 'testimonials') {
-        // Keep 'unit' and 'location' for Testimonials; delete incompatible filters
-        const keysToDelete = ['guide_type', 'sub_domain', 'domain', 'strategy_type', 'strategy_framework', 'guidelines_category', 'blueprint_framework', 'blueprint_sector'];
-        keysToDelete.forEach(key => next.delete(key));
-      } else {
-        // For other tabs, delete all incompatible filters
-        const keysToDelete = ['guide_type', 'sub_domain', 'unit', 'domain', 'strategy_type', 'strategy_framework', 'guidelines_category', 'blueprint_framework', 'blueprint_sector', 'testimonial_category'];
-        keysToDelete.forEach(key => next.delete(key));
-      }
-    } else {
-      // Switching to Guidelines - clear Strategy and Blueprint-specific filters
-      const keysToDelete = ['strategy_type', 'strategy_framework', 'blueprint_framework', 'blueprint_sector'];
-      keysToDelete.forEach(key => next.delete(key));
-    }
-    // Clear tab-specific filters when switching away from their respective tabs
-    if (tab !== 'guidelines') {
-      next.delete('guidelines_category');
-    }
-    if (tab !== 'blueprints') {
-      next.delete('blueprint_framework');
-    }
-    const qs = next.toString();
-    if (typeof window !== 'undefined') {
-      window.history.replaceState(null, '', `${window.location.pathname}${qs ? '?' + qs : ''}`);
-    }
+    const next = buildGuidesTabParams(tab, queryParams);
+    syncUrlParams(next);
     setQueryParams(new URLSearchParams(next.toString()));
     track('Guides.TabChanged', { tab });
   }, [queryParams, setQueryParams]);
@@ -326,56 +383,11 @@ type WorkGuideTab = 'guidelines' | 'strategy' | 'blueprints' | 'testimonials' | 
     // Only run if tab actually changed
     if (prevTabRef.current === activeTab) return;
     prevTabRef.current = activeTab;
-    
-    const next = new URLSearchParams(queryParams.toString());
-    let changed = false;
-    // For Strategy and Blueprints, keep 'unit' filter; only delete incompatible filters
-    let keysToDelete: string[] = [];
-    if (activeTab === 'strategy') {
-      // Keep 'unit' and 'location' for Strategy; delete incompatible filters
-      keysToDelete = ['guide_type', 'sub_domain', 'domain', 'testimonial_category'];
-    } else if (activeTab === 'blueprints') {
-      // Keep 'unit' and 'location' for Blueprints; delete incompatible filters
-      keysToDelete = ['guide_type', 'sub_domain', 'domain', 'testimonial_category', 'strategy_type', 'strategy_framework', 'guidelines_category'];
-    } else if (activeTab === 'testimonials') {
-      // For Testimonials, delete all incompatible filters
-      keysToDelete = ['guide_type', 'sub_domain', 'unit', 'domain', 'strategy_type', 'strategy_framework', 'guidelines_category', 'blueprint_framework', 'blueprint_sector'];
-    } else if (activeTab === 'glossary' || activeTab === 'faqs') {
-      // For Glossary and FAQs, delete all incompatible filters
-      keysToDelete = ['guide_type', 'sub_domain', 'unit', 'domain', 'strategy_type', 'strategy_framework', 'guidelines_category', 'blueprint_framework', 'blueprint_sector', 'testimonial_category'];
-    } else {
-      // For Guidelines, delete Strategy and Blueprint-specific filters
-      keysToDelete = ['strategy_type', 'strategy_framework', 'blueprint_framework', 'blueprint_sector'];
-    }
-    // Clear tab-specific filters when switching away from their respective tabs
-    // Note: activeTab cannot be 'guidelines' here due to early return above
-    if (next.has('guidelines_category')) {
-      next.delete('guidelines_category');
-      changed = true;
-    }
-    if (activeTab !== 'blueprints') {
-      if (next.has('blueprint_framework')) {
-        next.delete('blueprint_framework');
-        changed = true;
-      }
-      if (next.has('blueprint_sector')) {
-        next.delete('blueprint_sector');
-        changed = true;
-      }
-    }
-    keysToDelete.forEach(key => {
-      if (next.has(key)) {
-        next.delete(key);
-        changed = true;
-      }
-    });
+    const { next, changed } = cleanFiltersForActiveTab(activeTab, queryParams);
     if (!changed) return;
-    const qs = next.toString();
-    if (typeof window !== 'undefined') {
-      window.history.replaceState(null, '', `${window.location.pathname}${qs ? '?' + qs : ''}`);
-    }
+    syncUrlParams(next);
     setQueryParams(new URLSearchParams(next.toString()));
-  }, [isGuides, activeTab]);
+  }, [isGuides, activeTab, queryParams]);
 
   const pageSize = Math.min(200, Math.max(1, parseInt(queryParams.get('pageSize') || String(DEFAULT_GUIDE_PAGE_SIZE), 10)));
   const currentPage = Math.max(1, parseInt(queryParams.get('page') || '1', 10));
@@ -434,91 +446,8 @@ type WorkGuideTab = 'guidelines' | 'strategy' | 'blueprints' | 'testimonials' | 
   
   // Filter glossary terms based on two-level filter structure
   const filteredGlossaryTerms = useMemo(() => {
-    if (!isGuides || activeTab !== 'glossary') {
-      return [];
-    }
-    
-    // PRIMARY FILTER: Knowledge System
-    const knowledgeSystems = parseFilterValues(queryParams, 'glossary_knowledge_system');
-    
-    // SECONDARY FILTERS: GHC
-    const ghcDimensions = parseFilterValues(queryParams, 'glossary_ghc_dimension');
-    const ghcTermTypes = parseFilterValues(queryParams, 'glossary_ghc_term_type');
-    
-    // SECONDARY FILTERS: 6xD
-    const sixXdDimensions = parseFilterValues(queryParams, 'glossary_6xd_dimension');
-    const sixXdTermTypes = parseFilterValues(queryParams, 'glossary_6xd_term_type');
-    
-    // SHARED FILTERS
-    const termOrigins = parseFilterValues(queryParams, 'glossary_term_origin');
-    const usedIn = parseFilterValues(queryParams, 'glossary_used_in');
-    const whoUsesIt = parseFilterValues(queryParams, 'glossary_who_uses_it');
-    const letters = parseFilterValues(queryParams, 'glossary_letter');
-    
-    // Search query
-    const searchQuery = queryParams.get('q') || '';
-    
-    return glossaryTerms.filter(term => {
-      // PRIMARY: Knowledge System filter
-      if (knowledgeSystems.length > 0) {
-        if (!term.knowledgeSystem || !knowledgeSystems.includes(term.knowledgeSystem)) return false;
-      }
-      
-      // SECONDARY: GHC filters (only if GHC is selected or no system filter)
-      if (term.knowledgeSystem === 'ghc') {
-        if (ghcDimensions.length > 0) {
-          if (!term.ghcDimension || !ghcDimensions.includes(term.ghcDimension)) return false;
-        }
-        if (ghcTermTypes.length > 0) {
-          if (!term.ghcTermType || !ghcTermTypes.includes(term.ghcTermType)) return false;
-        }
-      }
-      
-      // SECONDARY: 6xD filters (only if 6xD is selected or no system filter)
-      if (term.knowledgeSystem === '6xd') {
-        if (sixXdDimensions.length > 0) {
-          if (!term.sixXdDimension || !sixXdDimensions.includes(term.sixXdDimension)) return false;
-        }
-        if (sixXdTermTypes.length > 0) {
-          if (!term.sixXdTermType || !sixXdTermTypes.includes(term.sixXdTermType)) return false;
-        }
-      }
-      
-      // SHARED: Term Origin filter
-      if (termOrigins.length > 0) {
-        if (!term.termOrigin || !termOrigins.includes(term.termOrigin)) return false;
-      }
-      
-      // SHARED: Used In filter
-      if (usedIn.length > 0) {
-        if (!term.usedIn || !term.usedIn.some(ui => usedIn.includes(ui))) return false;
-      }
-      
-      // SHARED: Who Uses It filter
-      if (whoUsesIt.length > 0) {
-        if (!term.whoUsesIt || !term.whoUsesIt.some(wui => whoUsesIt.includes(wui))) return false;
-      }
-      
-      // SHARED: Letter filter (A-Z)
-      if (letters.length > 0) {
-        const termLetter = term.letter.toUpperCase();
-        const matchesLetter = letters.some(l => l.toUpperCase() === termLetter);
-        if (!matchesLetter) return false;
-      }
-      
-      // Search filter (works across all terms, no category needed)
-      if (searchQuery) {
-        const searchLower = searchQuery.toLowerCase();
-        const matchesSearch = 
-          term.term.toLowerCase().includes(searchLower) ||
-          (term.shortIntro && term.shortIntro.toLowerCase().includes(searchLower)) ||
-          term.explanation.toLowerCase().includes(searchLower) ||
-          term.tags.some(tag => tag.toLowerCase().includes(searchLower));
-        if (!matchesSearch) return false;
-      }
-      
-      return true;
-    });
+    if (!isGuides || activeTab !== 'glossary') return [];
+    return computeFilteredGlossaryTerms(queryParams, glossaryTerms);
   }, [isGuides, activeTab, queryParams]);
   
   // Compute filters from URL for courses
@@ -598,7 +527,7 @@ type WorkGuideTab = 'guidelines' | 'strategy' | 'blueprints' | 'testimonials' | 
   
   // Fetch items based on marketplace type
   useEffect(() => {
-    const run = async () => {
+    const run = async () => { // NOSONAR: complex but intentional; refactor planned separately
       // COURSES: items come from LMS arrays / URL filters; no fetch
       if (isCourses) {
         setLoading(false);

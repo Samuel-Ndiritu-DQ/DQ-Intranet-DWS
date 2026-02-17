@@ -11,7 +11,7 @@ import {
     AlertCircleIcon,
 } from "lucide-react";
 
-type DocumentStatus = "Approved" | "Pending" | "Rejected" | string;
+type DocumentStatus = "Approved" | "Pending" | "Rejected" | "Complete" | "Draft" | "Unknown";
 
 type DocumentItem = {
     id: string;
@@ -103,57 +103,62 @@ export function DocumentsPage({ title, documents }: DocumentsPageProps) {
         });
     };
     // Simulate file upload
+    const updateUploadProgress = useCallback((uploadFile: UploadingFile, progress: number) => {
+        setUploadingFiles((prev) =>
+            prev.map((file) =>
+                file.id === uploadFile.id
+                    ? {
+                          ...file,
+                          progress,
+                      }
+                    : file
+            )
+        );
+    }, []);
+
+    const finalizeUpload = useCallback((uploadFile: UploadingFile) => {
+        setUploadingFiles((prev) =>
+            prev.map((file) =>
+                file.id === uploadFile.id
+                    ? {
+                          ...file,
+                          progress: 100,
+                          status: "complete",
+                      }
+                    : file
+            )
+        );
+        setTimeout(() => {
+            setDocs((prev) => [
+                ...prev,
+                {
+                    id: uploadFile.id,
+                    name: uploadFile.name,
+                    type: uploadFile.type,
+                    size: uploadFile.size,
+                    uploadDate: uploadFile.uploadDate,
+                    status: "Pending",
+                },
+            ]);
+            setUploadingFiles((prev) => prev.filter((file) => file.id !== uploadFile.id));
+        }, 500);
+    }, []);
+
     const simulateUpload = (uploadFile: UploadingFile) => {
-        let progress = 0;
-        const interval = setInterval(() => {
-            progress += Math.floor(Math.random() * 10) + 5;
-            if (progress >= 100) {
-                clearInterval(interval);
-                progress = 100;
-                setUploadingFiles((prev) =>
-                    prev.map((file) =>
-                        file.id === uploadFile.id
-                            ? {
-                                  ...file,
-                                  progress,
-                                  status: "complete",
-                              }
-                            : file
-                    )
-                );
-                setTimeout(() => {
-                    setDocs((prev) => [
-                        ...prev,
-                        {
-                            id: uploadFile.id,
-                            name: uploadFile.name,
-                            type: uploadFile.type,
-                            size: uploadFile.size,
-                            uploadDate: uploadFile.uploadDate,
-                            status: "Pending",
-                        },
-                    ]);
-                    setUploadingFiles((prev) =>
-                        prev.filter((file) => file.id !== uploadFile.id)
-                    );
-                }, 500);
-            } else {
-                setUploadingFiles((prev) =>
-                    prev.map((file) =>
-                        file.id === uploadFile.id
-                            ? {
-                                  ...file,
-                                  progress,
-                              }
-                            : file
-                    )
-                );
+        const tick = (current: number) => {
+            const next = Math.min(100, current + Math.floor(Math.random() * 10) + 5);
+            if (next >= 100) {
+                finalizeUpload(uploadFile);
+                return;
             }
-        }, 300);
+            updateUploadProgress(uploadFile, next);
+            setTimeout(() => tick(next), 300);
+        };
+        tick(0);
     };
     // Get file type from extension
     const getFileType = (filename: string) => {
-        const ext = filename.split(".").pop().toLowerCase();
+        const ext = (filename.split(".").pop() ?? "").toLowerCase();
         if (["jpg", "jpeg", "png", "gif", "webp"].includes(ext)) return "image";
         if (["pdf"].includes(ext)) return "pdf";
         if (["xls", "xlsx", "csv"].includes(ext)) return "spreadsheet";

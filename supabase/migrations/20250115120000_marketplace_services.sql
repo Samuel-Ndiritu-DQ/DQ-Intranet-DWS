@@ -37,8 +37,7 @@ CREATE TABLE public.marketplace_services (
   -- Metadata
   created_at timestamptz NOT NULL DEFAULT now(),
   updated_at timestamptz NOT NULL DEFAULT now(),
-  -- Status uses 'active' literal in multiple places (default, check, policies) for SQL clarity
-  status text NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'inactive', 'archived'))
+  status text NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'inactive', 'archived')) -- NOSONAR
 );
 
 -- ===== Indexes for Performance =====
@@ -76,10 +75,9 @@ ALTER TABLE public.marketplace_services ENABLE ROW LEVEL SECURITY;
 
 -- RLS Policies
 -- Allow public read access for active services
--- NOSONAR: 'active' literal used in multiple policies for clarity
 CREATE POLICY services_select ON public.marketplace_services 
   FOR SELECT 
-  USING (status = 'active');
+  USING (status = 'active'); -- NOSONAR: SQL migrations use literals for clarity
 
 -- Allow authenticated users to insert
 CREATE POLICY services_insert ON public.marketplace_services 

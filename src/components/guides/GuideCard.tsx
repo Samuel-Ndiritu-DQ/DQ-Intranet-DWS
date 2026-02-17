@@ -65,19 +65,11 @@ export const GuideCard: React.FC<GuideCardProps> = ({ guide, onClick }) => {
     }
   }
   
-  const handleKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
-    if (e.key === 'Enter' || e.key === ' ') {
-      e.preventDefault()
-      onClick()
-    }
-  }
-
   return (
     <button
       type="button"
       className="bg-white rounded-lg shadow p-4 hover:shadow-md transition-shadow cursor-pointer h-full flex flex-col text-left"
       onClick={onClick}
-      onKeyDown={handleKeyDown}
       aria-label={`Open guide ${guide.title}`}
     >
       {imageUrl && (

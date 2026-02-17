@@ -174,9 +174,6 @@ export function DocumentSection({ title, documents }: DocumentSectionProps) {
                 type="button"
                 className={`w-full border-2 border-dashed rounded-lg p-4 sm:p-6 flex flex-col items-center justify-center cursor-pointer min-h-[120px] ${isDragging ? 'border-blue-400 bg-blue-50' : 'border-gray-300 hover:border-blue-400'}`}
                 onClick={() => fileInputRef.current?.click()}
-                onDragOver={handleDragOver}
-                onDragLeave={handleDragLeave}
-                onDrop={handleDrop}
                 onKeyDown={(e) => {
                     if (e.key === 'Enter' || e.key === ' ') {
                         e.preventDefault();
@@ -194,6 +191,12 @@ export function DocumentSection({ title, documents }: DocumentSectionProps) {
                 </p>
                 <input type="file" ref={fileInputRef} className="hidden" multiple onChange={handleFileChange} />
             </button>
+            <div
+                className="sr-only"
+                onDragOver={handleDragOver}
+                onDragLeave={handleDragLeave}
+                onDrop={handleDrop}
+            />
         </div>
         {/* Uploading files */}
         {uploadingFiles.length > 0 && <div className="p-4 border-b border-gray-200 bg-gray-50">

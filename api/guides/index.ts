@@ -15,7 +15,7 @@ type AnyResponse = {
 };
 
 import { supabaseAdmin } from '../lib/supabaseAdmin.js';
-import { createHash } from 'crypto';
+import { createHash } from 'node:crypto';
 
 type GuideRow = {
   id: string;
@@ -49,8 +49,10 @@ const buildUrl = (req: AnyRequest) => {
 const parseCsv = (params: URLSearchParams, key: string) =>
   (params.get(key) || '').split(',').map(v => v.trim()).filter(Boolean);
 
-const buildSortParam = (raw: string) =>
-  raw === 'downloads' || raw === 'relevance' ? 'downloads' : (raw === 'updated' ? 'updated' : 'updated');
+const buildSortParam = (raw: string) => {
+  if (raw === 'downloads' || raw === 'relevance') return 'downloads';
+  return 'updated';
+};
 
 const countBy = (arr: FacetRow[] | null | undefined, key: 'domain'|'guide_type'|'function_area'|'status') => {
   const m = new Map<string, number>();
@@ -82,7 +84,7 @@ const fetchGuides = async (urlObj: URL, req: AnyRequest, res: AnyResponse) => {
   const q = urlObj.searchParams.get('q') || '';
   const sortParam = (urlObj.searchParams.get('sort') || 'relevance') as string;
   const sort = buildSortParam(sortParam);
-  const pageSize = Math.min(50, Math.max(1, parseInt(urlObj.searchParams.get('pageSize') || '12', 10)));
+  const pageSize = Math.min(50, Math.max(1, Number.parseInt(urlObj.searchParams.get('pageSize') || '12', 10)));
   const cursor = urlObj.searchParams.get('cursor') || '';
   const domains = parseCsv(urlObj.searchParams, 'domain');
   const types = parseCsv(urlObj.searchParams, 'guide_type');

@@ -695,7 +695,7 @@ const NewsDetailPage: React.FC = () => {
                               : 'text-gray-500 border-transparent hover:text-gray-700'
                           }`}
                         >
-                          Related Blogs
+                          Related Media
                         </button>
                       </div>
                       {/* Full-width border line - extends from left edge to right edge */}
@@ -717,7 +717,7 @@ const NewsDetailPage: React.FC = () => {
                           </div>
                         </div>
                       ) : (
-                        <section aria-label="Related Blogs">
+                        <section aria-label="Related Media">
                           <div className="space-y-3">
                             {related && related.length > 0 ? (
                               related.slice(0, 5).map((item) => {
@@ -790,52 +790,84 @@ const NewsDetailPage: React.FC = () => {
               </div>
 
               {/* Right Sidebar */}
-              <div className="lg:col-span-1">
-                <div className="sticky top-8 lg:pt-[41px]">
-                  {/* Article Summary Section */}
-                  <section className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden" aria-label="Article Summary">
-                    <div className="bg-gray-50 px-4 py-3 border-b border-gray-200">
-                      <h3 className="text-lg font-semibold text-gray-900">Article Summary</h3>
-                    </div>
-                    <div className="p-4 space-y-4">
-                      <div className="flex justify-between text-sm">
-                        <span className="text-gray-600">Author</span>
-                        <span className="text-gray-900 font-medium">{displayAuthor}</span>
+              {shouldUseNewLayout && activeTab === 'overview' && (
+                <div className="lg:col-span-1">
+                  <div className="sticky top-8 lg:pt-[41px]">
+                    {/* Article Summary Section */}
+                    <section className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden" aria-label="Article Summary">
+                      <div className="bg-gray-50 px-4 py-3 border-b border-gray-200">
+                        <h3 className="text-lg font-semibold text-gray-900">Article Summary</h3>
                       </div>
-                      <div className="flex justify-between text-sm">
-                        <span className="text-gray-600">Date</span>
-                        <span className="text-gray-900 font-medium">{announcementDate}</span>
+                      <div className="p-4 space-y-4">
+                        <div className="flex justify-between text-sm">
+                          <span className="text-gray-600">Author</span>
+                          <span className="text-gray-900 font-medium">{displayAuthor}</span>
+                        </div>
+                        <div className="flex justify-between text-sm">
+                          <span className="text-gray-600">Date</span>
+                          <span className="text-gray-900 font-medium">{announcementDate}</span>
+                        </div>
+                        <div className="flex justify-between text-sm">
+                          <span className="text-gray-600">Reading Time</span>
+                          <span className="text-gray-900 font-medium">{article.readingTime || '5–10'} min</span>
+                        </div>
+                        <div className="flex justify-between text-sm">
+                          <span className="text-gray-600">Category</span>
+                          <span className="text-gray-900 font-medium">{getNewsTypeDisplay(article).label}</span>
+                        </div>
                       </div>
-                      <div className="flex justify-between text-sm">
-                        <span className="text-gray-600">Reading Time</span>
-                        <span className="text-gray-900 font-medium">{article.readingTime || '5–10'} min</span>
+                      <div className="px-4 pb-4">
+                        <button 
+                          type="button"
+                          className="w-full px-4 py-3 text-white font-semibold rounded-md transition-colors shadow-md hover:opacity-90" 
+                          style={{ backgroundColor: '#030F35' }}
+                          onClick={() => {
+                            // Navigate to full blog or expand content
+                            window.open(`/marketplace/news/${article.id}${location.search || ''}`, '_blank');
+                          }}
+                        >
+                          View Full Blog
+                        </button>
                       </div>
-                      <div className="flex justify-between text-sm">
-                        <span className="text-gray-600">Category</span>
-                        <span className="text-gray-900 font-medium">{getNewsTypeDisplay(article).label}</span>
-                      </div>
-                    </div>
-                    <div className="px-4 pb-4">
-                      <button 
-                        type="button"
-                        className="w-full px-4 py-3 text-white font-semibold rounded-md transition-colors shadow-md hover:opacity-90" 
-                        style={{ backgroundColor: '#030F35' }}
-                        onClick={() => {
-                          // Navigate to full blog or expand content
-                          window.open(`/marketplace/news/${article.id}${location.search || ''}`, '_blank');
-                        }}
-                      >
-                        View Full Blog
-                      </button>
-                    </div>
-                  </section>
+                    </section>
+                  </div>
                 </div>
-              </div>
+              )}
+              {!shouldUseNewLayout && (
+                <div className="lg:col-span-1">
+                  <div className="sticky top-8 lg:pt-[41px]">
+                    {/* Article Summary Section */}
+                    <section className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden" aria-label="Announcement Summary">
+                      <div className="bg-gray-50 px-4 py-3 border-b border-gray-200">
+                        <h3 className="text-lg font-semibold text-gray-900">Announcement Summary</h3>
+                      </div>
+                      <div className="p-4 space-y-4">
+                        <div className="flex justify-between text-sm">
+                          <span className="text-gray-600">Author</span>
+                          <span className="text-gray-900 font-medium">HRA</span>
+                        </div>
+                        <div className="flex justify-between text-sm">
+                          <span className="text-gray-600">Date</span>
+                          <span className="text-gray-900 font-medium">{announcementDate}</span>
+                        </div>
+                        <div className="flex justify-between text-sm">
+                          <span className="text-gray-600">Reading Time</span>
+                          <span className="text-gray-900 font-medium">{article.readingTime || '5–10'} min</span>
+                        </div>
+                        <div className="flex justify-between text-sm">
+                          <span className="text-gray-600">Category</span>
+                          <span className="text-gray-900 font-medium">{getNewsTypeDisplay(article).label}</span>
+                        </div>
+                      </div>
+                    </section>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Engagement Metrics - Stretches full width below article summary */}
             {article && (
-              <div className="mt-4 bg-white rounded-lg shadow-sm p-4 border border-gray-200">
+              <div className="mt-4 bg-white p-4">
                 <div className="flex items-center gap-6">
                   <div className="flex items-center gap-1.5 text-sm text-gray-600">
                     <span>{views} views</span>

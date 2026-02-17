@@ -11,8 +11,9 @@ const TestimonialsGrid: React.FC<Props> = ({ items, onClickGuide }) => {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const disclaimer = '(not approved for external publication)'
-  // Get a hero image for testimonials - use an office/team collaboration image
-  const serviceCardImage = "/images/testimonials.jpg"
+  // Get hero images for testimonials
+  const clientTestimonialsImage = "/images/client-testimonials.png"
+  const associateTestimonialsImage = "/images/associate-testimonials.jpeg"
   
   const formatDate = (dateString?: string) => {
     if (!dateString) return new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
@@ -36,8 +37,8 @@ const TestimonialsGrid: React.FC<Props> = ({ items, onClickGuide }) => {
           {/* Hero Image */}
           <div className="rounded-lg overflow-hidden mb-2 bg-slate-50 flex-shrink-0" style={{ height: '160px', minHeight: '160px', maxHeight: '160px' }}>
             <img 
-              src={serviceCardImage} 
-              alt="The DQ Effect - Client feedback" 
+              src={clientTestimonialsImage} 
+              alt="The Client Perspective" 
               className="w-full h-full object-cover"
               loading="lazy"
             />
@@ -100,8 +101,8 @@ const TestimonialsGrid: React.FC<Props> = ({ items, onClickGuide }) => {
           {/* Hero Image */}
           <div className="rounded-lg overflow-hidden mb-2 bg-slate-50 flex-shrink-0" style={{ height: '160px', minHeight: '160px', maxHeight: '160px' }}>
             <img 
-              src={serviceCardImage} 
-              alt="Life at DQ - Associate feedback" 
+              src={associateTestimonialsImage} 
+              alt="The Associate Perspective" 
               className="w-full h-full object-cover"
               loading="lazy"
             />

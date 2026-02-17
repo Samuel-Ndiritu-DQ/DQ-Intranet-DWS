@@ -1,12 +1,29 @@
 import { BrowserRouter, Routes, Route, Navigate, useParams } from "react-router-dom";
 import { AuthProvider } from "./components/Header";
+import { ProtectedRoute } from "./components/ProtectedRoute";
 import { MarketplaceRouter } from "./pages/marketplace/MarketplaceRouter";
-import { CommunitiesRouter } from "./communities/CommunitiesRouter";
 import { App } from './App';
+import Communities from "./communities/pages/Communities";
+import Home from "./communities/pages/Home";
+import CommunityFeed from "./communities/pages/CommunityFeed";
+import Community from "./communities/pages/Community";
+import CommunityMembers from "./communities/pages/CommunityMembers";
+import CommunitySettings from "./communities/pages/CommunitySettings";
+import CommunityAnalytics from "./communities/pages/CommunityAnalytics";
+import ModerationDashboard from "./communities/pages/ModerationDashboard";
+import MessagingDashboard from "./communities/pages/MessagingDashboard";
+import ActivityCenter from "./communities/pages/ActivityCenter";
+import CreatePost from "./communities/pages/CreatePost";
+import PostDetail from "./communities/pages/PostDetail";
+import ProfileDashboard from "./communities/pages/ProfileDashboard";
+import { AuthProvider as CommunitiesAuthProvider } from "./communities/contexts/AuthProvider";
 
 import MarketplaceDetailsPage from "./pages/marketplace/MarketplaceDetailsPage";
 import LmsCourseDetailPage from "./pages/lms/LmsCourseDetailPage";
 import LmsCourseReviewsPage from "./pages/lms/LmsCourseReviewsPage";
+import LmsLessonPage from "./pages/lms/LmsLessonPage";
+import LmsCourseAssessmentPage from "./pages/lms/LmsCourseAssessmentPage";
+import MyLearningDashboard from "./pages/lms/MyLearningDashboard";
 
 // Wrapper component to force remount on slug change
 const LmsCourseDetailPageWrapper = () => {
@@ -47,78 +64,103 @@ export function AppRouter() {
     <ApolloProvider client={client}>
       <BrowserRouter>
         <AuthProvider>
-          <ChatBot />
-          <Routes>
-            <Route path="/discover-dq" element={<DiscoverDQ />} />
-            <Route path="/coming-soon" element={<ComingSoonPage />} />
-            <Route path="/growth-sectors-coming-soon" element={<GrowthSectorsComingSoon />} />
-            <Route path="/*" element={<App />} />
-            <Route path="/courses/:itemId" element={<LmsCourseDetailPage />} />
-            <Route path="/lms" element={<LmsCourses />} />
-            <Route path="/lms/:slug/reviews" element={<LmsCourseReviewsPage />} />
-            <Route 
-              path="/lms/:slug" 
-              element={<LmsCourseDetailPageWrapper />} 
-            />
-            <Route
-              path="/onboarding/:itemId"
-              element={
-                <MarketplaceDetailsPage
-                  marketplaceType="onboarding"
+          <CommunitiesAuthProvider>
+            <ChatBot />
+            <ProtectedRoute>
+              <Routes>
+                <Route path="/discover-dq" element={<DiscoverDQ />} />
+                <Route path="/coming-soon" element={<ComingSoonPage />} />
+                <Route path="/growth-sectors-coming-soon" element={<GrowthSectorsComingSoon />} />
+                <Route path="/*" element={<App />} />
+                <Route path="/courses/:itemId" element={<LmsCourseDetailPage />} />
+                <Route path="/lms" element={<LmsCourses />} />
+                <Route path="/lms/my-learning" element={<MyLearningDashboard />} />
+                <Route path="/lms/:courseSlug/lesson/:lessonId" element={<LmsLessonPage />} />
+                <Route path="/lms/:slug/reviews" element={<LmsCourseReviewsPage />} />
+                <Route path="/lms/:slug/assessment" element={<LmsCourseAssessmentPage />} />
+                <Route
+                  path="/lms/:slug"
+                  element={<LmsCourseDetailPageWrapper />}
                 />
-              }
-            />
-            <Route
-              path="/onboarding/:itemId/details"
-              element={
-                <MarketplaceDetailsPage
-                  marketplaceType="onboarding"
+                <Route
+                  path="/onboarding/:itemId"
+                  element={
+                    <MarketplaceDetailsPage
+                      marketplaceType="onboarding"
+                    />
+                  }
                 />
-              }
-            />
-            <Route path="/marketplace/*" element={<MarketplaceRouter />} />
-            {/* Admin - Guides CRUD */}
-            <Route path="/admin/guides" element={<AdminGuidesList />} />
-            <Route path="/admin/guides/new" element={<GuideEditor />} />
-            <Route path="/admin/guides/:id" element={<GuideEditor />} />
-          {/* Canonical and compatibility routes for Guides marketplace */}
-          <Route path="/guides" element={<Navigate to="/marketplace/guides" replace />} />
-          <Route path="/knowledge-hub" element={<Navigate to="/marketplace/guides" replace />} />
-            <Route
-              path="/dashboard/*"
-              element={
-                // <ProtectedRoute>
-                <DashboardRouter />
-                // </ProtectedRoute>
-              }
-            />
-            <Route path="/asset-library" element={<AssetLibraryPage />} />
-            <Route path="/blueprints" element={<BlueprintsPage />} />
-            <Route path="/blueprints/:projectId" element={<BlueprintsPage />} />
-            <Route
-              path="/blueprints/:projectId/:folderId"
-              element={<BlueprintsPage />}
-            />
-            <Route path="/play/dq-agile-kpis" element={<DQAgileKPIsPage />} />
-            <Route path="/discover-dq" element={<DiscoverDQ />} />
-            <Route path="/thank-you" element={<ThankYou />} />
-            {/* Redirect encoded leading-space path to canonical route */}
-            <Route path="/%20marketplace/news" element={<Navigate to="/marketplace/news" replace />} />
-            <Route path="/events" element={<EventsPage />} />
-            <Route path="/communities/*" element={<CommunitiesRouter />} />
-            {/* Work Directory Routes */}
-            <Route path="/work-directory/units/:slug" element={<UnitProfilePage />} />
-            <Route path="/work-directory/positions/:slug" element={<WorkPositionProfilePage />} />
-            {/* Role Profile Route */}
-            <Route path="/roles/:slug" element={<RoleProfilePage />} />
-            <Route
-              path="/women-entrepreneurs"
-              element={<WomenEntrepreneursPage />}
-            />
-            <Route path="/404" element={<NotFound />} />
+                <Route
+                  path="/onboarding/:itemId/details"
+                  element={
+                    <MarketplaceDetailsPage
+                      marketplaceType="onboarding"
+                    />
+                  }
+                />
+                <Route path="/marketplace/*" element={<MarketplaceRouter />} />
+                {/* Admin - Guides CRUD */}
+                <Route path="/admin/guides" element={<AdminGuidesList />} />
+                <Route path="/admin/guides/new" element={<GuideEditor />} />
+                <Route path="/admin/guides/:id" element={<GuideEditor />} />
+                {/* Canonical and compatibility routes for Guides marketplace */}
+                <Route path="/guides" element={<Navigate to="/marketplace/guides" replace />} />
+                <Route path="/knowledge-hub" element={<Navigate to="/marketplace/guides" replace />} />
+                <Route
+                  path="/dashboard/*"
+                  element={<DashboardRouter />}
+                />
+                <Route path="/asset-library" element={<AssetLibraryPage />} />
+                <Route path="/blueprints" element={<BlueprintsPage />} />
+                <Route path="/blueprints/:projectId" element={<BlueprintsPage />} />
+                <Route
+                  path="/blueprints/:projectId/:folderId"
+                  element={<BlueprintsPage />}
+                />
+                <Route path="/play/dq-agile-kpis" element={<DQAgileKPIsPage />} />
+                <Route path="/thank-you" element={<ThankYou />} />
+                {/* Redirect encoded leading-space path to canonical route */}
+                <Route path="/%20marketplace/news" element={<Navigate to="/marketplace/news" replace />} />
+                <Route path="/events" element={<EventsPage />} />
+                {/* Community Routes */}
+                <Route path="/community" element={<Home />} />
+                <Route path="/communities" element={<Communities />} />
+                <Route path="/community/:id" element={<Community />} />
+                <Route path="/feed" element={<CommunityFeed />} />
+                <Route
+                  path="/community/:id/members"
+                  element={<CommunityMembers />}
+                />
+                <Route
+                  path="/community/:id/settings"
+                  element={<CommunitySettings />}
+                />
+                <Route path="/moderation" element={<ModerationDashboard />} />
+                <Route path="/analytics" element={<CommunityAnalytics />} />
+                <Route path="/activity" element={<ActivityCenter />} />
+                <Route path="/messages" element={<MessagingDashboard />} />
+                <Route path="/create-post" element={<CreatePost />} />
+                <Route path="/post/edit/:id" element={<CreatePost />} />
+                <Route path="/post/:id" element={<PostDetail />} />
+                <Route
+                  path="/profile/:userId?"
+                  element={<ProfileDashboard />}
+                />
+                {/* Work Directory Routes */}
+                <Route path="/work-directory/units/:slug" element={<UnitProfilePage />} />
+                <Route path="/work-directory/positions/:slug" element={<WorkPositionProfilePage />} />
+                {/* Role Profile Route */}
+                <Route path="/roles/:slug" element={<RoleProfilePage />} />
+                <Route
+                  path="/women-entrepreneurs"
+                  element={<WomenEntrepreneursPage />}
+                />
+                <Route path="/404" element={<NotFound />} />
 
-            <Route path="*" element={<Navigate to="/404" replace />} />
-          </Routes>
+                <Route path="*" element={<Navigate to="/404" replace />} />
+              </Routes>
+            </ProtectedRoute>
+          </CommunitiesAuthProvider>
         </AuthProvider>
       </BrowserRouter>
     </ApolloProvider>

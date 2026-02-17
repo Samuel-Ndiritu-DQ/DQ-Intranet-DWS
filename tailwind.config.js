@@ -61,11 +61,12 @@ module.exports = {
       colors: {
         dqNavy: "#030F35",
         dqOrange: "#FB5535",
+        dqYellow: "#FB5535",
         dqBlue: "#1A2E6E",
         dqWhite: "#FFFFFF",
         primary: {
           DEFAULT: "#0030E3",
-          dark: "#002080",
+          dark: "#030F35",
           light: "#99B2FF",
         },
         teal: {

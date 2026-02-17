@@ -30,13 +30,14 @@ const TestimonialsDetailPage: React.FC = () => {
   const [activeFilter, setActiveFilter] = useState<string>("all")
   const disclaimer = '(not approved for external publication)'
 
-  // Hero image for testimonials - office collaboration scene
+  // Keep testimonials-specific hero image but style like guidelines hero
   const heroImage = "https://images.unsplash.com/photo-1522071820081-009f0129c71c?q=80&w=2970&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
 
   return (
     <div className="min-h-screen bg-gray-50">
       <Header isLoggedIn={false} />
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6">
         {/* Breadcrumb Navigation */}
         <nav className="flex mb-4" aria-label="Breadcrumb">
           <ol className="flex items-center space-x-2">
@@ -63,20 +64,38 @@ const TestimonialsDetailPage: React.FC = () => {
           </ol>
         </nav>
 
-        {/* Hero Image */}
-        <div className="bg-white rounded-lg shadow-sm overflow-hidden mb-8">
-          <img 
-            src={heroImage} 
-            alt="Client Feedback" 
-            className="w-full h-64 md:h-80 object-cover"
-            loading="lazy"
-          />
+      </div>
+
+      {/* Hero full-bleed like guidelines */}
+      <div className="w-full bg-gray-900">
+        <div className="relative w-full h-80 md:h-[420px] overflow-hidden">
+          <div
+            className="absolute inset-0 bg-cover bg-center"
+            style={{ backgroundImage: `url(${heroImage})` }}
+          >
+            <div className="absolute inset-0 bg-[#030E31] bg-opacity-75" />
+          </div>
+          <div className="relative z-10 h-full flex flex-col justify-center px-6 md:px-12 lg:px-16 text-white max-w-6xl mx-auto">
+            <span
+              className="inline-flex self-start px-4 py-1.5 rounded-full bg-white/15 backdrop-blur-sm text-sm font-medium mb-4"
+              style={{ width: 'fit-content' }}
+            >
+              Testimonial
+            </span>
+            <h1 className="text-4xl md:text-5xl font-bold mb-4 leading-tight">
+              Client Feedback
+            </h1>
+            <p className="text-white/85 max-w-2xl">
+              Highlights from DFSA, ADIB, and Khalifa Fund showcasing how Digital Qatalyst engagements accelerate transformation outcomes.
+            </p>
+          </div>
         </div>
+      </div>
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
 
         {/* Header Section */}
         <div className="bg-white rounded-lg shadow-sm p-6 mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-4">Client Feedback</h1>
-
           {/* Filter Buttons */}
           <div className="flex flex-wrap gap-2 mb-4">
             <button
@@ -100,11 +119,6 @@ const TestimonialsDetailPage: React.FC = () => {
               UAE
             </button>
           </div>
-
-          {/* Description */}
-          <p className="text-gray-600">
-            Highlights from DFSA, ADIB, and Khalifa Fund showcasing how Digital Qatalyst engagements accelerate transformation outcomes.
-          </p>
         </div>
 
         {/* Featured Clients Section */}

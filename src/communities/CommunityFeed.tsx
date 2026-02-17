@@ -6,7 +6,7 @@ import { PageLayout, PageSection, SectionHeader, SectionContent, Breadcrumbs } f
 import { TabsFeed } from '@/communities/components/feed/TabsFeed';
 import { FeedSidebar } from '@/communities/components/feed/FeedSidebar';
 import { InlineComposer } from '@/communities/components/post/InlineComposer';
-import { supabaseClient } from '../lib/supabaseClient';
+import { supabase } from '@/lib/supabaseClient';
 import { safeFetch } from '@/communities/utils/safeFetch';
 import { StickyActionButton } from '@/communities/components/DesignSystem/Button';
 import { Button } from '@/communities/components/ui/button';
@@ -112,7 +112,7 @@ export function CommunityFeed() {
         created_by: post.created_by,
         community_id: post.community_id,
         community_name: post.community?.name || 'Unknown',
-        author_username: post.author?.username || 'Anonymous',
+        author_username: post.author?.username || 'Unknown User',
         author_avatar: post.author?.avatar_url,
         helpful_count: post.reactions?.filter((r: any) => r.reaction_type === 'helpful').length || 0,
         insightful_count: post.reactions?.filter((r: any) => r.reaction_type === 'insightful').length || 0,
@@ -173,7 +173,7 @@ export function CommunityFeed() {
         created_by: post.created_by,
         community_id: post.community_id,
         community_name: post.community?.name || 'Unknown',
-        author_username: post.author?.username || 'Anonymous',
+        author_username: post.author?.username || 'Unknown User',
         author_avatar: post.author?.avatar_url,
         helpful_count: post.reactions?.filter((r: any) => r.reaction_type === 'helpful').length || 0,
         insightful_count: post.reactions?.filter((r: any) => r.reaction_type === 'insightful').length || 0,
@@ -236,7 +236,7 @@ export function CommunityFeed() {
           created_by: post.created_by,
           community_id: post.community_id,
           community_name: post.community?.name || 'Unknown',
-          author_username: post.author?.username || 'Anonymous',
+          author_username: post.author?.username || 'Unknown User',
           author_avatar: post.author?.avatar_url,
           helpful_count: helpful,
           insightful_count: insightful,
@@ -312,7 +312,7 @@ export function CommunityFeed() {
         title="Community Feed" 
         breadcrumbs={[
           { label: 'Home', href: '/communities' },
-          { label: 'Communities', href: '/communities/communities' },
+          { label: 'DQ Work Communities', href: '/communities/communities' },
           { label: 'Feed', current: true }
         ]} 
         headerSubtitle="See updates and posts from your joined communities"

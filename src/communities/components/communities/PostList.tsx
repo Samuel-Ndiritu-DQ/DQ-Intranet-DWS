@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '@/communities/integrations/supabase/client';
+import { supabase } from "@/lib/supabaseClient";
 import { safeFetch } from '@/communities/utils/safeFetch';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/communities/components/ui/card';
 import { Button } from '@/communities/components/ui/button';
@@ -130,7 +130,7 @@ export function PostList({
             <div className="flex items-center gap-2 text-sm text-gray-500 mt-1.5">
               <Avatar className="h-5 w-5">
                 <AvatarImage src={post.author_avatar || undefined} />
-                <AvatarFallback className="text-xs bg-indigo-100 text-indigo-600">
+                <AvatarFallback className="text-xs bg-dq-navy/15 text-dq-navy">
                   {post.author?.charAt(0).toUpperCase() || 'U'}
                 </AvatarFallback>
               </Avatar>

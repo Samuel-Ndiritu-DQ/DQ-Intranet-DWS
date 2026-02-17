@@ -73,13 +73,14 @@ export const DirectoryCard: React.FC<DirectoryCardData> = ({
 
   return (
     <article
-      className="bg-white border transition-all duration-200 flex flex-col h-full"
+      className="bg-white border transition-all duration-200 flex flex-col"
       style={{
         borderColor: 'rgba(0,0,0,0.05)',
         borderRadius: '14px',
         padding: '26px',
         boxShadow: '0 4px 12px rgba(0, 0, 0, 0.05)',
-        minHeight: '360px',
+        // Fixed height to keep all directory cards visually consistent
+        height: '460px',
       }}
       onMouseEnter={(e) => {
         e.currentTarget.style.borderColor = '#D4DBF1';
@@ -112,7 +113,7 @@ export const DirectoryCard: React.FC<DirectoryCardData> = ({
 
             <div className="min-w-0 flex-1">
               <h3
-                className="font-bold leading-tight mb-1.5"
+                className="font-bold leading-tight mb-1.5 clamp-2"
                 style={{ color: '#131E42', fontSize: '16px' }}
                 title={title}
               >
@@ -128,51 +129,54 @@ export const DirectoryCard: React.FC<DirectoryCardData> = ({
           </div>
 
           <p
-            className="text-sm leading-relaxed clamp-2"
+            className="text-sm leading-relaxed clamp-3"
             style={{ color: '#3C4659', fontSize: '14px' }}
             title={description}
           >
             {description}
           </p>
+        </div>
 
+        {/* Bottom block: info panel + CTA pinned to bottom */}
+        <div className="mt-auto space-y-4">
           {(hasTowers || hasRoleInfo) && (
             <div className="rounded-2xl bg-slate-50 p-3">{renderInfoBlock()}</div>
           )}
-        </div>
 
-      {/* CTA Button (DQ Navy) */}
-      <button
-        type="button"
-        onClick={onViewProfile}
-        className="mt-6 w-full font-semibold transition-all"
-        style={{
-          height: '48px',
-          borderRadius: '12px',
-          backgroundColor: 'var(--dws-navy)',
-          color: 'var(--dws-white)',
-          fontSize: '14px',
-          border: 'none',
-          cursor: 'pointer',
-        }}
-        onMouseEnter={(e) => {
-          e.currentTarget.style.backgroundColor = 'var(--dws-navy-press)';
-          e.currentTarget.style.boxShadow = '0 4px 12px rgba(11, 30, 103, 0.3)';
-        }}
-        onMouseLeave={(e) => {
-          e.currentTarget.style.backgroundColor = 'var(--dws-navy)';
-          e.currentTarget.style.boxShadow = 'none';
-        }}
-        onFocus={(e) => {
-          e.currentTarget.style.outline = '2px solid var(--dws-outline)';
-          e.currentTarget.style.outlineOffset = '2px';
-        }}
-        onBlur={(e) => {
-          e.currentTarget.style.outline = 'none';
-        }}
-        aria-label={`View profile for ${title}`}
-      >
-        View Profile
-      </button>
+          {/* CTA Button (DQ Navy) */}
+          <button
+            type="button"
+            onClick={onViewProfile}
+            className="mt-6 w-full font-semibold transition-all"
+            style={{
+              height: '48px',
+              borderRadius: '12px',
+              backgroundColor: 'var(--dws-navy)',
+              color: 'var(--dws-white)',
+              fontSize: '14px',
+              border: 'none',
+              cursor: 'pointer',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = 'var(--dws-navy-press)';
+              e.currentTarget.style.boxShadow = '0 4px 12px rgba(11, 30, 103, 0.3)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = 'var(--dws-navy)';
+              e.currentTarget.style.boxShadow = 'none';
+            }}
+            onFocus={(e) => {
+              e.currentTarget.style.outline = '2px solid var(--dws-outline)';
+              e.currentTarget.style.outlineOffset = '2px';
+            }}
+            onBlur={(e) => {
+              e.currentTarget.style.outline = 'none';
+            }}
+            aria-label={`View profile for ${title}`}
+          >
+            View Profile
+          </button>
+        </div>
       </div>
     </article>
   );

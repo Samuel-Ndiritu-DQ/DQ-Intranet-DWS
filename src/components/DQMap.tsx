@@ -7,12 +7,16 @@ import type { LocationItem } from "../api/MAPAPI";
 import { MARKER_COLORS } from "./map/constants";
 import LocationModal from "./map/LocationModal";
 
-// OpenStreetMap tile layer (FREE - no token needed)
-const OSM_TILE_LAYER = "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png";
-const OSM_ATTRIBUTION = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
+// CARTO Positron (light, minimal basemap)
+const CARTO_TILE_LAYER =
+  "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png";
+const CARTO_ATTRIBUTION =
+  '&copy; OpenStreetMap contributors &copy; <a href="https://carto.com/attributions">CARTO</a>';
 
 const INITIAL_CENTER: [number, number] = [25.0, 54.0]; // [lat, lng] for Leaflet
 const INITIAL_ZOOM = 5.5;
+const PRIMARY_PIN_COLOR = "#162862"; // DWS Primary Dark Blue
+const ACCENT_PIN_COLOR = "#E95139"; // DWS Accent Orange
 
 const DQMap: React.FC<{
   className?: string;
@@ -31,6 +35,7 @@ const DQMap: React.FC<{
     () => locations.filter((item) => item.coordinates),
     [locations]
   );
+  const lastSelectedIdRef = useRef<string | null>(null);
 
   // Create custom marker icon
   const createMarkerIcon = (color: string): L.DivIcon => {
@@ -69,10 +74,11 @@ const DQMap: React.FC<{
         attributionControl: false,
       });
 
-      // Add OpenStreetMap tile layer (FREE - no token needed)
-      L.tileLayer(OSM_TILE_LAYER, {
-        attribution: OSM_ATTRIBUTION,
+      // Add CARTO Positron light basemap
+      L.tileLayer(CARTO_TILE_LAYER, {
+        attribution: CARTO_ATTRIBUTION,
         maxZoom: 19,
+        subdomains: "abcd",
       }).addTo(map);
 
       // Add custom zoom controls
@@ -132,8 +138,12 @@ const DQMap: React.FC<{
       const coords = location.coordinates;
       if (!coords) return;
 
-      const color = MARKER_COLORS[location.type] || MARKER_COLORS.Default;
-      const icon = createMarkerIcon(color);
+      // Prefer explicit markerColor when provided, otherwise fall back to type-based color or primary
+      const baseColor =
+        location.markerColor ||
+        MARKER_COLORS[location.type as keyof typeof MARKER_COLORS] ||
+        PRIMARY_PIN_COLOR;
+      const icon = createMarkerIcon(baseColor);
 
       const marker = L.marker([coords.lat, coords.lng], { icon }).addTo(map);
 
@@ -177,7 +187,26 @@ const DQMap: React.FC<{
   // Handle selected location from external selection (e.g., filter)
   useEffect(() => {
     const map = mapRef.current;
-    if (!map || !selectedId) {
+    if (!map) {
+      return;
+    }
+
+    // If selection is cleared, reset last highlighted marker (if any)
+    if (!selectedId) {
+      if (lastSelectedIdRef.current) {
+        const previous = validLocations.find(
+          (item) => item.id === lastSelectedIdRef.current
+        );
+        const previousMarker = markersRef.current[lastSelectedIdRef.current];
+        if (previous && previousMarker) {
+          const baseColor =
+            previous.markerColor ||
+            MARKER_COLORS[previous.type as keyof typeof MARKER_COLORS] ||
+            PRIMARY_PIN_COLOR;
+          previousMarker.setIcon(createMarkerIcon(baseColor));
+        }
+        lastSelectedIdRef.current = null;
+      }
       return;
     }
 
@@ -186,6 +215,28 @@ const DQMap: React.FC<{
 
     const marker = markersRef.current[location.id];
     if (!marker) return;
+
+    // Reset previously selected marker back to primary color
+    if (
+      lastSelectedIdRef.current &&
+      lastSelectedIdRef.current !== location.id
+    ) {
+      const previous = validLocations.find(
+        (item) => item.id === lastSelectedIdRef.current
+      );
+      const previousMarker = markersRef.current[lastSelectedIdRef.current];
+      if (previous && previousMarker) {
+        const baseColor =
+          previous.markerColor ||
+          MARKER_COLORS[previous.type as keyof typeof MARKER_COLORS] ||
+          PRIMARY_PIN_COLOR;
+        previousMarker.setIcon(createMarkerIcon(baseColor));
+      }
+    }
+
+    // Highlight current marker with accent color
+    marker.setIcon(createMarkerIcon(ACCENT_PIN_COLOR));
+    lastSelectedIdRef.current = location.id;
 
     // Open modal for selected location
     setSelectedLocation(location);

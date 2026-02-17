@@ -1,8 +1,8 @@
 import * as React from 'react';
 import { ReactNode } from 'react';
-import { DollarSign, Calendar, Clock, Users, MapPin, CheckCircle, BarChart, Award, FileText, Info, BookOpen, ClipboardList, Building, FileType, Bookmark, TrendingUp, Compass } from 'lucide-react';
+import { DollarSign, Calendar, Clock, Users, MapPin, CheckCircle, BarChart, Award, FileText, Info, BookOpen, ClipboardList, Building, FileType, Bookmark, TrendingUp, Compass, Layers } from 'lucide-react';
 import { mockCourses, providers, mockOnboardingFlowsData } from './mockData';
-import { mockFinancialServices, mockNonFinancialServices, mockKnowledgeHubItems, mockKnowledgeHubFilterOptions } from './mockMarketplaceData';
+import { mockFinancialServices, mockNonFinancialServices, mockKnowledgeHubItems, mockKnowledgeHubFilterOptions, mockEvents, mockEventsFilterOptions } from './mockMarketplaceData';
 // Define a Tab type for consistency across marketplace pages
 export interface MarketplaceTab {
   id: string;
@@ -76,63 +76,58 @@ export const mockFinancialServicesData = {
     }, {
       id: 'creditcard',
       name: 'Credit Card'
-    }],
-    serviceTypes: [{
-      id: 'financing',
-      name: 'Financing'
-    }, {
-      id: 'credit',
-      name: 'Credit'
-    }, {
-      id: 'riskmanagement',
-      name: 'Risk Management'
     }]
   },
   providers: providers
 };
-// Mock data for non-financial services
+
+// Mock data for Service Center (non-financial services)
 export const mockNonFinancialServicesData = {
   items: mockNonFinancialServices,
   filterOptions: {
     categories: [{
-      id: 'consultancy',
-      name: 'Consultancy'
-    }, {
       id: 'technology',
       name: 'Technology'
     }, {
-      id: 'research',
-      name: 'Research'
+      id: 'business',
+      name: 'Employee Services'
     }, {
-      id: 'export',
-      name: 'Export'
+      id: 'digital_worker',
+      name: 'Digital Worker'
+    }, {
+      id: 'prompt_library',
+      name: 'Prompt Library'
+    }, {
+      id: 'ai_tools',
+      name: 'AI Tools'
     }],
     serviceTypes: [{
-      id: 'advisory',
-      name: 'Advisory'
+      id: 'query',
+      name: 'Query'
     }, {
-      id: 'implementation',
-      name: 'Implementation'
+      id: 'support',
+      name: 'Support'
     }, {
-      id: 'information',
-      name: 'Information'
+      id: 'requisition',
+      name: 'Requisition'
     }, {
-      id: 'program',
-      name: 'Program'
+      id: 'self-service',
+      name: 'Self-Service'
     }],
     deliveryModes: [{
       id: 'online',
       name: 'Online'
     }, {
       id: 'inperson',
-      name: 'In-person'
+      name: 'In person'
     }, {
       id: 'hybrid',
       name: 'Hybrid'
     }]
   },
-  providers: providers
+  providers: [] // Not used in Service Center, but required by type definition
 };
+
 // Mock data for courses
 export const mockCoursesData = {
   items: mockCourses,
@@ -149,34 +144,14 @@ export const mockCoursesData = {
     }, {
       id: 'keytools',
       name: 'Key Tools'
-    }, {
-      id: 'dayindq',
-      name: 'Day in DQ'
-    }],
-    deliveryModes: [{
-      id: 'online',
-      name: 'Online'
-    }, {
-      id: 'inperson',
-      name: 'In-person'
-    }, {
-      id: 'hybrid',
-      name: 'Hybrid'
-    }],
-    businessStages: [{
-      id: 'new-joiner',
-      name: 'New Joiner'
-    }, {
-      id: 'team-lead',
-      name: 'Team Lead'
-    }, {
-      id: 'project-delivery',
-      name: 'Project/Delivery'
-    }, {
-      id: 'ops-support',
-      name: 'Ops & Support'
     }]
   },
+  providers: providers
+};
+// Mock data for events
+export const mockEventsData = {
+  items: mockEvents,
+  filterOptions: mockEventsFilterOptions,
   providers: providers
 };
 // Mock data for Knowledge Hub
@@ -185,7 +160,9 @@ export const mockKnowledgeHubData = {
   filterOptions: mockKnowledgeHubFilterOptions,
   providers: providers
 };
+
 // Define marketplace configurations
+
 // Define Knowledge Hub (Guides) base config once, then reuse for alias
 const knowledgeHubBaseConfig: MarketplaceConfig = {
   id: 'knowledge-hub',
@@ -255,25 +232,21 @@ const knowledgeHubBaseConfig: MarketplaceConfig = {
     title: 'Popularity',
     options: [{ id: 'latest', name: 'Latest' }, { id: 'trending', name: 'Trending' }, { id: 'downloaded', name: 'Most Downloaded' }, { id: 'editors', name: "Editor's Pick" }]
   }],
-  // Data mapping functions
   mapListResponse: data => {
     return data.map((item: any) => ({
       ...item,
-      // Transform any fields if needed
       tags: item.tags || [item.mediaType, item.domain].filter(Boolean)
     }));
   },
   mapDetailResponse: data => {
     return {
       ...data,
-      // Transform any fields if needed
       highlights: data.highlights || []
     };
   },
   mapFilterResponse: data => {
     return [{ id: 'mediaType', title: 'Media Type', options: data.mediaTypes || [] }, { id: 'businessStage', title: 'Business Stage', options: data.businessStages || [] }, { id: 'domain', title: 'Domain', options: data.domains || [] }, { id: 'format', title: 'Format', options: data.formats || [] }, { id: 'popularity', title: 'Popularity', options: data.popularity || [] }];
   },
-  // Mock data for fallback and schema reference
   mockData: mockKnowledgeHubData
 };
 
@@ -773,14 +746,18 @@ export const marketplaceConfig: Record<string, MarketplaceConfig> = {
   },
   'non-financial': {
     id: 'non-financial',
-    title: 'Services & Requests',
-    description: "Welcome to Digital Qatalyst's Support Services! We're here to ensure your success by providing dedicated assistance and efficient solutions for all your needs. This platform offers comprehensive support tools, resources, and expert guidance to help you overcome challenges and maximize productivity. Whether you require technical help or operational support we're here to empower your journey every step of the way.",
-    route: '/marketplace/non-financial',
+    title: 'Services Center',
+    description: "Welcome to DigitalQatalyst's Services Center. We're here to ensure your success with dedicated assistance, efficient solutions, comprehensive tools, expert guidance, and both technical and operational support.",
+    route: '/marketplace/services-center',
     primaryCTA: 'Request Service',
     secondaryCTA: 'View Details',
     itemName: 'Business Service',
-    itemNamePlural: 'Business Services',
+    itemNamePlural: 'Services Center',
     attributes: [{
+      key: 'category',
+      label: 'Department',
+      icon: React.createElement(Building, { size: 18, className: "mr-2" })
+    }, {
       key: 'serviceType',
       label: 'Service Type',
       icon: React.createElement(Award, { size: 18, className: "mr-2" })
@@ -794,55 +771,31 @@ export const marketplaceConfig: Record<string, MarketplaceConfig> = {
       icon: React.createElement(Clock, { size: 18, className: "mr-2" })
     }],
     detailSections: ['description', 'deliveryDetails', 'provider', 'related'],
-    tabs: [{
-      id: 'about',
-      label: 'About This Service',
-      icon: Info,
-      iconBgColor: 'bg-blue-50',
-      iconColor: 'text-blue-600'
-    }, {
-      id: 'eligibility_terms',
-      label: 'Eligibility & Terms',
-      icon: CheckCircle,
-      iconBgColor: 'bg-green-50',
-      iconColor: 'text-green-600'
-    }, {
-      id: 'application_process',
-      label: 'Application Process',
-      icon: ClipboardList,
-      iconBgColor: 'bg-orange-50',
-      iconColor: 'text-orange-600'
-    }, {
-      id: 'required_documents',
-      label: 'Required Documents',
-      icon: FileText,
-      iconBgColor: 'bg-amber-50',
-      iconColor: 'text-amber-600'
-    }, {
-      id: 'provider',
-      label: 'About Provider',
-      icon: Building,
-      iconBgColor: 'bg-blue-50',
-      iconColor: 'text-blue-600'
-    }],
+    tabs: [
+      {
+        id: 'submit_request',
+        label: 'Submit Request',
+        icon: ClipboardList,
+        iconBgColor: 'bg-blue-50',
+        iconColor: 'text-blue-600'
+      },
+      {
+        id: 'self_service_faq',
+        label: 'FAQ',
+        icon: BookOpen,
+        iconBgColor: 'bg-purple-50',
+        iconColor: 'text-purple-600'
+      },
+      {
+        id: 'contact_sla',
+        label: 'Contacts',
+        icon: Info,
+        iconBgColor: 'bg-amber-50',
+        iconColor: 'text-amber-600'
+      }
+    ],
     summarySticky: true,
     filterCategories: [{
-      id: 'category',
-      title: 'Service Category',
-      options: [{
-        id: 'it_support',
-        name: 'IT Support'
-      }, {
-        id: 'support_charter_template',
-        name: 'Support Charter Template'
-      }, {
-        id: 'it_support_walkthrough',
-        name: 'IT Support Walkthrough'
-      }, {
-        id: 'export',
-        name: 'Export'
-      }]
-    }, {
       id: 'deliveryMode',
       title: 'Delivery Mode',
       options: [{
@@ -850,10 +803,58 @@ export const marketplaceConfig: Record<string, MarketplaceConfig> = {
         name: 'Online'
       }, {
         id: 'inperson',
-        name: 'In-person'
+        name: 'In person'
       }, {
         id: 'hybrid',
         name: 'Hybrid'
+      }]
+    }, {
+      id: 'provider',
+      title: 'Department',
+      options: [{
+        id: 'it_support',
+        name: 'IT Support'
+      }, {
+        id: 'hr',
+        name: 'HR'
+      }, {
+        id: 'finance',
+        name: 'Finance'
+      }, {
+        id: 'admin',
+        name: 'Admin'
+      }]
+    }, {
+      id: 'category',
+      title: 'Service Category',
+      options: [{
+        id: 'technology',
+        name: 'Technology'
+      }, {
+        id: 'business',
+        name: 'Business'
+      }, {
+        id: 'digital_worker',
+        name: 'Digital Worker'
+      }, {
+        id: 'prompt_library',
+        name: 'Prompt Library'
+      }, {
+        id: 'ai_tools',
+        name: 'AI Tools'
+      }]
+    }, {
+      id: 'location',
+      title: 'Location',
+      options: [{
+        id: 'dubai',
+        name: 'Dubai'
+      }, {
+        id: 'nairobi',
+        name: 'Nairobi'
+      }, {
+        id: 'riyadh',
+        name: 'Riyadh'
       }]
     }],
     // Data mapping functions
@@ -873,17 +874,244 @@ export const marketplaceConfig: Record<string, MarketplaceConfig> = {
     },
     mapFilterResponse: data => {
       return [{
+        id: 'deliveryMode',
+        title: 'Delivery Mode',
+        options: data.deliveryModes || []
+      }, {
+        id: 'provider',
+        title: 'Department',
+        options: data.providers || []
+      }, {
         id: 'category',
         title: 'Service Category',
         options: data.categories || []
       }, {
-        id: 'deliveryMode',
-        title: 'Delivery Mode',
-        options: data.deliveryModes || []
+        id: 'location',
+        title: 'Location',
+        options: data.locations || []
       }];
     },
     // Mock data for fallback and schema reference
     mockData: mockNonFinancialServicesData
+  },
+  events: {
+    id: 'events',
+    title: 'DQ Work Communities',
+    description: 'Find and join communities to connect with other associates within the organization.',
+    route: '/marketplace/events',
+    primaryCTA: 'View Event',
+    secondaryCTA: 'View Details',
+    itemName: 'Event',
+    itemNamePlural: 'Events',
+    attributes: [{
+      key: 'date',
+      label: 'Date',
+      icon: React.createElement(Calendar, { size: 18, className: "mr-2" })
+    }, {
+      key: 'time',
+      label: 'Time',
+      icon: React.createElement(Clock, { size: 18, className: "mr-2" })
+    }, {
+      key: 'location',
+      label: 'Location',
+      icon: React.createElement(MapPin, { size: 18, className: "mr-2" })
+    }],
+    detailSections: ['description', 'details', 'provider', 'related'],
+    tabs: [{
+      id: 'about',
+      label: 'About This Event',
+      icon: Info,
+      iconBgColor: 'bg-blue-50',
+      iconColor: 'text-blue-600'
+    }, {
+      id: 'application_process',
+      label: 'Registration Process',
+      icon: ClipboardList,
+      iconBgColor: 'bg-orange-50',
+      iconColor: 'text-orange-600'
+    }, {
+      id: 'required_documents',
+      label: 'What to Bring',
+      icon: FileText,
+      iconBgColor: 'bg-amber-50',
+      iconColor: 'text-amber-600'
+    }, {
+      id: 'provider',
+      label: 'About Organizer',
+      icon: Building,
+      iconBgColor: 'bg-blue-50',
+      iconColor: 'text-blue-600'
+    }],
+    summarySticky: true,
+    filterCategories: [{
+      id: 'time-range',
+      title: 'Time Range',
+      options: [{
+        id: 'today',
+        name: 'Today'
+      }, {
+        id: 'this-week',
+        name: 'This Week'
+      }, {
+        id: 'next-30-days',
+        name: 'Next 30 Days'
+      }, {
+        id: 'custom-date-range',
+        name: 'Custom Date Range'
+      }]
+    }, {
+      id: 'event-type',
+      title: 'Event Type',
+      options: [{
+        id: 'webinar',
+        name: 'Webinar'
+      }, {
+        id: 'workshop',
+        name: 'Workshop'
+      }, {
+        id: 'seminar',
+        name: 'Seminar'
+      }, {
+        id: 'panel',
+        name: 'Panel'
+      }, {
+        id: 'conference',
+        name: 'Conference'
+      }, {
+        id: 'networking',
+        name: 'Networking'
+      }, {
+        id: 'competition',
+        name: 'Competition'
+      }, {
+        id: 'pitch-day',
+        name: 'Pitch Day'
+      }]
+    }, {
+      id: 'delivery-mode',
+      title: 'Delivery Mode',
+      options: [{
+        id: 'onsite',
+        name: 'Onsite'
+      }, {
+        id: 'online',
+        name: 'Online'
+      }, {
+        id: 'hybrid',
+        name: 'Hybrid'
+      }]
+    }, {
+      id: 'duration-band',
+      title: 'Duration Band',
+      options: [{
+        id: 'short',
+        name: 'Short (≤ 1 hr)'
+      }, {
+        id: 'medium',
+        name: 'Medium (1 – 3 hrs)'
+      }, {
+        id: 'long',
+        name: 'Long (> 3 hrs)'
+      }, {
+        id: 'multi-day',
+        name: 'Multi-Day'
+      }]
+    }, {
+      id: 'department',
+      title: 'Department',
+      options: [{
+        id: 'hra-people',
+        name: 'HRA (People)'
+      }, {
+        id: 'finance',
+        name: 'Finance'
+      }, {
+        id: 'deals',
+        name: 'Deals'
+      }, {
+        id: 'stories',
+        name: 'Stories'
+      }, {
+        id: 'intelligence',
+        name: 'Intelligence'
+      }, {
+        id: 'solutions',
+        name: 'Solutions'
+      }, {
+        id: 'secdevops',
+        name: 'SecDevOps'
+      }, {
+        id: 'products',
+        name: 'Products'
+      }, {
+        id: 'delivery-deploys',
+        name: 'Delivery — Deploys'
+      }, {
+        id: 'delivery-designs',
+        name: 'Delivery — Designs'
+      }, {
+        id: 'dco-operations',
+        name: 'DCO Operations'
+      }, {
+        id: 'dbp-platform',
+        name: 'DBP Platform'
+      }, {
+        id: 'dbp-delivery',
+        name: 'DBP Delivery'
+      }]
+    }, {
+      id: 'location',
+      title: 'Location',
+      options: [{
+        id: 'dubai',
+        name: 'Dubai'
+      }, {
+        id: 'nairobi',
+        name: 'Nairobi'
+      }, {
+        id: 'riyadh',
+        name: 'Riyadh'
+      }, {
+        id: 'remote',
+        name: 'Remote'
+      }]
+    }],
+    // Data mapping functions
+    mapListResponse: data => {
+      return data.map((item: any) => ({
+        ...item,
+        // Transform any fields if needed
+        tags: item.tags || [item.category, item.eventType].filter(Boolean)
+      }));
+    },
+    mapDetailResponse: data => {
+      return {
+        ...data,
+        // Transform any fields if needed
+        highlights: data.highlights || data.details || []
+      };
+    },
+    mapFilterResponse: data => {
+      return [{
+        id: 'category',
+        title: 'Categories',
+        options: data.categories || []
+      }, {
+        id: 'location',
+        title: 'Location',
+        options: data.locations || []
+      }, {
+        id: 'price',
+        title: 'Price',
+        options: data.prices || []
+      }, {
+        id: 'session',
+        title: 'Session',
+        options: data.sessions || []
+      }];
+    },
+    // Mock data for fallback and schema reference
+    mockData: mockEventsData
   },
   'knowledge-hub': knowledgeHubBaseConfig,
   // Compatibility alias for new Guides marketplace
@@ -893,6 +1121,75 @@ export const marketplaceConfig: Record<string, MarketplaceConfig> = {
     route: '/marketplace/guides',
     title: 'DQ Knowledge Center',
     description: 'Access practical guidelines, templates, and processes to support everyday delivery and collaboration.'
+  },
+  'design-system': {
+    id: 'design-system',
+    title: 'Design System Marketplace',
+    description: 'Explore design system components, patterns, and resources for consistent digital experiences.',
+    route: '/marketplace/design-system',
+    primaryCTA: 'Access Now',
+    secondaryCTA: 'View Details',
+    itemName: 'Design System',
+    itemNamePlural: 'Design Systems',
+    attributes: [{
+      key: 'type',
+      label: 'Type',
+      icon: React.createElement(Layers, { size: 18, className: "mr-2" })
+    }, {
+      key: 'category',
+      label: 'Category',
+      icon: React.createElement(Bookmark, { size: 18, className: "mr-2" })
+    }, {
+      key: 'version',
+      label: 'Version',
+      icon: React.createElement(FileText, { size: 18, className: "mr-2" })
+    }],
+    detailSections: ['description', 'components', 'resources', 'related'],
+    tabs: [{
+      id: 'about',
+      label: 'About This Design System',
+      icon: Info,
+      iconBgColor: 'bg-blue-50',
+      iconColor: 'text-blue-600'
+    }, {
+      id: 'components',
+      label: 'Components',
+      icon: Layers,
+      iconBgColor: 'bg-green-50',
+      iconColor: 'text-green-600'
+    }, {
+      id: 'resources',
+      label: 'Resources',
+      icon: BookOpen,
+      iconBgColor: 'bg-purple-50',
+      iconColor: 'text-purple-600'
+    }],
+    summarySticky: true,
+    filterCategories: [{
+      id: 'type',
+      title: 'Type',
+      options: [
+        { id: 'cids', name: 'CI.DS (Component Integration)' },
+        { id: 'vds', name: 'V.DS (Visual Design)' },
+        { id: 'cds', name: 'CDS (Content Design)' }
+      ]
+    }, {
+      id: 'location',
+      title: 'Location',
+      options: [
+        { id: 'DXB', name: 'DXB' },
+        { id: 'KSA', name: 'KSA' },
+        { id: 'NBO', name: 'NBO' }
+      ]
+    }],
+    mapListResponse: data => data,
+    mapDetailResponse: data => data,
+    mapFilterResponse: data => [],
+    mockData: {
+      items: [],
+      filterOptions: {},
+      providers: []
+    }
   }
 };
 // Helper to get config by marketplace type
@@ -903,3 +1200,305 @@ export const getMarketplaceConfig = (type: string): MarketplaceConfig => {
   }
   return config;
 };
+
+// Tab-specific filters for Services Center
+export const getTabSpecificFilters = (tabId?: string): FilterCategoryConfig[] => {
+  const baseFilters: FilterCategoryConfig[] = [
+    {
+      id: 'serviceType',
+      title: 'Service Type',
+      options: [
+        { id: 'query', name: 'Query' },
+        { id: 'support', name: 'Support' },
+        { id: 'requisition', name: 'Requisition' },
+        { id: 'self-service', name: 'Self-Service' }
+      ]
+    },
+    {
+      id: 'deliveryMode',
+      title: 'Delivery Mode',
+      options: [
+        { id: 'online', name: 'Online' },
+        { id: 'inperson', name: 'In person' },
+        { id: 'hybrid', name: 'Hybrid' }
+      ]
+    },
+    {
+      id: 'provider',
+      title: 'Department',
+      options: [
+        { id: 'it_support', name: 'IT Support' },
+        { id: 'hr', name: 'HR' },
+        { id: 'finance', name: 'Finance' },
+        { id: 'admin', name: 'Admin' }
+      ]
+    },
+    {
+      id: 'location',
+      title: 'Location',
+      options: [
+        { id: 'dubai', name: 'Dubai' },
+        { id: 'nairobi', name: 'Nairobi' },
+        { id: 'riyadh', name: 'Riyadh' }
+      ]
+    }
+  ];
+
+  // Tab-specific filters for Technology category
+  const technologySpecificFilters: FilterCategoryConfig[] = [
+    {
+      id: 'userCategory',
+      title: 'User Category',
+      options: [
+        { id: 'employee', name: 'Employee' },
+        { id: 'contractor', name: 'Contractor' },
+        { id: 'intern', name: 'Intern' },
+        { id: 'manager', name: 'Manager' }
+      ]
+    },
+    {
+      id: 'technicalCategory',
+      title: 'Technical Category',
+      options: [
+        { id: 'hardware', name: 'Hardware' },
+        { id: 'software', name: 'Software' },
+        { id: 'network', name: 'Network' }
+      ]
+    },
+    {
+      id: 'deviceOwnership',
+      title: 'Device Ownership',
+      options: [
+        { id: 'company_device', name: 'Company Device' },
+        { id: 'personal_device', name: 'Personal Device (BYOD)' },
+        { id: 'fyod', name: 'FYOD' }
+      ]
+    }
+  ];
+
+  // Tab-specific filters for Business category
+  const businessSpecificFilters: FilterCategoryConfig[] = [
+    {
+      id: 'services',
+      title: 'Services',
+      options: [
+        { id: 'human_resources', name: 'Human Resources' },
+        { id: 'finance', name: 'Finance' },
+        { id: 'procurement', name: 'Procurement' },
+        { id: 'administration', name: 'Administration' },
+        { id: 'legal', name: 'Legal' },
+        { id: 'payroll', name: 'Payroll' }
+      ]
+    }
+  ];
+
+  // Tab-specific filters for Digital Worker category
+  const digitalWorkerSpecificFilters: FilterCategoryConfig[] = [
+    {
+      id: 'serviceDomains',
+      title: 'Service Domains',
+      options: [
+        { id: 'backoffice_operations', name: 'Backoffice Operations' },
+        { id: 'automation_integration', name: 'Automation & Integration' },
+        { id: 'digital_security', name: 'Digital Security' },
+        { id: 'digital_channels', name: 'Digital Channels' },
+        { id: 'customer_experiences', name: 'Customer Experiences' },
+        { id: 'service_delivery', name: 'Service Delivery' },
+        { id: 'marketing_comms', name: 'Marketing & Comms' },
+        { id: 'digital_workspace', name: 'Digital Workspace' },
+        { id: 'design', name: 'Design' },
+        { id: 'business_intelligence', name: 'Business Intelligence' },
+        { id: 'it_operations', name: 'IT Operations' }
+      ]
+    },
+    {
+      id: 'aiMaturityLevel',
+      title: 'AI Maturity Level',
+      options: [
+        { id: 'level_1', name: 'Level 1 (Prompting)' },
+        { id: 'level_2', name: 'Level 2 (Integrate Systems)' },
+        { id: 'level_3', name: 'Level 3 (Unified Operations)' },
+        { id: 'level_4', name: 'Level 4 (Human Oversight)' },
+        { id: 'level_5', name: 'Level 5 (Autonomous)' }
+      ]
+    }
+  ];
+
+  // Tab-specific filters for Prompt Library category
+  const promptLibrarySpecificFilters: FilterCategoryConfig[] = [
+    {
+      id: 'promptType',
+      title: 'Prompt Type',
+      options: [
+        { id: 'business', name: 'Business (Admin, HR, Finance, Ops)' },
+        { id: 'tech', name: 'Tech (Hardware, Software)' },
+        { id: 'dev_prompts', name: 'Dev Prompts (Software Development)' },
+        { id: 'devops_prompts', name: 'DevOps Prompts (Deployment)' },
+        { id: 'ai', name: 'AI (Machine Learning)' }
+      ]
+    }
+  ];
+
+  // Tab-specific filters for AI Tools category
+  const aiToolsSpecificFilters: FilterCategoryConfig[] = [
+    {
+      id: 'toolCategory',
+      title: 'Tool Category',
+      options: [
+        { id: 'llm', name: 'LLM' },
+        { id: 'coding_ides', name: 'Coding IDEs' },
+        { id: 'low_code_tools', name: 'Low Code Tools' },
+        { id: 'content_generators', name: 'Content Generators' }
+      ]
+    }
+  ];
+
+  // Return tab-specific filters based on the tab
+  if (tabId === 'technology') {
+    return [...baseFilters, ...technologySpecificFilters];
+  }
+
+  if (tabId === 'business') {
+    return [...baseFilters, ...businessSpecificFilters];
+  }
+
+  if (tabId === 'digital_worker') {
+    return [...baseFilters, ...digitalWorkerSpecificFilters];
+  }
+
+  if (tabId === 'prompt_library') {
+    return [...baseFilters, ...promptLibrarySpecificFilters];
+  }
+
+  if (tabId === 'ai_tools') {
+    return [...baseFilters, ...aiToolsSpecificFilters];
+  }
+
+  return baseFilters;
+};
+
+// Removed old tab-specific filters as they're no longer needed with category-based tabs
+/*
+  const tabFilters: Record<string, FilterCategoryConfig[]> = {
+    'query': [
+      {
+        id: 'priority',
+        title: 'Priority',
+        options: [
+          { id: 'high', name: 'High' },
+          { id: 'medium', name: 'Medium' },
+          { id: 'low', name: 'Low' }
+        ]
+      },
+      {
+        id: 'responseTime',
+        title: 'Response Time',
+        options: [
+          { id: 'immediate', name: 'Immediate' },
+          { id: '1-2days', name: '1-2 Days' },
+          { id: '3-5days', name: '3-5 Days' }
+        ]
+      },
+      {
+        id: 'status',
+        title: 'Status',
+        options: [
+          { id: 'open', name: 'Open' },
+          { id: 'in_progress', name: 'In Progress' },
+          { id: 'resolved', name: 'Resolved' }
+        ]
+      }
+    ],
+    'support': [
+      {
+        id: 'supportType',
+        title: 'Support Type',
+        options: [
+          { id: 'technical', name: 'Technical' },
+          { id: 'account', name: 'Account' },
+          { id: 'access', name: 'Access' },
+          { id: 'system', name: 'System' }
+        ]
+      },
+      {
+        id: 'urgency',
+        title: 'Urgency',
+        options: [
+          { id: 'critical', name: 'Critical' },
+          { id: 'high', name: 'High' },
+          { id: 'medium', name: 'Medium' },
+          { id: 'low', name: 'Low' }
+        ]
+      },
+      {
+        id: 'status',
+        title: 'Status',
+        options: [
+          { id: 'open', name: 'Open' },
+          { id: 'in_progress', name: 'In Progress' },
+          { id: 'resolved', name: 'Resolved' }
+        ]
+      }
+    ],
+    'requisition': [
+      {
+        id: 'requestType',
+        title: 'Request Type',
+        options: [
+          { id: 'staff', name: 'Staff' },
+          { id: 'equipment', name: 'Equipment' },
+          { id: 'booking', name: 'Booking' },
+          { id: 'registration', name: 'Registration' }
+        ]
+      },
+      {
+        id: 'approvalStatus',
+        title: 'Approval Status',
+        options: [
+          { id: 'pending', name: 'Pending' },
+          { id: 'approved', name: 'Approved' },
+          { id: 'rejected', name: 'Rejected' }
+        ]
+      },
+      {
+        id: 'budgetRange',
+        title: 'Budget Range',
+        options: [
+          { id: 'under_1k', name: 'Under 1K' },
+          { id: '1k_10k', name: '1K - 10K' },
+          { id: '10k_plus', name: '10K+' }
+        ]
+      }
+    ],
+    'self-service': [
+      {
+        id: 'format',
+        title: 'Format',
+        options: [
+          { id: 'video', name: 'Video' },
+          { id: 'guide', name: 'Guide' },
+          { id: 'template', name: 'Template' },
+          { id: 'walkthrough', name: 'Walkthrough' }
+        ]
+      },
+      {
+        id: 'difficulty',
+        title: 'Difficulty',
+        options: [
+          { id: 'beginner', name: 'Beginner' },
+          { id: 'intermediate', name: 'Intermediate' },
+          { id: 'advanced', name: 'Advanced' }
+        ]
+      },
+      {
+        id: 'duration',
+        title: 'Duration',
+        options: [
+          { id: 'quick', name: 'Quick (< 5 min)' },
+          { id: 'medium', name: 'Medium (5-15 min)' },
+          { id: 'long', name: 'Long (> 15 min)' }
+        ]
+      }
+    ]
+  };
+*/

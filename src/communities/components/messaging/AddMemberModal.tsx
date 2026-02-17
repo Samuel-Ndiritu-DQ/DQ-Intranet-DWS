@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { supabase } from '@/communities/integrations/supabase/client';
+import { supabase } from "@/lib/supabaseClient";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/communities/components/ui/dialog';
 import { Button } from '@/communities/components/ui/button';
 import { Input } from '@/communities/components/ui/input';
@@ -160,7 +160,7 @@ export function AddMemberModal({
                     <Checkbox checked={selectedMembers.has(member.user_id)} onCheckedChange={() => toggleMember(member.user_id)} />
                     <Avatar className="h-10 w-10">
                       <AvatarImage src={member.avatar_url || undefined} />
-                      <AvatarFallback className="bg-primary text-primary-foreground">
+                      <AvatarFallback className="bg-dq-navy text-white">
                         {member.username?.[0]?.toUpperCase() || <User className="h-5 w-5" />}
                       </AvatarFallback>
                     </Avatar>

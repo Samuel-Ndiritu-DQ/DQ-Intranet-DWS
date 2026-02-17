@@ -41,6 +41,9 @@ Identity host (pick one):
 - CIAM subdomain: `NEXT_PUBLIC_CIAM_SUBDOMAIN` or `VITE_AZURE_SUBDOMAIN` — uses `https://<sub>.ciamlogin.com`
 - Explicit host override: `NEXT_PUBLIC_IDENTITY_HOST` or `VITE_IDENTITY_HOST` (e.g. `login.example.com`, `<sub>.ciamlogin.com`)
 - B2C tenant name: `NEXT_PUBLIC_B2C_TENANT_NAME` or `VITE_B2C_TENANT_NAME` — fallback to `https://<tenant>.b2clogin.com`
+- **Azure AD (single-tenant)**: `NEXT_PUBLIC_TENANT_ID` or `VITE_AZURE_TENANT_ID` (tenant GUID) — **REQUIRED for single-tenant apps**. The `/common` endpoint is not supported for single-tenant applications created after 10/15/2018. You can find your tenant ID in Azure Portal > Azure Active Directory > Overview.
+- **Azure AD (alternative)**: `NEXT_PUBLIC_TENANT_DOMAIN` or `VITE_AZURE_TENANT_DOMAIN` (verified domain name, e.g. `contoso.onmicrosoft.com`)
+- **Azure AD (explicit authority)**: `VITE_AZURE_AUTHORITY` (full authority URL, e.g. `https://login.microsoftonline.com/{tenantId}`)
 
 Policies (B2C/CIAM):
 - Combined SUSI: `NEXT_PUBLIC_B2C_POLICY_SIGNUP_SIGNIN` or `VITE_B2C_POLICY_SIGNUP_SIGNIN`
@@ -64,6 +67,14 @@ VITE_AZURE_SCOPES="openid profile offline_access"
 VITE_B2C_TENANT_NAME=yourtenant
 VITE_B2C_POLICY_SIGNUP_SIGNIN=B2C_1_SUSI
 # VITE_B2C_POLICY_SIGNUP=B2C_1_SignUp
+
+# Azure AD (single-tenant) - REQUIRED for single-tenant apps
+# Find tenant ID in Azure Portal > Azure Active Directory > Overview
+VITE_AZURE_TENANT_ID=00000000-0000-0000-0000-000000000000
+# OR use tenant domain:
+# VITE_AZURE_TENANT_DOMAIN=contoso.onmicrosoft.com
+# OR use explicit authority:
+# VITE_AZURE_AUTHORITY=https://login.microsoftonline.com/00000000-0000-0000-0000-000000000000
 
 # Optional: improve email accuracy with Graph
 VITE_MSAL_ENABLE_GRAPH_FALLBACK=false
@@ -104,7 +115,7 @@ VITE_MSAL_ENABLE_GRAPH_FALLBACK=false
 
 - CIAM (External Identities): set `VITE_AZURE_SUBDOMAIN` or `VITE_IDENTITY_HOST` to use `<sub>.ciamlogin.com`.
 - B2C: set `VITE_B2C_TENANT_NAME` and either a combined `VITE_B2C_POLICY_SIGNUP_SIGNIN` or a dedicated `VITE_B2C_POLICY_SIGNUP`.
-- Azure AD tenant: adapt `authority`/`knownAuthorities` to `login.microsoftonline.com/<tenantId>`; the file contains commented guidance to enable this path if needed.
+- **Azure AD (single-tenant)**: **REQUIRED** - set `VITE_AZURE_TENANT_ID` (tenant GUID) or `VITE_AZURE_TENANT_DOMAIN` (verified domain). Single-tenant applications cannot use the `/common` endpoint. The configuration will throw an error if tenant is not specified.
 
 ## Rationale and Notes
 

@@ -146,19 +146,37 @@ const GuideEditor: React.FC = () => {
             <label className="block text-sm font-medium">Attachments (JSON)</label>
             <textarea className="border rounded px-3 py-2 w-full" rows={6}
               value={JSON.stringify(guide.attachments || [], null, 2)}
-              onChange={e => { try { onChange('attachments', JSON.parse(e.target.value)); } catch {} }} />
+              onChange={e => {
+                try {
+                  onChange('attachments', JSON.parse(e.target.value));
+                } catch (error) {
+                  console.error('GuideEditor: invalid attachments JSON', error);
+                }
+              }} />
           </div>
           <div>
             <label className="block text-sm font-medium">Templates (JSON)</label>
             <textarea className="border rounded px-3 py-2 w-full" rows={6}
               value={JSON.stringify(guide.templates || [], null, 2)}
-              onChange={e => { try { onChange('templates', JSON.parse(e.target.value)); } catch {} }} />
+              onChange={e => {
+                try {
+                  onChange('templates', JSON.parse(e.target.value));
+                } catch (error) {
+                  console.error('GuideEditor: invalid templates JSON', error);
+                }
+              }} />
           </div>
           <div>
             <label className="block text-sm font-medium">Related Tools (JSON)</label>
             <textarea className="border rounded px-3 py-2 w-full" rows={6}
               value={JSON.stringify(guide.relatedTools || [], null, 2)}
-              onChange={e => { try { onChange('relatedTools', JSON.parse(e.target.value)); } catch {} }} />
+              onChange={e => {
+                try {
+                  onChange('relatedTools', JSON.parse(e.target.value));
+                } catch (error) {
+                  console.error('GuideEditor: invalid related tools JSON', error);
+                }
+              }} />
           </div>
         </div>
         <div className="flex gap-2">

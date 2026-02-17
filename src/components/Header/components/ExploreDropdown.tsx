@@ -1,6 +1,15 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { ChevronDownIcon, BuildingIcon, NewspaperIcon, UsersIcon, GraduationCapIcon, TrendingUpIcon, LucideProps, BookOpen } from 'lucide-react';
+import { CalendarIcon, ChevronDownIcon } from 'lucide-react';
+import {
+  BuildingIcon,
+  GraduationCapIcon,
+  UsersIcon,
+  NewspaperIcon,
+  SparklesIcon,
+  LucideProps,
+  BookOpen,
+} from 'lucide-react';
 
 interface Marketplace {
   id: string;
@@ -8,6 +17,7 @@ interface Marketplace {
   description: string;
   icon: React.ComponentType<LucideProps>;
   href: string;
+  isComingSoon?: boolean;
 }
 
 
@@ -17,49 +27,51 @@ const marketplaces: Marketplace[] = [
     name: 'DQ Learning Center',
     description: 'Explore LMS courses, onboarding tracks, and learning resources across GHC, 6xD, DWS, and DXP.',
     icon: GraduationCapIcon,
-    href: '#',
+    href: '/lms',
   },
   {
     id: 'services-center',
     name: 'DQ Services Center',
-    description: 'Submit technology requests, business services, and access digital worker tools for delivery.',
+    description: 'Business services, technology services, and digital worker tools.',
     icon: BuildingIcon,
-    href: '#',
+    href: '/marketplace/services-center',
   },
   {
     id: 'work-center',
     name: 'DQ Work Center',
-    description: 'Run work sessions, manage projects & tasks, and track performance across workflows.',
-    icon: TrendingUpIcon,
-    href: '#',
+    description: 'Daily sessions, project work, and execution trackers.',
+    icon: CalendarIcon,
+    href: '/events',
+    isComingSoon: true,
   },
   {
     id: 'work-directory',
     name: 'DQ Work Directory',
-    description: 'Explore sectors, units, positions, and associates across DQ to connect and collaborate.',
+    description: 'Units, positions, and associate profiles.',
     icon: UsersIcon,
-    href: '#',
+    href: '/marketplace/work-directory',
+    isComingSoon: true,
   },
   {
-    id: 'media-center',
-    name: 'DQ Media Center',
+    id: 'news-center',
+    name: 'News Center',
     description: 'View DQ updates, corporate news, blogs, job openings, and essential announcements.',
     icon: NewspaperIcon,
-    href: '/marketplace/opportunities',
+    href: '/marketplace/opportunities?tab=announcements',
   },
   {
     id: 'work-communities',
     name: 'DQ Work Communities',
-    description: 'Connect, collaborate, and engage with peers in vibrant communities across DQ.',
-    icon: UsersIcon,
-    href: '#',
+    description: 'Discussion rooms, pulse updates, and events.',
+    icon: SparklesIcon,
+    href: '/communities',
   },
   {
     id: 'knowledge-center',
     name: 'DQ Knowledge Center',
-    description: 'Access strategy guides, operational guidelines, knowledge library, and reference resources.',
+    description: 'Strategy guides, blueprints, libraries, and testimonials.',
     icon: BookOpen,
-    href: '#',
+    href: '/marketplace/guides',
   },
 ];
 
@@ -141,7 +153,6 @@ export function ExploreDropdown({ isCompact = false }: ExploreDropdownProps) {
   const handleItemClick = (href: string) => {
     setIsOpen(false);
     setFocusedIndex(-1);
-    if (href === "#" || !href) return; // Don't navigate if path is # or empty
     navigate(href); // Use React Router's navigate function
   };
 
@@ -149,9 +160,8 @@ export function ExploreDropdown({ isCompact = false }: ExploreDropdownProps) {
     <div className="relative" ref={dropdownRef}>
       <button
         ref={buttonRef}
-        className={`flex items-center text-white hover:text-dq-coral transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-white/20 rounded-md px-2 py-1 ${
-          isCompact ? 'text-sm' : ''
-        }`}
+        className={`flex items-center text-white hover:text-dq-coral transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-white/20 rounded-md px-2 py-1 ${isCompact ? 'text-sm' : ''
+          }`}
         onClick={() => setIsOpen(!isOpen)}
         onKeyDown={handleKeyDown}
         aria-expanded={isOpen}
@@ -171,31 +181,26 @@ export function ExploreDropdown({ isCompact = false }: ExploreDropdownProps) {
           aria-orientation="vertical"
           aria-labelledby="explore-menu"
         >
-          <div className="px-4 py-2 border-b border-gray-100">
-            <h3 className="text-sm font-semibold text-gray-800">
-              Explore Marketplaces
-            </h3>
-            <p className="text-xs text-gray-500 mt-1">
-              Discover the tools, services, and spaces across DQ's Digital Workspace
-            </p>
-          </div>
-          <div className="max-h-96 overflow-y-auto">
+          <div className="max-h-[480px] overflow-y-auto">
             {marketplaces.map((marketplace, index) => {
               const Icon = marketplace.icon;
-              const isActive = marketplace.id === 'media-center' && (location.pathname.startsWith('/marketplace/opportunities') || location.pathname.startsWith('/marketplace/news'));
+              const isComingSoon = marketplace.isComingSoon;
+              const isActive = marketplace.id === 'news-center' && (location.pathname.startsWith('/marketplace/opportunities') || location.pathname.startsWith('/marketplace/news'));
               return (
                 <a
                   key={marketplace.id}
                   ref={(el) => (itemRefs.current[index] = el)}
                   href={marketplace.href}
-                  className={`flex items-start px-4 py-3 text-left hover:bg-dq-coral/10 focus:bg-dq-coral/10 focus:outline-none transition-colors duration-150 ${
-                    focusedIndex === index ? 'bg-dq-coral/10' : ''
-                  } ${isActive ? 'border-l-4 border-dq-coral bg-dq-coral/5' : ''}`}
+                  className={`flex items-start px-4 py-3 text-left hover:bg-dq-coral/10 focus:bg-dq-coral/10 focus:outline-none transition-colors duration-150 ${focusedIndex === index ? 'bg-dq-coral/10' : ''
+                    } ${isActive ? 'border-l-4 border-dq-coral bg-dq-coral/5' : ''} ${isComingSoon ? 'cursor-not-allowed opacity-60' : ''
+                    }`}
                   role="menuitem"
                   tabIndex={-1}
                   aria-current={isActive ? 'page' : undefined}
+                  aria-disabled={isComingSoon || undefined}
                   onClick={(e) => {
                     e.preventDefault();
+                    if (isComingSoon) return;
                     handleItemClick(marketplace.href);
                   }}
                   onMouseEnter={() => setFocusedIndex(index)}

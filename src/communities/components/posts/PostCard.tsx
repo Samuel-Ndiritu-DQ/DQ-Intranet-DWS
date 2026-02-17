@@ -1,7 +1,12 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { formatDistanceToNow } from 'date-fns';
 import { Heart, MessageSquare, Share2, Calendar, MapPin } from 'lucide-react';
+import { CommunityReactions } from '@/communities/components/post/CommunityReactions';
+import { CommunityComments } from '@/communities/components/post/CommunityComments';
+import { useAuth } from '@/communities/contexts/AuthProvider';
+import { toast } from 'sonner';
+import { PostCardMedia } from './PostCard/PostCardMedia';
 
 interface Post {
   id: string;
@@ -26,15 +31,18 @@ interface Post {
 interface PostCardProps {
   post: Post;
   onActionComplete?: () => void;
+  isMember?: boolean;
 }
 
-export function PostCard({ post }: PostCardProps) {
+export function PostCard({ post, onActionComplete, isMember = false }: PostCardProps) {
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const [showComments, setShowComments] = useState(false);
 
   const getPostTypeBadge = (type: string) => {
     const badges = {
       event: 'bg-green-100 text-green-800',
-      poll: 'bg-blue-100 text-blue-800',
+      poll: 'bg-dq-navy/15 text-dq-navy',
       media: 'bg-purple-100 text-purple-800',
       article: 'bg-orange-100 text-orange-800',
       announcement: 'bg-red-100 text-red-800',
@@ -43,14 +51,44 @@ export function PostCard({ post }: PostCardProps) {
     return badges[type as keyof typeof badges] || badges.text;
   };
 
+  const handleShare = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    try {
+      const url = `${window.location.origin}/post/${post.id}`;
+      if (navigator.share) {
+        await navigator.share({
+          title: post.title,
+          text: post.content.substring(0, 200),
+          url: url
+        });
+      } else {
+        await navigator.clipboard.writeText(url);
+        toast.success('Post link copied to clipboard');
+      }
+    } catch (error: any) {
+      // User cancelled share or error occurred
+      if (error.name !== 'AbortError') {
+        console.error('Error sharing:', error);
+        // Fallback to clipboard
+        try {
+          const url = `${window.location.origin}/post/${post.id}`;
+          await navigator.clipboard.writeText(url);
+          toast.success('Post link copied to clipboard');
+        } catch (clipboardError) {
+          toast.error('Failed to share post');
+        }
+      }
+    }
+  };
+
   return (
     <div className="bg-white rounded-lg border border-gray-200 shadow-sm hover:shadow-md transition-shadow duration-200">
       {/* Post Header */}
       <div className="p-6 pb-4">
         <div className="flex items-start justify-between">
           <div className="flex items-start space-x-3">
-            <div className="w-10 h-10 bg-indigo-100 rounded-full flex items-center justify-center">
-              <span className="text-indigo-600 font-medium text-sm">
+            <div className="w-10 h-10 bg-dq-navy/15 rounded-full flex items-center justify-center">
+              <span className="text-dq-navy font-medium text-sm">
                 {post.author_username.charAt(0).toUpperCase()}
               </span>
             </div>
@@ -58,7 +96,7 @@ export function PostCard({ post }: PostCardProps) {
               <div className="flex items-center space-x-2">
                 <button
                   onClick={() => navigate(`/communities/profile/${post.created_by}`)}
-                  className="font-medium text-gray-900 hover:text-indigo-600 transition-colors"
+                  className="font-medium text-gray-900 hover:text-dq-navy transition-colors"
                 >
                   {post.author_username}
                 </button>
@@ -71,7 +109,7 @@ export function PostCard({ post }: PostCardProps) {
               <div className="flex items-center space-x-2 mt-1">
                 <button
                   onClick={() => navigate(`/communities/community/${post.community_id}`)}
-                  className="text-sm text-indigo-600 hover:text-indigo-800 transition-colors"
+                  className="text-sm text-dq-navy hover:text-[#13285A] transition-colors"
                 >
                   {post.community_name}
                 </button>
@@ -88,7 +126,30 @@ export function PostCard({ post }: PostCardProps) {
       {/* Post Content */}
       <div className="px-6 pb-4">
         <h3 className="text-lg font-semibold text-gray-900 mb-2">{post.title}</h3>
-        <p className="text-gray-700 leading-relaxed line-clamp-3">{post.content}</p>
+        
+        {/* Check if content has media (either post_type is media OR content contains media HTML) */}
+        {(() => {
+          const hasMedia = post.post_type === 'media' || 
+                          (post.content && (post.content.includes('<div class="media-content">') || 
+                                           post.content.includes('<img') ||
+                                           post.content.match(/<img[^>]+src/i)));
+          
+          if (hasMedia) {
+            return (
+              <div className="mt-3">
+                <PostCardMedia post={post as any} />
+                {/* Show text content only if it doesn't contain media HTML */}
+                {post.content && !post.content.includes('<div class="media-content">') && !post.content.includes('<img') && (
+                  <p className="text-gray-700 leading-relaxed mt-3">{post.content.replace(/<[^>]*>/g, '')}</p>
+                )}
+              </div>
+            );
+          } else {
+            return (
+              <p className="text-gray-700 leading-relaxed line-clamp-3">{post.content?.replace(/<[^>]*>/g, '') || post.content}</p>
+            );
+          }
+        })()}
         
         {/* Event specific content */}
         {post.post_type === 'event' && (
@@ -113,24 +174,54 @@ export function PostCard({ post }: PostCardProps) {
 
       {/* Post Actions */}
       <div className="px-6 py-4 border-t border-gray-100">
-        <div className="flex items-center space-x-6">
-          <button className="flex items-center space-x-2 text-gray-500 hover:text-red-500 transition-colors">
-            <Heart className="h-5 w-5" />
-            <span className="text-sm">{post.helpful_count || 0}</span>
-          </button>
-          <button
-            onClick={() => navigate(`/communities/post/${post.id}`)}
-            className="flex items-center space-x-2 text-gray-500 hover:text-blue-500 transition-colors"
-          >
-            <MessageSquare className="h-5 w-5" />
-            <span className="text-sm">{post.comment_count || 0}</span>
-          </button>
-          <button className="flex items-center space-x-2 text-gray-500 hover:text-green-500 transition-colors">
-            <Share2 className="h-5 w-5" />
-            <span className="text-sm">Share</span>
-          </button>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-6">
+            <CommunityReactions
+              postId={post.id}
+              communityId={post.community_id}
+              isMember={isMember || false}
+              onReactionChange={onActionComplete}
+            />
+            <button
+              onClick={(e) => {
+                console.log('🔵 PostCard Comments button clicked');
+                e.stopPropagation();
+                e.preventDefault();
+                setShowComments(!showComments);
+              }}
+              className="flex items-center space-x-2 text-gray-500 hover:text-dq-navy transition-colors"
+            >
+              <MessageSquare className="h-5 w-5" />
+              <span className="text-sm">{post.comment_count || 0}</span>
+            </button>
+            <button 
+              onClick={(e) => {
+                console.log('🔵 PostCard Share button clicked');
+                handleShare(e);
+              }}
+              className="flex items-center space-x-2 text-gray-500 hover:text-green-500 transition-colors"
+            >
+              <Share2 className="h-5 w-5" />
+              <span className="text-sm">Share</span>
+            </button>
+          </div>
         </div>
       </div>
+
+      {/* Comments Section */}
+      {showComments && (
+        <div className="px-6 pb-4">
+          <CommunityComments
+            postId={post.id}
+            communityId={post.community_id}
+            isMember={isMember || false}
+            onCommentAdded={() => {
+              onActionComplete?.();
+              setShowComments(true);
+            }}
+          />
+        </div>
+      )}
     </div>
   );
 }

@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { FadeInUpOnScroll } from "../AnimationUtils";
 import { Building2, Brain, Layers, Shuffle, Users, Rocket } from "lucide-react";
 import DQSixDigitalModal, { SixDigitalModalData } from "./DQSixDigitalModal";
+import { DiscoverSectionTitle } from "./DiscoverSectionTitle";
 
 export type SixDigitalId = "D1" | "D2" | "D3" | "D4" | "D5" | "D6";
 
@@ -166,14 +167,11 @@ const Discover_SixDigitalSection: React.FC = () => {
     <section className="bg-gray-50 py-16">
       <div className="container mx-auto px-4">
         <FadeInUpOnScroll className="mb-8 text-center">
-          <p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-500">
-            Architecture
-          </p>
-          <h2 className="mb-3 text-3xl font-bold text-gray-900">
-            DQ | 6x Digital Architecture
-          </h2>
+          <DiscoverSectionTitle>
+            Agile 6xD (Products)
+          </DiscoverSectionTitle>
           <p className="mx-auto max-w-3xl text-lg text-gray-600">
-            Six connected digital dimensions shaping how DQ learns, builds, and delivers value.
+            Six digital perspectives guiding how DQ designs, builds, and scales transformation as living systems.
           </p>
         </FadeInUpOnScroll>
 

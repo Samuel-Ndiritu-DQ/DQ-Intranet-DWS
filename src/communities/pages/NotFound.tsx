@@ -10,7 +10,6 @@ const NotFound = () => {
       location.pathname
     );
   }, [location.pathname]);
-
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-900 px-4 py-10 sm:px-6">
       <div className="relative flex min-h-[calc(100vh-80px)] items-center justify-center">

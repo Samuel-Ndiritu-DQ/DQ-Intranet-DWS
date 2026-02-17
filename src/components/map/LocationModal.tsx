@@ -43,15 +43,9 @@ const LocationModal: React.FC<LocationModalProps> = ({ location, isOpen, onClose
 
   useEffect(() => {
     if (isOpen) {
-      document.body.style.overflow = "hidden";
-      // Reset description expansion when modal opens
+      // Reset description expansion when panel opens
       setShowFullDescription(false);
-    } else {
-      document.body.style.overflow = "";
     }
-    return () => {
-      document.body.style.overflow = "";
-    };
   }, [isOpen]);
 
   useEffect(() => {
@@ -147,23 +141,23 @@ const LocationModal: React.FC<LocationModalProps> = ({ location, isOpen, onClose
   return (
     <div
       ref={modalRef}
-      className={`absolute top-0 right-0 h-full w-full md:w-[360px] lg:w-[380px] z-50 transition-transform duration-300 ease-out ${
+      className={`absolute top-0 right-0 h-full w-full md:w-[452px] z-50 transition-transform duration-300 ease-out ${
         isOpen ? "translate-x-0" : "translate-x-full"
       }`}
       style={{
-        borderRadius: "0 24px 24px 0",
-        maxHeight: "100%",
+        borderRadius: 16,
+        maxHeight: "740px",
       }}
       role="dialog"
       aria-modal="true"
       aria-labelledby="location-modal-title"
     >
-      <div className="flex h-full flex-col rounded-[24px] bg-white shadow-[0_25px_60px_rgba(3,15,53,0.25)] ring-1 ring-slate-100">
+      <div className="flex h-full flex-col rounded-[16px] bg-white shadow-[0_8px_24px_rgba(0,0,0,0.12)]">
         {/* Header */}
         <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
           <button
             onClick={onClose}
-            className="flex items-center gap-1 text-sm font-semibold text-blue-600 hover:text-blue-700"
+            className="flex items-center gap-1 text-sm font-semibold text-[#162862] hover:text-[#162862] hover:opacity-85 transition-opacity"
             aria-label="Back"
           >
             <ArrowLeft size={16} />
@@ -182,12 +176,20 @@ const LocationModal: React.FC<LocationModalProps> = ({ location, isOpen, onClose
         <div className="flex-1 overflow-y-auto px-6 pt-6 pb-4 space-y-6">
           <div className="space-y-2">
             <span
-              className="inline-flex rounded-full px-3 py-1 text-xs font-semibold tracking-wide"
+              className="inline-flex rounded-full px-3 py-1 text-xs font-medium tracking-wide"
               style={{ backgroundColor: accentPale, color }}
             >
               {getCategoryDisplay()}
             </span>
-            <h2 id="location-modal-title" className="text-2xl font-semibold text-slate-900">
+            <h2
+              id="location-modal-title"
+              className="font-bold"
+              style={{
+                fontSize: "20px",
+                color: "#162862",
+                lineHeight: 1.3,
+              }}
+            >
               {location.name}
             </h2>
             <p className="text-sm font-medium text-slate-500">
@@ -259,17 +261,23 @@ const LocationModal: React.FC<LocationModalProps> = ({ location, isOpen, onClose
             </div>
           )}
 
+          {location.address && (
           <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50/80 p-4">
-            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Address</p>
-            <p className="text-sm font-medium text-slate-900">{location.address}</p>
-            <p className="text-sm text-slate-600">
-              {location.city}, {location.country}
+              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                Address
+              </p>
+              <p className="text-sm font-medium text-slate-900">
+                {location.address}
             </p>
           </div>
+          )}
         </div>
 
         {/* Footer with Action Buttons */}
-        <div className="border-t border-slate-200 px-4 md:px-6 py-4 bg-white" style={{ borderBottomLeftRadius: 24, borderBottomRightRadius: 24 }}>
+        <div
+          className="border-t border-slate-200 px-4 md:px-6 py-4 bg-white"
+          style={{ borderBottomLeftRadius: 16, borderBottomRightRadius: 16 }}
+        >
           <div className="flex gap-3 flex-wrap">
             {showKnowledgeCenter && (
               <div className="flex-1 min-w-0">

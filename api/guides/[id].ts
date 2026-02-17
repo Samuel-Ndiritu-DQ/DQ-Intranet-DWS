@@ -35,7 +35,7 @@ export default async function handler(req: AnyRequest, res: AnyResponse) {
     const reqUrl = `${proto}://${host}${req.url || ''}`;
     const urlObj = new URL(reqUrl);
     const id = urlObj.pathname.split('/').pop() as string;
-    const isUuid = /^[0-9a-z\-]+$/i.test(id);
+    const isUuid = /^[0-9a-z-]+$/i.test(id);
 
     if (req.method === 'GET') {
       const include = (urlObj.searchParams.get('include') || '').toLowerCase();

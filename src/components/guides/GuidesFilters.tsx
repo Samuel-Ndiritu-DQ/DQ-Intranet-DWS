@@ -1,6 +1,12 @@
 import React, { useEffect, useId, useMemo, useRef, useState } from 'react'
 import { parseCsv, toCsv } from '../../utils/guides'
 import { ChevronDown, ChevronRight } from 'lucide-react'
+import {
+  KNOWLEDGE_SYSTEMS,
+  GHC_DIMENSIONS,
+  SIX_XD_PERSPECTIVES,
+  ALPHABET
+} from '../../pages/guides/glossaryFilters'
 
 type Facet = { id: string; name: string; count?: number }
 export interface GuidesFacets {
@@ -25,7 +31,7 @@ interface Props {
   facets: GuidesFacets
   query: URLSearchParams
   onChange: (next: URLSearchParams) => void
-  activeTab: 'guidelines' | 'strategy' | 'blueprints' | 'testimonials' | 'resources'
+  activeTab: 'guidelines' | 'strategy' | 'blueprints' | 'testimonials' | 'glossary' | 'faqs'
 }
 
 const TESTIMONIAL_CATEGORIES: Facet[] = [
@@ -85,9 +91,8 @@ const GUIDELINES_LOCATIONS: Facet[] = [
 ]
 
 const GUIDELINES_CATEGORIES: Facet[] = [
-  { id: 'resources', name: 'Resources' },
-  { id: 'policies', name: 'Policies' },
-  { id: 'xds', name: 'xDS (Design Systems)' }
+  { id: 'resources', name: 'Guidelines' },
+  { id: 'policies', name: 'Policies' }
 ]
 
 const BLUEPRINT_GUIDE_TYPES: Facet[] = [
@@ -117,6 +122,24 @@ const BLUEPRINT_LOCATIONS: Facet[] = [
   { id: 'NBO', name: 'NBO' }
 ]
 
+const PRODUCT_TYPES: Facet[] = [
+  { id: 'platform', name: 'Platform' },
+  { id: 'academy', name: 'Academy' },
+  { id: 'framework', name: 'Framework' },
+  { id: 'tooling', name: 'Tooling' },
+  { id: 'marketplace', name: 'Marketplace' },
+  { id: 'enablement-product', name: 'Enablement Product' }
+]
+
+const PRODUCT_STAGES: Facet[] = [
+  { id: 'concept', name: 'Concept' },
+  { id: 'mvp', name: 'MVP' },
+  { id: 'live', name: 'Live' },
+  { id: 'scaling', name: 'Scaling' },
+  { id: 'enterprise-ready', name: 'Enterprise-ready' }
+]
+
+// Keep legacy framework filters for backward compatibility (mapped to product domains)
 const BLUEPRINT_FRAMEWORKS: Facet[] = [
   { id: 'devops', name: 'DevOps' },
   { id: 'dbp', name: 'DBP' },
@@ -126,16 +149,12 @@ const BLUEPRINT_FRAMEWORKS: Facet[] = [
   { id: 'projects', name: 'Projects' }
 ]
 
-const BLUEPRINT_SECTORS: Facet[] = [
-  { id: 'farming-4.0', name: 'Farming 4.0' },
+const PRODUCT_SECTORS: Facet[] = [
   { id: 'government-4.0', name: 'Government 4.0' },
-  { id: 'hospitality-4.0', name: 'Hospitality 4.0' },
   { id: 'infrastructure-4.0', name: 'Infrastructure 4.0' },
-  { id: 'logistics-4.0', name: 'Logistics 4.0' },
   { id: 'plant-4.0', name: 'Plant 4.0' },
-  { id: 'retail-4.0', name: 'Retail 4.0' },
-  { id: 'service-4.0', name: 'Service 4.0' },
-  { id: 'wellness-4.0', name: 'Wellness 4.0' }
+  { id: 'logistics-4.0', name: 'Logistics 4.0' },
+  { id: 'service-4.0', name: 'Service 4.0' }
 ]
 
 const STRATEGY_LOCATIONS: Facet[] = [
@@ -160,18 +179,20 @@ const STRATEGY_UNITS: Facet[] = [
 
 const STRATEGY_TYPES: Facet[] = [
   { id: 'journey', name: 'Journey' },
-  { id: 'history', name: 'History' },
-  { id: 'initiatives', name: 'Initiatives' },
-  { id: 'cases', name: 'Cases' },
-  { id: 'references', name: 'References' }
+  { id: 'history', name: 'History' }
 ]
 
 const STRATEGY_FRAMEWORKS: Facet[] = [
   { id: 'ghc', name: 'GHC' },
-  { id: '6xd', name: '6xD (Digital Framework)' },
-  { id: 'clients', name: 'Clients' },
-  { id: 'ghc-leader', name: 'GHC Leader' },
-  { id: 'testimonials-insights', name: 'Testimonials/Insights' }
+  { id: '6xd', name: '6xD (Digital Framework)' }
+]
+
+// All possible filter categories - default to ALL collapsed
+const ALL_CATEGORIES = [
+  'guide_type', 'sub_domain', 'unit', 'location', 'testimonial_category',
+  'product_type', 'product_stage', 'product_sector', 'guidelines_category',
+  'strategy_type', 'strategy_framework',
+  'glossary_knowledge_system', 'glossary_ghc_dimension', 'glossary_6xd_perspective', 'glossary_letter'
 ]
 
 const Section: React.FC<{ idPrefix: string; title: string; category: string; collapsed: boolean; onToggle: (category: string) => void }> = ({ idPrefix, title, category, collapsed, onToggle, children }) => {
@@ -244,32 +265,109 @@ export const GuidesFilters: React.FC<Props> = ({ facets, query, onChange, active
   const isBlueprintSelected = activeTab === 'blueprints'
   const isTestimonialsSelected = activeTab === 'testimonials'
   const isGuidelinesSelected = activeTab === 'guidelines'
+  const isGlossarySelected = activeTab === 'glossary'
   const isResourcesSelected = activeTab === 'resources'
   const prevTabRef = useRef<typeof activeTab>(activeTab)
+  
+  // Filter strategy options based on available data in facets
+  // Only show filter options that have matching guides in the database
+  const availableStrategyTypes = useMemo(() => {
+    if (!isStrategySelected) return []
+    // If facets are not loaded yet, show all options (they'll be filtered once data loads)
+    if (!facets.sub_domain || facets.sub_domain.length === 0) return STRATEGY_TYPES
+    
+    const subDomainIds = new Set(facets.sub_domain.map(f => f.id.toLowerCase()))
+    return STRATEGY_TYPES.filter(type => {
+      const typeId = type.id.toLowerCase()
+      // Check if any sub_domain matches this type (strategy filters check sub_domain field)
+      return Array.from(subDomainIds).some(sd => 
+        sd.includes(typeId) || typeId.includes(sd) || sd === typeId
+      )
+    })
+  }, [isStrategySelected, facets.sub_domain])
+  
+  const availableStrategyFrameworks = useMemo(() => {
+    if (!isStrategySelected) return []
+    // If facets are not loaded yet, show all options (they'll be filtered once data loads)
+    if ((!facets.sub_domain || facets.sub_domain.length === 0) && 
+        (!facets.domain || facets.domain.length === 0) && 
+        (!facets.guide_type || facets.guide_type.length === 0)) {
+      return STRATEGY_FRAMEWORKS
+    }
+    
+    const subDomainIds = new Set((facets.sub_domain || []).map(f => f.id.toLowerCase()))
+    const domainIds = new Set((facets.domain || []).map(f => f.id.toLowerCase()))
+    const guideTypeIds = new Set((facets.guide_type || []).map(f => f.id.toLowerCase()))
+    
+    return STRATEGY_FRAMEWORKS.filter(framework => {
+      const frameworkId = framework.id.toLowerCase()
+      // Check if any facet matches this framework (strategy filters check sub_domain, domain, and guide_type)
+      const allFacetValues = [...subDomainIds, ...domainIds, ...guideTypeIds]
+      return allFacetValues.some(value => {
+        if (frameworkId === '6xd') {
+          return value.includes('6xd') || 
+                 value.includes('digital-framework') ||
+                 value.includes('digital framework')
+        } else if (frameworkId === 'ghc') {
+          return value.includes('ghc') ||
+                 value.includes('golden honeycomb')
+        }
+        return value.includes(frameworkId) || frameworkId.includes(value)
+      })
+    })
+  }, [isStrategySelected, facets.sub_domain, facets.domain, facets.guide_type])
   const clearAll = () => {
     const next = new URLSearchParams()
     onChange(next)
   }
+  
   // Persist collapsed categories in URL param 'collapsed' as CSV; also keep local state to avoid cross-instance glitches
+  // Default to ALL categories collapsed if not in URL
   const initialCollapsed = useMemo(() => {
     const fromUrl = parseCsv(query.get('collapsed'))
-    return new Set(fromUrl.length > 0 ? fromUrl : ['guide_type', 'sub_domain', 'unit', 'location', 'testimonial_category'])
+    // If URL has collapsed param, use it; otherwise default to ALL collapsed
+    return new Set(fromUrl.length > 0 ? fromUrl : ALL_CATEGORIES)
   }, [query])
   const [collapsedSet, setCollapsedSet] = useState<Set<string>>(initialCollapsed)
+  
   // Keep local collapsed state in sync if URL changes from outside
   useEffect(() => {
     const next = new Set(parseCsv(query.get('collapsed')))
-    if (next.size > 0) setCollapsedSet(next)
+    // If URL has collapsed param, use it; otherwise default to ALL collapsed
+    if (next.size > 0) {
+      setCollapsedSet(next)
+    } else {
+      setCollapsedSet(new Set(ALL_CATEGORIES))
+    }
   }, [query])
   // Clean up incompatible filters when switching tabs (only run on actual tab change, not on query changes)
+  // Also collapse all filters when switching tabs
   useEffect(() => {
     // Only run if tab actually changed
     if (prevTabRef.current === activeTab) return
     prevTabRef.current = activeTab
     
-    if (!(isStrategySelected || isBlueprintSelected || isTestimonialsSelected)) return
     const next = new URLSearchParams(query.toString())
     let changed = false
+    
+    // Collapse all filters when switching tabs
+    const allCollapsed = new Set(ALL_CATEGORIES)
+    const currentCollapsed = new Set(parseCsv(next.get('collapsed')))
+    // Check if collapsed state needs to be updated
+    const collapsedChanged = ALL_CATEGORIES.some(cat => {
+      return allCollapsed.has(cat) !== currentCollapsed.has(cat)
+    })
+    if (collapsedChanged) {
+      next.set('collapsed', Array.from(allCollapsed).join(','))
+      setCollapsedSet(allCollapsed)
+      changed = true
+    }
+    
+    if (!(isStrategySelected || isBlueprintSelected || isTestimonialsSelected)) {
+      if (changed) onChange(next)
+      return
+    }
+    
     const keysToDelete = isStrategySelected 
       ? ['guide_type', 'sub_domain', 'domain']
       : isTestimonialsSelected
@@ -316,13 +414,124 @@ export const GuidesFilters: React.FC<Props> = ({ facets, query, onChange, active
         <h2 className="text-lg font-semibold">Filters</h2>
         <button onClick={clearAll} className="text-[var(--guidelines-primary)] text-sm font-medium">Clear all</button>
       </div>
-      {isBlueprintSelected ? (
+      {isGlossarySelected ? (() => {
+        const selectedKnowledgeSystems = parseCsv(query.get('glossary_knowledge_system'))
+        const hasGHC = selectedKnowledgeSystems.includes('ghc')
+        const has6xD = selectedKnowledgeSystems.includes('6xd')
+
+        return (
+          <>
+            {/* PRIMARY FILTER: Knowledge System (e.g., GHC, Agile 6xD) */}
+            <Section
+              idPrefix={instanceId}
+              title="Knowledge System"
+              category="glossary_knowledge_system"
+              collapsed={collapsedSet.has('glossary_knowledge_system')}
+              onToggle={toggleCollapsed}
+            >
+              <CheckboxList
+                idPrefix={instanceId}
+                name="glossary_knowledge_system"
+                options={KNOWLEDGE_SYSTEMS}
+                query={query}
+                onChange={onChange}
+              />
+            </Section>
+
+            {/* SECONDARY FILTER: GHC Dimension (shown only when GHC is selected AND 6xD is NOT selected) */}
+            {hasGHC && !has6xD && (
+              <Section
+                idPrefix={instanceId}
+                title="GHC Dimension"
+                category="glossary_ghc_dimension"
+                collapsed={collapsedSet.has('glossary_ghc_dimension')}
+                onToggle={toggleCollapsed}
+              >
+                <CheckboxList
+                  idPrefix={instanceId}
+                  name="glossary_ghc_dimension"
+                  options={GHC_DIMENSIONS}
+                  query={query}
+                  onChange={onChange}
+                />
+              </Section>
+            )}
+
+            {/* SECONDARY FILTER: 6xD Perspective (shown only when Agile 6xD is selected) */}
+            {has6xD && (
+              <Section
+                idPrefix={instanceId}
+                title="6xD Perspective"
+                category="glossary_6xd_perspective"
+                collapsed={collapsedSet.has('glossary_6xd_perspective')}
+                onToggle={toggleCollapsed}
+              >
+                <CheckboxList
+                  idPrefix={instanceId}
+                  name="glossary_6xd_perspective"
+                  options={SIX_XD_PERSPECTIVES}
+                  query={query}
+                  onChange={onChange}
+                />
+              </Section>
+            )}
+
+            {/* ALPHABETICAL FILTER: A–Z browsing for fast scanning */}
+            <Section
+              idPrefix={instanceId}
+              title="Alphabetical"
+              category="glossary_letter"
+              collapsed={collapsedSet.has('glossary_letter')}
+              onToggle={toggleCollapsed}
+            >
+              <div className="flex flex-wrap gap-2">
+                {ALPHABET.map(letter => {
+                  const selected = parseCsv(query.get('glossary_letter')).includes(letter)
+                  return (
+                    <button
+                      key={letter}
+                      onClick={() => {
+                        const next = new URLSearchParams(query.toString())
+                        const values = new Set(parseCsv(next.get('glossary_letter')))
+                        if (values.has(letter)) {
+                          values.delete(letter)
+                        } else {
+                          values.add(letter)
+                        }
+                        if (values.size > 0) {
+                          next.set('glossary_letter', toCsv(Array.from(values)))
+                        } else {
+                          next.delete('glossary_letter')
+                        }
+                        onChange(next)
+                      }}
+                      className={`
+                        w-8 h-8 rounded text-xs font-medium transition-colors
+                        ${
+                          selected
+                            ? 'bg-[var(--guidelines-primary)] text-white'
+                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                        }
+                      `}
+                    >
+                      {letter}
+                    </button>
+                  )
+                })}
+              </div>
+            </Section>
+          </>
+        )
+      })() : isBlueprintSelected ? (
         <>
-          <Section idPrefix={instanceId} title="Sector" category="blueprint_sector" collapsed={collapsedSet.has('blueprint_sector')} onToggle={toggleCollapsed}>
-            <CheckboxList idPrefix={instanceId} name="blueprint_sector" options={BLUEPRINT_SECTORS} query={query} onChange={onChange} />
+          <Section idPrefix={instanceId} title="Product Type" category="product_type" collapsed={collapsedSet.has('product_type')} onToggle={toggleCollapsed}>
+            <CheckboxList idPrefix={instanceId} name="product_type" options={PRODUCT_TYPES} query={query} onChange={onChange} />
           </Section>
-          <Section idPrefix={instanceId} title="Framework" category="blueprint_framework" collapsed={collapsedSet.has('blueprint_framework')} onToggle={toggleCollapsed}>
-            <CheckboxList idPrefix={instanceId} name="blueprint_framework" options={BLUEPRINT_FRAMEWORKS} query={query} onChange={onChange} />
+          <Section idPrefix={instanceId} title="Product Stage" category="product_stage" collapsed={collapsedSet.has('product_stage')} onToggle={toggleCollapsed}>
+            <CheckboxList idPrefix={instanceId} name="product_stage" options={PRODUCT_STAGES} query={query} onChange={onChange} />
+          </Section>
+          <Section idPrefix={instanceId} title="Sector" category="product_sector" collapsed={collapsedSet.has('product_sector')} onToggle={toggleCollapsed}>
+            <CheckboxList idPrefix={instanceId} name="product_sector" options={PRODUCT_SECTORS} query={query} onChange={onChange} />
           </Section>
         </>
       ) : isGuidelinesSelected ? (
@@ -340,26 +549,30 @@ export const GuidesFilters: React.FC<Props> = ({ facets, query, onChange, active
           <CheckboxList idPrefix={instanceId} name="guide_type" options={facets.guide_type || []} query={query} onChange={onChange} />
         </Section>
       )}
-      {isBlueprintSelected ? (
-        <Section idPrefix={instanceId} title="Units" category="unit" collapsed={collapsedSet.has('unit')} onToggle={toggleCollapsed}>
-          <CheckboxList idPrefix={instanceId} name="unit" options={BLUEPRINT_UNITS} query={query} onChange={onChange} />
-        </Section>
-      ) : isStrategySelected ? (
-        <Section idPrefix={instanceId} title="Units" category="unit" collapsed={collapsedSet.has('unit')} onToggle={toggleCollapsed}>
-          <CheckboxList idPrefix={instanceId} name="unit" options={STRATEGY_UNITS} query={query} onChange={onChange} />
-        </Section>
-      ) : isGuidelinesSelected ? (
-        <Section idPrefix={instanceId} title="Units" category="unit" collapsed={collapsedSet.has('unit')} onToggle={toggleCollapsed}>
-          <CheckboxList idPrefix={instanceId} name="unit" options={GUIDELINES_UNITS} query={query} onChange={onChange} />
-        </Section>
-      ) : isTestimonialsSelected ? (
-        <Section idPrefix={instanceId} title="Units" category="unit" collapsed={collapsedSet.has('unit')} onToggle={toggleCollapsed}>
-          <CheckboxList idPrefix={instanceId} name="unit" options={TESTIMONIAL_UNITS} query={query} onChange={onChange} />
-        </Section>
-      ) : (
-        <Section idPrefix={instanceId} title="Units" category="unit" collapsed={collapsedSet.has('unit')} onToggle={toggleCollapsed}>
-          <CheckboxList idPrefix={instanceId} name="unit" options={facets.unit || []} query={query} onChange={onChange} />
-        </Section>
+      {!isGlossarySelected && (
+        <>
+          {isBlueprintSelected ? (
+            <Section idPrefix={instanceId} title="Units" category="unit" collapsed={collapsedSet.has('unit')} onToggle={toggleCollapsed}>
+              <CheckboxList idPrefix={instanceId} name="unit" options={BLUEPRINT_UNITS} query={query} onChange={onChange} />
+            </Section>
+          ) : isStrategySelected ? (
+            <Section idPrefix={instanceId} title="Units" category="unit" collapsed={collapsedSet.has('unit')} onToggle={toggleCollapsed}>
+              <CheckboxList idPrefix={instanceId} name="unit" options={STRATEGY_UNITS} query={query} onChange={onChange} />
+            </Section>
+          ) : isGuidelinesSelected ? (
+            <Section idPrefix={instanceId} title="Units" category="unit" collapsed={collapsedSet.has('unit')} onToggle={toggleCollapsed}>
+              <CheckboxList idPrefix={instanceId} name="unit" options={GUIDELINES_UNITS} query={query} onChange={onChange} />
+            </Section>
+          ) : isTestimonialsSelected ? (
+            <Section idPrefix={instanceId} title="Units" category="unit" collapsed={collapsedSet.has('unit')} onToggle={toggleCollapsed}>
+              <CheckboxList idPrefix={instanceId} name="unit" options={TESTIMONIAL_UNITS} query={query} onChange={onChange} />
+            </Section>
+          ) : (
+            <Section idPrefix={instanceId} title="Units" category="unit" collapsed={collapsedSet.has('unit')} onToggle={toggleCollapsed}>
+              <CheckboxList idPrefix={instanceId} name="unit" options={facets.unit || []} query={query} onChange={onChange} />
+            </Section>
+          )}
+        </>
       )}
       {isTestimonialsSelected && (
         <Section idPrefix={instanceId} title="Story Type" category="testimonial_category" collapsed={collapsedSet.has('testimonial_category')} onToggle={toggleCollapsed}>
@@ -369,33 +582,37 @@ export const GuidesFilters: React.FC<Props> = ({ facets, query, onChange, active
       {isStrategySelected && (
         <>
           <Section idPrefix={instanceId} title="Strategy Type" category="strategy_type" collapsed={collapsedSet.has('strategy_type')} onToggle={toggleCollapsed}>
-            <CheckboxList idPrefix={instanceId} name="strategy_type" options={STRATEGY_TYPES} query={query} onChange={onChange} />
+            <CheckboxList idPrefix={instanceId} name="strategy_type" options={availableStrategyTypes.length > 0 ? availableStrategyTypes : STRATEGY_TYPES} query={query} onChange={onChange} />
           </Section>
           <Section idPrefix={instanceId} title="Framework/Program" category="strategy_framework" collapsed={collapsedSet.has('strategy_framework')} onToggle={toggleCollapsed}>
-            <CheckboxList idPrefix={instanceId} name="strategy_framework" options={STRATEGY_FRAMEWORKS} query={query} onChange={onChange} />
+            <CheckboxList idPrefix={instanceId} name="strategy_framework" options={availableStrategyFrameworks.length > 0 ? availableStrategyFrameworks : STRATEGY_FRAMEWORKS} query={query} onChange={onChange} />
           </Section>
         </>
       )}
-      {isBlueprintSelected ? (
-        <Section idPrefix={instanceId} title="Location" category="location" collapsed={collapsedSet.has('location')} onToggle={toggleCollapsed}>
-          <CheckboxList idPrefix={instanceId} name="location" options={BLUEPRINT_LOCATIONS} query={query} onChange={onChange} />
-        </Section>
-      ) : isStrategySelected ? (
-        <Section idPrefix={instanceId} title="Location" category="location" collapsed={collapsedSet.has('location')} onToggle={toggleCollapsed}>
-          <CheckboxList idPrefix={instanceId} name="location" options={STRATEGY_LOCATIONS} query={query} onChange={onChange} />
-        </Section>
-      ) : isGuidelinesSelected ? (
-        <Section idPrefix={instanceId} title="Location" category="location" collapsed={collapsedSet.has('location')} onToggle={toggleCollapsed}>
-          <CheckboxList idPrefix={instanceId} name="location" options={GUIDELINES_LOCATIONS} query={query} onChange={onChange} />
-        </Section>
-      ) : isTestimonialsSelected ? (
-        <Section idPrefix={instanceId} title="Location" category="location" collapsed={collapsedSet.has('location')} onToggle={toggleCollapsed}>
-          <CheckboxList idPrefix={instanceId} name="location" options={TESTIMONIAL_LOCATIONS} query={query} onChange={onChange} />
-        </Section>
-      ) : (
-        <Section idPrefix={instanceId} title="Location" category="location" collapsed={collapsedSet.has('location')} onToggle={toggleCollapsed}>
-          <CheckboxList idPrefix={instanceId} name="location" options={facets.location || []} query={query} onChange={onChange} />
-        </Section>
+      {!isGlossarySelected && (
+        <>
+          {isBlueprintSelected ? (
+            <Section idPrefix={instanceId} title="Location" category="location" collapsed={collapsedSet.has('location')} onToggle={toggleCollapsed}>
+              <CheckboxList idPrefix={instanceId} name="location" options={BLUEPRINT_LOCATIONS} query={query} onChange={onChange} />
+            </Section>
+          ) : isStrategySelected ? (
+            <Section idPrefix={instanceId} title="Location" category="location" collapsed={collapsedSet.has('location')} onToggle={toggleCollapsed}>
+              <CheckboxList idPrefix={instanceId} name="location" options={STRATEGY_LOCATIONS} query={query} onChange={onChange} />
+            </Section>
+          ) : isGuidelinesSelected ? (
+            <Section idPrefix={instanceId} title="Location" category="location" collapsed={collapsedSet.has('location')} onToggle={toggleCollapsed}>
+              <CheckboxList idPrefix={instanceId} name="location" options={GUIDELINES_LOCATIONS} query={query} onChange={onChange} />
+            </Section>
+          ) : isTestimonialsSelected ? (
+            <Section idPrefix={instanceId} title="Location" category="location" collapsed={collapsedSet.has('location')} onToggle={toggleCollapsed}>
+              <CheckboxList idPrefix={instanceId} name="location" options={TESTIMONIAL_LOCATIONS} query={query} onChange={onChange} />
+            </Section>
+          ) : (
+            <Section idPrefix={instanceId} title="Location" category="location" collapsed={collapsedSet.has('location')} onToggle={toggleCollapsed}>
+              <CheckboxList idPrefix={instanceId} name="location" options={facets.location || []} query={query} onChange={onChange} />
+            </Section>
+          )}
+        </>
       )}
     </div>
   )

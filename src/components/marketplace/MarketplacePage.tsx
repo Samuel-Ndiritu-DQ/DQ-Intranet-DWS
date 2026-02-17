@@ -1,12 +1,12 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { useSearchParams, useNavigate, Link } from 'react-router-dom';
+import { useCallback, useEffect, useRef, useState, useMemo } from 'react';
+import { useSearchParams, useNavigate, Link, useLocation } from 'react-router-dom';
 import { FilterSidebar, FilterConfig } from './FilterSidebar.js';
 import { MarketplaceGrid } from './MarketplaceGrid.js';
 import { SearchBar } from '../SearchBar.js';
-import { FilterIcon, XIcon, HomeIcon, ChevronRightIcon } from 'lucide-react';
+import { FilterIcon, XIcon, HomeIcon, ChevronRightIcon, ChevronDown } from 'lucide-react';
 import { ErrorDisplay, CourseCardSkeleton } from '../SkeletonLoader.js';
 import { fetchMarketplaceItems, fetchMarketplaceFilters } from '../../services/marketplace.js';
-import { getMarketplaceConfig } from '../../utils/marketplaceConfig.js';
+import { getMarketplaceConfig, getTabSpecificFilters } from '../../utils/marketplaceConfig.js';
 import { MarketplaceComparison } from './MarketplaceComparison.js';
 import { Header } from '../Header';
 import { Footer } from '../Footer';
@@ -24,8 +24,11 @@ import {
 import GuidesFilters, { GuidesFacets } from '../guides/GuidesFilters';
 import GuidesGrid from '../guides/GuidesGrid';
 import TestimonialsGrid from '../guides/TestimonialsGrid';
-import { supabaseClient } from '../../lib/supabaseClient';
+import GlossaryGrid from '../guides/GlossaryGrid';
+import { supabaseClient, supabase } from '../../lib/supabaseClient';
 import { track } from '../../utils/analytics';
+import FAQsPageContent from '@/pages/guides/FAQsPageContent.tsx';
+import { glossaryTerms, GlossaryTerm, CATEGORIES } from '@/pages/guides/glossaryData.ts';
 const LEARNING_TYPE_FILTER: FilterConfig = {
   id: 'learningType',
   title: 'Learning Type',
@@ -120,7 +123,7 @@ interface ComparisonItem {
 }
 
 export interface MarketplacePageProps {
-  marketplaceType: 'courses' | 'financial' | 'non-financial' | 'knowledge-hub' | 'onboarding' | 'guides';
+  marketplaceType: 'courses' | 'financial' | 'non-financial' | 'knowledge-hub' | 'onboarding' | 'guides' | 'events';
   title: string;
   description: string;
   promoCards?: any[];
@@ -160,6 +163,205 @@ const parseFilterValues = (params: URLSearchParams, key: string): string[] =>
     .map((value) => value.trim())
     .filter(Boolean);
 
+// Interface for Supabase event data from upcoming_events view or events_v2 table
+interface UpcomingEventView {
+  id: string;
+  title: string;
+  description: string | null;
+  start_time: string;
+  end_time: string;
+  category: string;
+  location: string;
+  location_filter?: string | null; // For filtering (from events_v2 table)
+  department?: string | null; // Department field for filtering (from events_v2 table)
+  image_url: string | null;
+  meeting_link: string | null;
+  is_virtual: boolean;
+  is_all_day: boolean;
+  max_attendees: number | null;
+  registration_required: boolean;
+  registration_deadline: string | null;
+  organizer_id: string;
+  organizer_name: string | null;
+  organizer_email: string | null;
+  status: string;
+  is_featured: boolean;
+  tags: string[] | null;
+  created_at: string;
+  updated_at: string;
+}
+
+// Interface for Supabase events table
+interface EventsTableRow {
+  id: string;
+  title: string;
+  description: string | null;
+  event_date: string; // DATE format: YYYY-MM-DD
+  event_time: string | null; // TIME format: HH:MM:SS
+  community_id: string | null;
+  created_by: string | null;
+  created_at: string;
+}
+
+// Interface for events stored in posts table
+interface PostEventRow {
+  id: string;
+  title: string;
+  content: string | null;
+  description?: string | null;
+  event_date: string | null; // TIMESTAMPTZ format
+  event_location: string | null;
+  post_type: string;
+  community_id: string | null;
+  created_by: string | null;
+  created_at: string;
+  tags?: string[] | null;
+}
+
+// Union type for all event sources
+type SupabaseEvent = UpcomingEventView | EventsTableRow | PostEventRow;
+
+// Interface for marketplace event format
+interface MarketplaceEvent {
+  id: string;
+  title: string;
+  description: string;
+  category: string;
+  eventType: string;
+  businessStage: string;
+  provider: {
+    name: string;
+    logoUrl: string;
+    description?: string;
+  };
+  date: string;
+  time?: string;
+  location: string;
+  price: string;
+  capacity?: string;
+  details?: string[];
+  tags: string[];
+  imageUrl?: string;
+  department?: string; // Preserve department field for filtering
+}
+
+// Transform Supabase event to marketplace event format
+const transformEventToMarketplace = (event: SupabaseEvent): MarketplaceEvent => {
+  let startDate: Date;
+  let endDate: Date;
+  let category: string;
+  let location: string;
+  let description: string;
+  let imageUrl: string | null = null;
+  let tags: string[] = [];
+  let department: string | undefined = undefined;
+
+  // Check event type and extract data accordingly
+  if ('start_time' in event && 'end_time' in event) {
+    // Event from upcoming_events view or events_v2 table
+    const evt = event as UpcomingEventView;
+    startDate = new Date(evt.start_time);
+    endDate = new Date(evt.end_time);
+    category = evt.category || "General";
+    location = evt.location || "TBA";
+    description = evt.description || "";
+    imageUrl = evt.image_url;
+    tags = evt.tags || [];
+    // Extract department field if available (from events_v2 table)
+    if ('department' in evt && evt.department) {
+      department = evt.department as string;
+    }
+  } else if ('post_type' in event && event.post_type === 'event') {
+    // Event from posts table
+    const evt = event as PostEventRow;
+    if (evt.event_date) {
+      startDate = new Date(evt.event_date);
+    } else {
+      startDate = new Date(evt.created_at);
+    }
+    endDate = new Date(startDate.getTime() + 60 * 60 * 1000); // Default 1 hour
+    category = evt.community_id ? "Community" : "General";
+    location = evt.event_location || "TBA";
+    description = evt.content || evt.description || "";
+    tags = evt.tags || [];
+  } else {
+    // Event from events table
+    const evt = event as EventsTableRow;
+    const eventDate = evt.event_date; // YYYY-MM-DD format
+    const eventTime = evt.event_time || "00:00:00"; // HH:MM:SS format
+    const dateTimeString = `${eventDate}T${eventTime}`;
+    startDate = new Date(dateTimeString);
+    endDate = new Date(startDate.getTime() + 60 * 60 * 1000); // Default 1 hour
+    category = evt.community_id ? "Community" : "General";
+    location = "TBA";
+    description = evt.description || "";
+  }
+
+  // Format date and time
+  const dateStr = startDate.toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
+  });
+
+  // Format time - use range if we have both start and end times, otherwise just start time
+  const startTimeStr = startDate.toLocaleTimeString('en-US', {
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true
+  });
+
+  let timeStr: string;
+  // Check if we have a meaningful end time (not just 1 hour default)
+  const hasRealEndTime = endDate.getTime() - startDate.getTime() > 60 * 60 * 1000 ||
+    (endDate.getTime() - startDate.getTime() === 60 * 60 * 1000 &&
+      ('start_time' in event && 'end_time' in event));
+
+  if (hasRealEndTime) {
+    const endTimeStr = endDate.toLocaleTimeString('en-US', {
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true
+    });
+    timeStr = `${startTimeStr} - ${endTimeStr} (UTC +3)`;
+  } else {
+    timeStr = `${startTimeStr} (UTC +3)`;
+  }
+
+  // Determine event type from category or tags
+  const eventType = category || "General";
+
+  // Default business stage
+  const businessStage = "All Stages";
+
+  // Default provider
+  const provider = {
+    name: "DQ Events",
+    logoUrl: "/DWS-Logo.png",
+    description: "Digital Qatalyst Events"
+  };
+
+  // Default price
+  const price = "Free";
+
+  return {
+    id: event.id,
+    title: event.title,
+    description,
+    category,
+    eventType,
+    businessStage,
+    provider,
+    date: dateStr,
+    time: timeStr,
+    location,
+    price,
+    tags,
+    imageUrl: imageUrl || undefined,
+    department, // Preserve department field for filtering
+  };
+};
+
 export const MarketplacePage: React.FC<MarketplacePageProps> = ({
   marketplaceType,
   title: _title,
@@ -169,27 +371,58 @@ export const MarketplacePage: React.FC<MarketplacePageProps> = ({
   const isGuides = marketplaceType === 'guides';
   const isCourses = marketplaceType === 'courses';
   const isKnowledgeHub = marketplaceType === 'knowledge-hub';
-  
+  const isServicesCenter = marketplaceType === 'non-financial';
+  const isEvents = marketplaceType === 'events';
+
   const navigate = useNavigate();
+  const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
   const config = getMarketplaceConfig(marketplaceType);
 
+  // Service Center tabs - sync with URL params
+  const getServiceTabFromParams = useCallback((params: URLSearchParams): string => {
+    const tab = params.get('tab');
+    const validTabs = ['technology', 'business', 'digital_worker', 'prompt_library', 'ai_tools'];
+    return tab && validTabs.includes(tab) ? tab : 'technology';
+  }, []);
+  const [activeServiceTab, setActiveServiceTab] = useState<string>(() =>
+    isServicesCenter
+      ? getServiceTabFromParams(typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : new URLSearchParams())
+      : 'technology'
+  );
+
+  // Sync activeServiceTab with URL params
+  useEffect(() => {
+    if (isServicesCenter) {
+      const currentTab = searchParams.get('tab');
+      const validTabs = ['technology', 'business', 'digital_worker', 'prompt_library', 'ai_tools'];
+      if (currentTab && validTabs.includes(currentTab) && currentTab !== activeServiceTab) {
+        setActiveServiceTab(currentTab);
+      } else if (!currentTab || !validTabs.includes(currentTab)) {
+        // Set default tab in URL if not present
+        const newParams = new URLSearchParams(searchParams);
+        newParams.set('tab', activeServiceTab);
+        setSearchParams(newParams, { replace: true });
+      }
+    }
+  }, [isServicesCenter, searchParams, activeServiceTab, setSearchParams]);
+
   // Items & filters state
-  const [items, setItems] = useState<any[]>([]);
+  const [_items, setItems] = useState<any[]>([]);
   const [filteredItems, setFilteredItems] = useState<any[]>([]);
   const [totalCount, setTotalCount] = useState<number>(0);
   const [searchQuery, setSearchQuery] = useState('');
-  const [filters, setFilters] = useState<Record<string, string>>({});
+  const [filters, setFilters] = useState<Record<string, string | string[]>>({});
   const [filterConfig, setFilterConfig] = useState<FilterConfig[]>([]);
 
   // Guides facets + URL state
   const [facets, setFacets] = useState<GuidesFacets>({});
   const [queryParams, setQueryParams] = useState(() => new URLSearchParams(typeof window !== 'undefined' ? window.location.search : ''));
   const searchStartRef = useRef<number | null>(null);
-type WorkGuideTab = 'guidelines' | 'strategy' | 'blueprints' | 'testimonials' | 'resources';
+  type WorkGuideTab = 'guidelines' | 'strategy' | 'blueprints' | 'testimonials' | 'glossary' | 'faqs';
   const getTabFromParams = useCallback((params: URLSearchParams): WorkGuideTab => {
     const tab = params.get('tab');
-    return tab === 'strategy' || tab === 'blueprints' || tab === 'testimonials' || tab === 'resources' ? tab : 'guidelines';
+    return tab === 'strategy' || tab === 'blueprints' || tab === 'testimonials' || tab === 'glossary' || tab === 'faqs' ? tab : 'guidelines';
   }, []);
   const [activeTab, setActiveTab] = useState<WorkGuideTab>(() => getTabFromParams(typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : new URLSearchParams()));
 
@@ -198,7 +431,8 @@ type WorkGuideTab = 'guidelines' | 'strategy' | 'blueprints' | 'testimonials' | 
     guidelines: 'Guidelines',
     blueprints: 'Blueprints',
     testimonials: 'Testimonials',
-    resources: 'Library'
+    glossary: 'Glossary',
+    faqs: 'FAQs'
   };
 
   const TAB_DESCRIPTIONS: Record<WorkGuideTab, { description: string; author?: string }> = {
@@ -218,8 +452,12 @@ type WorkGuideTab = 'guidelines' | 'strategy' | 'blueprints' | 'testimonials' | 
       description: 'Success stories, case studies, and reflections that capture lessons learned, celebrate achievements, and share insights from real-world experiences and transformations.',
       author: 'Authored by DQ Teams, Clients, and Partners'
     },
-    resources: {
-      description: 'Library of reference materials, glossaries, and FAQs that help you navigate DQ terminology, processes, and best practices.',
+    glossary: {
+      description: 'Comprehensive dictionary of DQ terminology, acronyms, and key concepts to help you understand our language and processes.',
+      author: 'Maintained by DQ Knowledge Management Team'
+    },
+    faqs: {
+      description: 'Frequently asked questions about DQ processes, tools, workflows, and best practices with detailed answers and guidance.',
       author: 'Maintained by DQ Knowledge Management Team'
     }
   };
@@ -248,8 +486,8 @@ type WorkGuideTab = 'guidelines' | 'strategy' | 'blueprints' | 'testimonials' | 
         // Keep 'unit' and 'location' for Blueprints; delete incompatible filters
         const keysToDelete = ['guide_type', 'sub_domain', 'domain', 'testimonial_category', 'strategy_type', 'strategy_framework', 'guidelines_category', 'blueprint_sector'];
         keysToDelete.forEach(key => next.delete(key));
-      } else if (tab === 'resources') {
-        // For Resources tab, delete all incompatible filters
+      } else if (tab === 'glossary' || tab === 'faqs') {
+        // For Glossary and FAQs tabs, delete all incompatible filters
         const keysToDelete = ['guide_type', 'sub_domain', 'unit', 'domain', 'strategy_type', 'strategy_framework', 'guidelines_category', 'blueprint_framework', 'blueprint_sector', 'testimonial_category'];
         keysToDelete.forEach(key => next.delete(key));
       } else if (tab === 'testimonials') {
@@ -289,7 +527,7 @@ type WorkGuideTab = 'guidelines' | 'strategy' | 'blueprints' | 'testimonials' | 
     // Only run if tab actually changed
     if (prevTabRef.current === activeTab) return;
     prevTabRef.current = activeTab;
-    
+
     const next = new URLSearchParams(queryParams.toString());
     let changed = false;
     // For Strategy and Blueprints, keep 'unit' filter; only delete incompatible filters
@@ -303,19 +541,18 @@ type WorkGuideTab = 'guidelines' | 'strategy' | 'blueprints' | 'testimonials' | 
     } else if (activeTab === 'testimonials') {
       // For Testimonials, delete all incompatible filters
       keysToDelete = ['guide_type', 'sub_domain', 'unit', 'domain', 'strategy_type', 'strategy_framework', 'guidelines_category', 'blueprint_framework', 'blueprint_sector'];
-    } else if (activeTab === 'resources') {
-      // For Resources, delete all incompatible filters
+    } else if (activeTab === 'glossary' || activeTab === 'faqs') {
+      // For Glossary and FAQs, delete all incompatible filters
       keysToDelete = ['guide_type', 'sub_domain', 'unit', 'domain', 'strategy_type', 'strategy_framework', 'guidelines_category', 'blueprint_framework', 'blueprint_sector', 'testimonial_category'];
     } else {
       // For Guidelines, delete Strategy and Blueprint-specific filters
       keysToDelete = ['strategy_type', 'strategy_framework', 'blueprint_framework', 'blueprint_sector'];
     }
     // Clear tab-specific filters when switching away from their respective tabs
-    if (activeTab !== 'guidelines') {
-      if (next.has('guidelines_category')) {
-        next.delete('guidelines_category');
-        changed = true;
-      }
+    // Note: activeTab cannot be 'guidelines' here due to early return above
+    if (next.has('guidelines_category')) {
+      next.delete('guidelines_category');
+      changed = true;
     }
     if (activeTab !== 'blueprints') {
       if (next.has('blueprint_framework')) {
@@ -346,7 +583,7 @@ type WorkGuideTab = 'guidelines' | 'strategy' | 'blueprints' | 'testimonials' | 
   const totalPages = Math.max(1, Math.ceil(Math.max(totalCount, 0) / pageSize));
 
   // UI state
-  
+
   // For courses: URL-based filtering
   const courseFacets = isCourses ? parseFacets(searchParams) : undefined;
   const lmsFilteredItems = isCourses
@@ -359,11 +596,13 @@ type WorkGuideTab = 'guidelines' | 'strategy' | 'blueprints' | 'testimonials' | 
   const [showComparison, setShowComparison] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  
-  
+
+
   // Knowledge-hub specific state
   const [activeFilters, setActiveFilters] = useState<string[]>([]);
-  
+  // Events filter accordion state - track which filter is expanded
+  const [expandedFilter, setExpandedFilter] = useState<string | null>(null);
+
   // Courses: URL toggle function
   const toggleFilter = useCallback((key: string, value: string) => {
     const curr = new Set((searchParams.get(key)?.split(",").filter(Boolean)) || []);
@@ -376,40 +615,129 @@ type WorkGuideTab = 'guidelines' | 'strategy' | 'blueprints' | 'testimonials' | 
     }
     setSearchParams(newParams, { replace: true });
   }, [searchParams, setSearchParams]);
-  
+
   // Apply search query to LMS items
   const searchFilteredItems = isCourses && searchQuery
     ? lmsFilteredItems.filter(item => {
-        const searchableText = [
-          item.title,
-          item.summary,
-          item.courseCategory,
-          item.deliveryMode,
-          item.duration,
-          item.levelCode,
-          item.levelLabel,
-          ...(item.locations || []),
-          ...(item.audience || []),
-          ...(item.department || [])
-        ].filter(Boolean).join(' ').toLowerCase();
-        return searchableText.includes(searchQuery.toLowerCase());
-      })
+      const searchableText = [
+        item.title,
+        item.summary,
+        item.courseCategory,
+        item.deliveryMode,
+        item.duration,
+        item.levelCode,
+        item.levelLabel,
+        ...(item.locations || []),
+        ...(item.audience || []),
+        ...(item.department || [])
+      ].filter(Boolean).join(' ').toLowerCase();
+      return searchableText.includes(searchQuery.toLowerCase());
+    })
     : lmsFilteredItems;
-  
+
+  // Filter glossary terms based on two-level filter structure
+  const filteredGlossaryTerms = useMemo(() => {
+    if (!isGuides || activeTab !== 'glossary') {
+      return [];
+    }
+
+    // PRIMARY FILTER: Knowledge System
+    const knowledgeSystems = parseFilterValues(queryParams, 'glossary_knowledge_system');
+
+    // SECONDARY FILTERS: GHC
+    const ghcDimensions = parseFilterValues(queryParams, 'glossary_ghc_dimension');
+    const ghcTermTypes = parseFilterValues(queryParams, 'glossary_ghc_term_type');
+
+    // SECONDARY FILTERS: 6xD
+    const sixXdDimensions = parseFilterValues(queryParams, 'glossary_6xd_dimension');
+    const sixXdTermTypes = parseFilterValues(queryParams, 'glossary_6xd_term_type');
+
+    // SHARED FILTERS
+    const termOrigins = parseFilterValues(queryParams, 'glossary_term_origin');
+    const usedIn = parseFilterValues(queryParams, 'glossary_used_in');
+    const whoUsesIt = parseFilterValues(queryParams, 'glossary_who_uses_it');
+    const letters = parseFilterValues(queryParams, 'glossary_letter');
+
+    // Search query
+    const searchQuery = queryParams.get('q') || '';
+
+    return glossaryTerms.filter(term => {
+      // PRIMARY: Knowledge System filter
+      if (knowledgeSystems.length > 0) {
+        if (!term.knowledgeSystem || !knowledgeSystems.includes(term.knowledgeSystem)) return false;
+      }
+
+      // SECONDARY: GHC filters (only if GHC is selected or no system filter)
+      if (term.knowledgeSystem === 'ghc') {
+        if (ghcDimensions.length > 0) {
+          if (!term.ghcDimension || !ghcDimensions.includes(term.ghcDimension)) return false;
+        }
+        if (ghcTermTypes.length > 0) {
+          if (!term.ghcTermType || !ghcTermTypes.includes(term.ghcTermType)) return false;
+        }
+      }
+
+      // SECONDARY: 6xD filters (only if 6xD is selected or no system filter)
+      if (term.knowledgeSystem === '6xd') {
+        if (sixXdDimensions.length > 0) {
+          if (!term.sixXdDimension || !sixXdDimensions.includes(term.sixXdDimension)) return false;
+        }
+        if (sixXdTermTypes.length > 0) {
+          if (!term.sixXdTermType || !sixXdTermTypes.includes(term.sixXdTermType)) return false;
+        }
+      }
+
+      // SHARED: Term Origin filter
+      if (termOrigins.length > 0) {
+        if (!term.termOrigin || !termOrigins.includes(term.termOrigin)) return false;
+      }
+
+      // SHARED: Used In filter
+      if (usedIn.length > 0) {
+        if (!term.usedIn || !term.usedIn.some(ui => usedIn.includes(ui))) return false;
+      }
+
+      // SHARED: Who Uses It filter
+      if (whoUsesIt.length > 0) {
+        if (!term.whoUsesIt || !term.whoUsesIt.some(wui => whoUsesIt.includes(wui))) return false;
+      }
+
+      // SHARED: Letter filter (A-Z)
+      if (letters.length > 0) {
+        const termLetter = term.letter.toUpperCase();
+        const matchesLetter = letters.some(l => l.toUpperCase() === termLetter);
+        if (!matchesLetter) return false;
+      }
+
+      // Search filter (works across all terms, no category needed)
+      if (searchQuery) {
+        const searchLower = searchQuery.toLowerCase();
+        const matchesSearch =
+          term.term.toLowerCase().includes(searchLower) ||
+          (term.shortIntro && term.shortIntro.toLowerCase().includes(searchLower)) ||
+          term.explanation.toLowerCase().includes(searchLower) ||
+          term.tags.some(tag => tag.toLowerCase().includes(searchLower));
+        if (!matchesSearch) return false;
+      }
+
+      return true;
+    });
+  }, [isGuides, activeTab, queryParams]);
+
   // Compute filters from URL for courses
   const urlBasedFilters: Record<string, string[]> = isCourses
     ? {
-        category: courseFacets?.category || [],
-        delivery: courseFacets?.delivery || [],
-        duration: courseFacets?.duration || [],
-        level: (courseFacets?.level || []) as string[],
-        department: courseFacets?.department || [],
-        location: courseFacets?.location || [],
-        audience: courseFacets?.audience || [],
-        status: courseFacets?.status || []
-      }
+      category: courseFacets?.category || [],
+      delivery: courseFacets?.delivery || [],
+      duration: courseFacets?.duration || [],
+      level: (courseFacets?.level || []) as string[],
+      department: courseFacets?.department || [],
+      location: courseFacets?.location || [],
+      audience: courseFacets?.audience || [],
+      status: courseFacets?.status || []
+    }
     : {};
-  
+
   // Handle track parameter for newjoiner (courses)
   useEffect(() => {
     if (isCourses) {
@@ -426,7 +754,7 @@ type WorkGuideTab = 'guidelines' | 'strategy' | 'blueprints' | 'testimonials' | 
       }
     }
   }, [isCourses, searchParams, setSearchParams]);
-  
+
   // Load filter configurations
   useEffect(() => {
     if (isCourses) {
@@ -434,7 +762,7 @@ type WorkGuideTab = 'guidelines' | 'strategy' | 'blueprints' | 'testimonials' | 
       setLoading(false);
       return;
     }
-  const loadFilterOptions = async () => {
+    const loadFilterOptions = async () => {
       if (isGuides || isKnowledgeHub) {
         if (filterConfig.length || Object.keys(filters).length) {
           setFilterConfig([]);
@@ -442,24 +770,120 @@ type WorkGuideTab = 'guidelines' | 'strategy' | 'blueprints' | 'testimonials' | 
         }
         return;
       }
+
+      // Use tab-specific filters for Services Center
+      if (isServicesCenter) {
+        const tabFilters = getTabSpecificFilters(activeServiceTab);
+        setFilterConfig(tabFilters);
+        const initial: Record<string, string | string[]> = {};
+        tabFilters.forEach(c => { initial[c.id] = ''; });
+        setFilters(initial);
+        return;
+      }
+
+      // Initialize filter config for events - fetch Department, Location, and Event Type from database
+      if (isEvents) {
+        const loadEventsFilters = async () => {
+          try {
+            // Fetch Department, Location, and Event Type options from database
+            const [departmentResult, locationResult, eventTypeResult] = await Promise.all([
+              supabase.rpc('get_filter_options', { p_filter_type: 'department', p_filter_category: 'events' }),
+              supabase.rpc('get_filter_options', { p_filter_type: 'location', p_filter_category: 'events' }),
+              supabase.rpc('get_filter_options', { p_filter_type: 'event-type', p_filter_category: 'events' })
+            ]);
+
+            // Build filter config with database values
+            const updatedFilterConfig: FilterConfig[] = [];
+
+            // Add Department filter (first) - from database
+            // RPC returns: id = option_value (database value), name = option_label (display name)
+            // Use opt.id (option_value) for name to ensure exact database value matching
+            if (departmentResult.data && departmentResult.data.length > 0) {
+              updatedFilterConfig.push({
+                id: 'department',
+                title: 'Department',
+                options: departmentResult.data.map((opt: any) => ({
+                  id: opt.id.toLowerCase().replace(/\s+/g, '-').replace(/[()]/g, ''),
+                  name: opt.id // Use option_value (opt.id) for exact database value matching
+                }))
+              });
+            } else {
+              // Fallback: use config if database is empty
+              const deptConfig = config.filterCategories?.find(c => c.id === 'department');
+              if (deptConfig) updatedFilterConfig.push(deptConfig);
+            }
+
+            // Add Location filter (second) - from database
+            if (locationResult.data && locationResult.data.length > 0) {
+              updatedFilterConfig.push({
+                id: 'location',
+                title: 'Location',
+                options: locationResult.data.map((opt: any) => ({
+                  id: opt.id.toLowerCase().replace(/\s+/g, '-'),
+                  name: opt.id // Use option_value (opt.id) for exact database value matching
+                }))
+              });
+            } else {
+              // Fallback: use config if database is empty
+              const locConfig = config.filterCategories?.find(c => c.id === 'location');
+              if (locConfig) updatedFilterConfig.push(locConfig);
+            }
+
+            // Add Event Type filter (third) - from database
+            if (eventTypeResult.data && eventTypeResult.data.length > 0) {
+              updatedFilterConfig.push({
+                id: 'event-type',
+                title: 'Event Type',
+                options: eventTypeResult.data.map((opt: any) => ({
+                  id: opt.id.toLowerCase().replace(/\s+/g, '-'),
+                  name: opt.id // Use option_value (opt.id) for exact database value matching
+                }))
+              });
+            } else {
+              // Fallback: use config if database is empty
+              const eventTypeConfig = config.filterCategories?.find(c => c.id === 'event-type');
+              if (eventTypeConfig) updatedFilterConfig.push(eventTypeConfig);
+            }
+
+            // Add other filters from config (Time Range, Delivery Mode, Duration Band)
+            const otherFilters = config.filterCategories?.filter(c =>
+              c.id !== 'department' && c.id !== 'location' && c.id !== 'event-type'
+            ) || [];
+            updatedFilterConfig.push(...otherFilters);
+
+            setFilterConfig(updatedFilterConfig);
+            console.log('Events filter config loaded:', updatedFilterConfig.length, 'categories (Department, Location, and Event Type from database)');
+          } catch (error) {
+            console.error('Error loading filter options from database, using config fallback:', error);
+            // Fallback to config if database fetch fails
+            if (config.filterCategories && config.filterCategories.length > 0) {
+              setFilterConfig(config.filterCategories);
+            }
+          }
+        };
+
+        loadEventsFilters();
+        return;
+      }
+
       try {
         let filterOptions = await fetchMarketplaceFilters(marketplaceType);
         filterOptions = prependLearningTypeFilter(marketplaceType, filterOptions);
         setFilterConfig(filterOptions);
-        const initial: Record<string, string> = {};
+        const initial: Record<string, string | string[]> = {};
         filterOptions.forEach(c => { initial[c.id] = ''; });
         setFilters(initial);
       } catch (err) {
         console.error('Error fetching filter options:', err);
         setFilterConfig(config.filterCategories);
-        const initial: Record<string, string> = {};
+        const initial: Record<string, string | string[]> = {};
         config.filterCategories.forEach(c => { initial[c.id] = ''; });
         setFilters(initial);
       }
     };
     loadFilterOptions();
-  }, [marketplaceType, config, isCourses, isGuides, isKnowledgeHub, filterConfig.length, Object.keys(filters).length]);
-  
+  }, [marketplaceType, config, isCourses, isGuides, isKnowledgeHub, isServicesCenter, isEvents, activeServiceTab, filterConfig.length, Object.keys(filters).length]);
+
   // Fetch items based on marketplace type
   useEffect(() => {
     const run = async () => {
@@ -484,19 +908,333 @@ type WorkGuideTab = 'guidelines' | 'strategy' | 'blueprints' | 'testimonials' | 
         return;
       }
 
+      // EVENTS: fetch from Supabase
+      if (isEvents) {
+        setLoading(true);
+        setError(null);
+        try {
+          let data: SupabaseEvent[] | null = null;
+          let error: any = null;
+
+          // Fetch from events_v2 table (primary source)
+          const now = new Date().toISOString();
+          console.log('[Events Marketplace] Fetching events with filters:', {
+            searchQuery,
+            activeFilters,
+            now
+          });
+
+          // Diagnostic: Check what's in the database
+          console.log('[Events Marketplace] Running database diagnostics...');
+
+          const diagnosticQuery = await supabaseClient
+            .from("events_v2")
+            .select("*", { count: 'exact', head: true });
+
+          const allEventsQuery = await supabaseClient
+            .from("events_v2")
+            .select("id, title, status, start_time", { count: 'exact' })
+            .limit(10);
+
+          const publishedEventsQuery = await supabaseClient
+            .from("events_v2")
+            .select("id, title, status, start_time", { count: 'exact' })
+            .eq("status", "published")
+            .limit(10);
+
+          const futureEventsQuery = await supabaseClient
+            .from("events_v2")
+            .select("id, title, status, start_time", { count: 'exact' })
+            .gte("start_time", now)
+            .limit(10);
+
+          console.log('[Events Marketplace] ===== DATABASE DIAGNOSTICS =====');
+          console.log('Total events in events_v2 table:', diagnosticQuery.count || 0);
+          console.log('Published events count:', publishedEventsQuery.count || 0);
+          console.log('Future events count (start_time >= now):', futureEventsQuery.count || 0);
+          console.log('Current time (now):', now);
+
+          if (allEventsQuery.data && allEventsQuery.data.length > 0) {
+            console.log('Sample of ALL events (first 3):', allEventsQuery.data.slice(0, 3).map(e => ({
+              id: e.id,
+              title: e.title,
+              status: e.status,
+              start_time: e.start_time,
+              isFuture: new Date(e.start_time) >= new Date(now)
+            })));
+          } else {
+            console.log('No events found in events_v2 table');
+          }
+
+          if (publishedEventsQuery.data && publishedEventsQuery.data.length > 0) {
+            console.log('Sample of PUBLISHED events (first 3):', publishedEventsQuery.data.slice(0, 3).map(e => ({
+              id: e.id,
+              title: e.title,
+              status: e.status,
+              start_time: e.start_time,
+              isFuture: new Date(e.start_time) >= new Date(now)
+            })));
+          } else {
+            console.log('No published events found');
+          }
+
+          if (futureEventsQuery.data && futureEventsQuery.data.length > 0) {
+            console.log('Sample of FUTURE events (first 3):', futureEventsQuery.data.slice(0, 3).map(e => ({
+              id: e.id,
+              title: e.title,
+              status: e.status,
+              start_time: e.start_time
+            })));
+          } else {
+            console.log('No future events found');
+          }
+
+          console.log('[Events Marketplace] ===== END DIAGNOSTICS =====');
+
+          let eventsQuery = supabaseClient
+            .from("events_v2")
+            .select("*")
+            .eq("status", "published") // Only get published events
+            .gte("start_time", now); // Only get future events
+
+          // Apply search query if provided
+          if (searchQuery && searchQuery.trim()) {
+            const searchTerm = `%${searchQuery.trim()}%`;
+            // Search across title, description, category, location, and location_filter
+            // Supabase .or() syntax: "column1.ilike.value1,column2.ilike.value2"
+            eventsQuery = eventsQuery.or(
+              `title.ilike.${searchTerm},description.ilike.${searchTerm},category.ilike.${searchTerm},location.ilike.${searchTerm},location_filter.ilike.${searchTerm}`
+            );
+          }
+
+          // Apply backend filters based on activeFilters
+          if (activeFilters.length > 0 && filterConfig.length > 0) {
+            // Group filters by category
+            const filtersByCategory: Record<string, string[]> = {};
+
+            activeFilters.forEach(filterName => {
+              const category = filterConfig.find(c =>
+                c.options.some(opt => opt.name === filterName)
+              );
+              if (category) {
+                if (!filtersByCategory[category.id]) {
+                  filtersByCategory[category.id] = [];
+                }
+                filtersByCategory[category.id].push(filterName);
+              }
+            });
+
+            // Apply event-type filter (maps to category column)
+            // Use exact filter names: Webinar, Workshop, Seminar, Panel, Conference, Networking, Competition, Pitch Day, Townhall
+            if (filtersByCategory['event-type'] && filtersByCategory['event-type'].length > 0) {
+              // Map exact filter names to database category values
+              const categoryMap: Record<string, string> = {
+                'Webinar': 'Training',
+                'Workshop': 'Training',
+                'Seminar': 'Training',
+                'Panel': 'Internal',
+                'Conference': 'Launches',
+                'Networking': 'Internal',
+                'Competition': 'Internal',
+                'Pitch Day': 'Launches',
+                'Townhall': 'Internal'
+              };
+
+              // Use exact filter names (case-sensitive)
+              const categoryValues = filtersByCategory['event-type']
+                .map(name => {
+                  // Match exact filter name
+                  return categoryMap[name] || null;
+                })
+                .filter((value): value is string => value !== null);
+
+              if (categoryValues.length > 0) {
+                // Use exact database column name: category
+                eventsQuery = eventsQuery.in('category', categoryValues);
+              }
+            }
+
+            // Apply delivery-mode filter (maps to is_virtual column)
+            // Use exact filter names: Onsite, Online, Hybrid
+            if (filtersByCategory['delivery-mode'] && filtersByCategory['delivery-mode'].length > 0) {
+              const deliveryModes = filtersByCategory['delivery-mode'];
+
+              // Use exact filter names (case-sensitive)
+              const hasOnline = deliveryModes.includes('Online');
+              const hasOnsite = deliveryModes.includes('Onsite');
+
+              // If only one mode selected, apply backend filter using exact database column name: is_virtual
+              if (deliveryModes.length === 1) {
+                if (hasOnline) {
+                  // Online = is_virtual = true
+                  eventsQuery = eventsQuery.eq('is_virtual', true);
+                } else if (hasOnsite) {
+                  // Onsite = is_virtual = false
+                  eventsQuery = eventsQuery.eq('is_virtual', false);
+                }
+                // Hybrid requires client-side filtering (checking both is_virtual and location for hybrid indicators)
+              }
+              // If multiple modes selected, we'll filter client-side for OR logic
+            }
+
+            // Apply duration-band filter (calculate from start_time and end_time)
+            if (filtersByCategory['duration-band'] && filtersByCategory['duration-band'].length > 0) {
+              // Duration filtering requires calculating duration from start_time and end_time
+              // This is complex to do in Supabase, so we'll filter client-side
+              // The duration is calculated in the transformation function
+            }
+
+            // Apply time-range filter
+            // Use exact filter names: Today, This Week, Next 30 Days, Custom Date Range
+            // Use exact database column name: start_time
+            if (filtersByCategory['time-range'] && filtersByCategory['time-range'].length > 0) {
+              const timeRange = filtersByCategory['time-range'][0]; // Take first selected
+              const today = new Date();
+              today.setHours(0, 0, 0, 0);
+
+              // Use exact filter names (case-sensitive)
+              if (timeRange === 'Today') {
+                const tomorrow = new Date(today);
+                tomorrow.setDate(tomorrow.getDate() + 1);
+                eventsQuery = eventsQuery
+                  .gte('start_time', today.toISOString())
+                  .lt('start_time', tomorrow.toISOString());
+              } else if (timeRange === 'This Week') {
+                const nextWeek = new Date(today);
+                nextWeek.setDate(nextWeek.getDate() + 7);
+                eventsQuery = eventsQuery
+                  .gte('start_time', today.toISOString())
+                  .lt('start_time', nextWeek.toISOString());
+              } else if (timeRange === 'Next 30 Days') {
+                const next30Days = new Date(today);
+                next30Days.setDate(next30Days.getDate() + 30);
+                eventsQuery = eventsQuery
+                  .gte('start_time', today.toISOString())
+                  .lte('start_time', next30Days.toISOString());
+              } else if (timeRange === 'Custom Date Range') {
+                // Custom date range would need additional UI/state to get start and end dates
+                // For now, apply no additional filter (shows all future events)
+              }
+            }
+
+            // Apply department filter (backend)
+            // Use exact database column name: department
+            // filtersByCategory['department'] contains option.name values which should match database department values
+            if (filtersByCategory['department'] && filtersByCategory['department'].length > 0) {
+              const departmentValues = filtersByCategory['department'];
+              // Use these values directly - they should match the database department column values
+              // If loaded from database RPC, opt.id (option_value) is used as option.name
+              // If loaded from config fallback, option.name might need normalization
+              console.log('Applying department filter with values:', departmentValues);
+              eventsQuery = eventsQuery.in('department', departmentValues);
+            }
+
+            // Apply location filter (backend)
+            // Use exact database column name: location_filter
+            // filtersByCategory['location'] contains option_label values which match option_value in our database
+            if (filtersByCategory['location'] && filtersByCategory['location'].length > 0) {
+              const locationValues = filtersByCategory['location'];
+              // Use these values directly as they match the database option_value
+              eventsQuery = eventsQuery.in('location_filter', locationValues);
+            }
+          }
+
+          // Apply ordering
+          eventsQuery = eventsQuery.order("start_time", { ascending: true });
+
+          // Explicitly set a high limit to ensure we get all events (Supabase default is 1000, but let's be explicit)
+          // Note: If you have more than 1000 events, you'll need pagination
+          eventsQuery = eventsQuery.limit(1000);
+
+          const queryResult = await eventsQuery;
+
+          console.log('[Events Marketplace] Query result:', {
+            hasData: !!queryResult.data,
+            dataLength: queryResult.data?.length || 0,
+            hasError: !!queryResult.error,
+            error: queryResult.error
+          });
+
+          if (!queryResult.error && queryResult.data) {
+            data = queryResult.data;
+            console.log(`[Events Marketplace] Successfully fetched ${data.length} events`);
+          } else {
+            error = queryResult.error || new Error("Events_v2 table query failed");
+            console.error('[Events Marketplace] Query error:', error);
+          }
+
+          // Handle errors gracefully - for events, don't use fallback data
+          if (error && (!data || data.length === 0)) {
+            if (error?.code === '42501') {
+              console.warn("[Events Marketplace] Permission denied: Events may require authentication or proper RLS policies.");
+              setError("Permission denied: Events may require authentication or proper RLS policies.");
+            } else {
+              console.error("[Events Marketplace] Error fetching events:", error);
+              setError(`Failed to load events: ${error?.message || 'Unknown error'}`);
+            }
+            // Show empty state instead of fallback data
+            setItems([]);
+            setFilteredItems([]);
+            setTotalCount(0);
+            setLoading(false);
+            return;
+          }
+
+          if (!data || data.length === 0) {
+            console.log("[Events Marketplace] No events found in Supabase - this may be normal if there are no published future events");
+            // Show empty state - no fallback to mock data
+            setItems([]);
+            setFilteredItems([]);
+            setTotalCount(0);
+            setLoading(false);
+            return;
+          }
+
+          // Transform Supabase data to marketplace format
+          const marketplaceEvents = data.map(transformEventToMarketplace);
+
+          setItems(marketplaceEvents);
+          setFilteredItems(marketplaceEvents);
+          setTotalCount(marketplaceEvents.length);
+        } catch (err) {
+          console.error("Error in fetchEvents:", err);
+          // For events, show error instead of fallback data
+          setError(`Failed to load events: ${err instanceof Error ? err.message : 'Unknown error'}`);
+          setItems([]);
+          setFilteredItems([]);
+          setTotalCount(0);
+        } finally {
+          setLoading(false);
+        }
+        return;
+      }
+
       // GUIDES: Supabase query + facets
       if (isGuides) {
+        if (activeTab === 'glossary' || activeTab === 'faqs') {
+          setLoading(false);
+          setItems([]);
+          setFilteredItems([]);
+          setTotalCount(0);
+          return;
+        }
         setLoading(true);
         try {
+          // Exclude removed guidelines from frontend
+          const excludedSlugs = ['atp-guidelines', 'agile-working-guidelines', 'client-session-guidelines', 'dbp-support-guidelines'];
+
           let q = supabaseClient.from('guides').select(GUIDE_LIST_SELECT, { count: 'exact' });
+          excludedSlugs.forEach(slug => {
+            q = q.neq('slug', slug);
+          });
 
           const qStr = queryParams.get('q') || '';
-          const domains     = parseFilterValues(queryParams, 'domain');
-          const rawSubs     = parseFilterValues(queryParams, 'sub_domain');
-          const guideTypes  = parseFilterValues(queryParams, 'guide_type');
-          const units       = parseFilterValues(queryParams, 'unit');
-          const locations   = parseFilterValues(queryParams, 'location');
-          const statuses    = parseFilterValues(queryParams, 'status');
+          const domains = parseFilterValues(queryParams, 'domain');
+          const rawSubs = parseFilterValues(queryParams, 'sub_domain');
+          const guideTypes = parseFilterValues(queryParams, 'guide_type');
+          const units = parseFilterValues(queryParams, 'unit');
+          const locations = parseFilterValues(queryParams, 'location');
+          const statuses = parseFilterValues(queryParams, 'status');
           const testimonialCategories = parseFilterValues(queryParams, 'testimonial_category');
           const strategyTypes = parseFilterValues(queryParams, 'strategy_type');
           const strategyFrameworks = parseFilterValues(queryParams, 'strategy_framework');
@@ -509,9 +1247,10 @@ type WorkGuideTab = 'guidelines' | 'strategy' | 'blueprints' | 'testimonials' | 
           const isStrategyTab = currentActiveTab === 'strategy';
           const isBlueprintTab = currentActiveTab === 'blueprints';
           const isTestimonialsTab = currentActiveTab === 'testimonials';
-          const isResourcesTab = currentActiveTab === 'resources';
+          const isGlossaryTab = currentActiveTab === 'glossary';
+          const isFAQsTab = currentActiveTab === 'faqs';
           const isGuidelinesTab = currentActiveTab === 'guidelines';
-          const isSpecialTab = isStrategyTab || isBlueprintTab || isTestimonialsTab || isResourcesTab;
+          const isSpecialTab = isStrategyTab || isBlueprintTab || isTestimonialsTab || isGlossaryTab || isFAQsTab;
 
           const allowed = new Set<string>();
           if (!isSpecialTab) {
@@ -539,12 +1278,12 @@ type WorkGuideTab = 'guidelines' | 'strategy' | 'blueprints' | 'testimonials' | 
 
           if (statuses.length) q = q.in('status', statuses); else q = q.eq('status', 'Approved');
           if (qStr) q = q.or(`title.ilike.%${qStr}%,summary.ilike.%${qStr}%`);
-          // For Strategy, Blueprints, and Testimonials tabs: fetch all approved guides
-          // Client-side filtering will handle the domain/guide_type matching
-          // This ensures we don't miss any guides due to query syntax issues
-          if (isStrategyTab || isBlueprintTab || isTestimonialsTab) {
-            // Don't filter by domain/guide_type here - let client-side filtering handle it
-            // This ensures we get all guides and filter them properly client-side
+          if (isStrategyTab) {
+            q = q.or('domain.ilike.%Strategy%,guide_type.ilike.%Strategy%');
+          } else if (isBlueprintTab) {
+            q = q.or('domain.ilike.%Blueprint%,guide_type.ilike.%Blueprint%');
+          } else if (isTestimonialsTab) {
+            q = q.or('domain.ilike.%Testimonial%,guide_type.ilike.%Testimonial%');
           } else if (isGuidelinesTab) {
             // For Guidelines tab: if domain filter is set, use it; otherwise fetch all and filter client-side
             // Client-side filtering will exclude Strategy/Blueprint/Testimonial guides
@@ -566,53 +1305,82 @@ type WorkGuideTab = 'guidelines' | 'strategy' | 'blueprints' | 'testimonials' | 
           if (locations.length) q = q.in('location', locations);
 
           const sort = queryParams.get('sort') || 'editorsPick';
-          if (sort === 'updated')       q = q.order('last_updated_at', { ascending: false, nullsFirst: false });
-          else if (sort === 'downloads')q = q.order('download_count',   { ascending: false, nullsFirst: false });
+          if (sort === 'updated') q = q.order('last_updated_at', { ascending: false, nullsFirst: false });
+          else if (sort === 'downloads') q = q.order('download_count', { ascending: false, nullsFirst: false });
           else if (sort === 'editorsPick') {
             q = q.order('is_editors_pick', { ascending: false })
-                .order('last_updated_at', { ascending: false, nullsFirst: false });
+              .order('last_updated_at', { ascending: false, nullsFirst: false });
           } else {
             q = q.order('is_editors_pick', { ascending: false })
-                .order('download_count',   { ascending: false, nullsFirst: false })
-                .order('last_updated_at',  { ascending: false, nullsFirst: false });
+              .order('download_count', { ascending: false, nullsFirst: false })
+              .order('last_updated_at', { ascending: false, nullsFirst: false });
           }
 
           // If unit filtering or framework filtering is needed client-side, fetch ALL results first, then filter and paginate
           // Otherwise, use server-side pagination
           const needsClientSideUnitFilter = effectiveUnits.length > 0;
-          const needsClientSideFrameworkFilter = (isStrategyTab && strategyFrameworks.length > 0) || 
-                                                 (isBlueprintTab && (blueprintFrameworks.length > 0 || blueprintSectors.length > 0)) ||
-                                                 (isGuidelinesTab && guidelinesCategories.length > 0);
+          const needsClientSideFrameworkFilter = (isStrategyTab && strategyFrameworks.length > 0) ||
+            (isBlueprintTab && (blueprintFrameworks.length > 0 || blueprintSectors.length > 0)) ||
+            (isGuidelinesTab && guidelinesCategories.length > 0);
           const needsClientSideFiltering = needsClientSideUnitFilter || needsClientSideFrameworkFilter;
-          
+
           const from = (currentPage - 1) * pageSize;
-          const to   = from + pageSize - 1;
+          const to = from + pageSize - 1;
 
           // Fetch all results if client-side filtering is needed, otherwise use pagination
           // When fetching all, we need to set a high limit (Supabase default is 1000)
           const listPromise = needsClientSideFiltering ? q.limit(10000) : q.range(from, to);
-          
+
+          // Exclude removed guidelines from facets
           let facetQ = supabaseClient
             .from('guides')
             .select('domain,sub_domain,guide_type,function_area,unit,location,status')
             .eq('status', 'Approved');
+          excludedSlugs.forEach(slug => {
+            facetQ = facetQ.neq('slug', slug);
+          });
 
           // Facets should show ALL available options for the current tab, not filtered by selected filters
           // This ensures filter options don't disappear when other filters are selected
-          if (qStr)              facetQ = facetQ.or(`title.ilike.%${qStr}%,summary.ilike.%${qStr}%`);
-          // For Strategy, Blueprints, and Testimonials tabs: don't filter facets server-side
-          // Client-side filtering will handle the domain/guide_type matching for facets too
+          if (qStr) facetQ = facetQ.or(`title.ilike.%${qStr}%,summary.ilike.%${qStr}%`);
+          if (isStrategyTab) facetQ = facetQ.or('domain.ilike.%Strategy%,guide_type.ilike.%Strategy%');
+          else if (isBlueprintTab) facetQ = facetQ.or('domain.ilike.%Blueprint%,guide_type.ilike.%Blueprint%');
+          else if (isTestimonialsTab) facetQ = facetQ.or('domain.ilike.%Testimonial%,guide_type.ilike.%Testimonial%');
           // For Guidelines tab: facets should only include Guidelines guides (exclude Strategy/Blueprint/Testimonial)
           // But don't filter by selected guide_type, units, locations - show all available options for Guidelines
           // Only filter by status if needed
-          if (statuses.length)   facetQ = facetQ.in('status', statuses);
+          if (statuses.length) facetQ = facetQ.in('status', statuses);
 
           const [{ data: rows, count, error }, { data: facetRows, error: facetError }] = await Promise.all([
             listPromise,
             facetQ,
           ]);
-          if (error) throw error;
+          if (error) {
+            console.error('Guides query error:', error);
+            throw error;
+          }
           if (facetError) console.warn('Facet query failed', facetError);
+
+          // Debug logging
+          if (isGuides) {
+            console.log('[Guides Debug]', {
+              activeTab,
+              currentActiveTab,
+              isStrategyTab,
+              isBlueprintTab,
+              isGuidelinesTab,
+              rowsCount: rows?.length || 0,
+              totalCount: count,
+              qStr,
+              hasError: !!error,
+              sampleRows: rows?.slice(0, 3).map((r: any) => ({
+                title: r.title,
+                domain: r.domain,
+                guide_type: r.guide_type,
+                status: r.status
+              }))
+            });
+          }
 
           const mapped = (rows || []).map((r: any) => {
             const unitValue = r.unit ?? r.function_area ?? null;
@@ -642,10 +1410,11 @@ type WorkGuideTab = 'guidelines' | 'strategy' | 'blueprints' | 'testimonials' | 
           });
 
           let out = mapped;
-          
+
           // Apply tab filtering FIRST to get only guides for the current tab
           // This ensures unit filtering only applies to the correct tab's guides
           // CRITICAL: This must happen before any other filtering to prevent cross-tab contamination
+          // Note: Server-side filtering is also applied, but client-side filtering ensures consistency
           if (isStrategyTab) {
             out = out.filter(it => {
               const domain = (it.domain || '').toLowerCase();
@@ -674,9 +1443,9 @@ type WorkGuideTab = 'guidelines' | 'strategy' | 'blueprints' | 'testimonials' | 
                 const normalizedGuideType = slugify(guideType);
                 return selectedTestimonials.some(sel => {
                   // Compare slugified values
-                  return normalizedGuideType === sel || 
-                         guideType.includes(sel) ||
-                         sel.includes(normalizedGuideType);
+                  return normalizedGuideType === sel ||
+                    guideType.includes(sel) ||
+                    sel.includes(normalizedGuideType);
                 });
               });
             }
@@ -702,9 +1471,9 @@ type WorkGuideTab = 'guidelines' | 'strategy' | 'blueprints' | 'testimonials' | 
             out = [];
           }
           // If no tab is active (shouldn't happen), show all guides
-          
+
           // Now apply other filters to the tab-filtered results
-          if (domains.length)    out = out.filter(it => it.domain && domains.includes(it.domain));
+          if (domains.length) out = out.filter(it => it.domain && domains.includes(it.domain));
           if (subDomains.length) out = out.filter(it => it.subDomain && subDomains.includes(it.subDomain));
           if (effectiveGuideTypes.length) {
             // Normalize guide type values for comparison
@@ -721,8 +1490,8 @@ type WorkGuideTab = 'guidelines' | 'strategy' | 'blueprints' | 'testimonials' | 
               return effectiveGuideTypes.some(selectedType => {
                 const normalizedSelected = slugify(selectedType);
                 // Match if slugified values are equal, or if the actual values match (case-insensitive)
-                return normalizedDbValue === normalizedSelected || 
-                       guideTypeValue.toLowerCase().trim() === selectedType.toLowerCase().trim();
+                return normalizedDbValue === normalizedSelected ||
+                  guideTypeValue.toLowerCase().trim() === selectedType.toLowerCase().trim();
               });
             });
           }
@@ -753,9 +1522,9 @@ type WorkGuideTab = 'guidelines' | 'strategy' | 'blueprints' | 'testimonials' | 
               return strategyTypes.some(selectedType => {
                 const normalizedSelected = slugify(selectedType);
                 const normalizedSubDomain = slugify(subDomain);
-                return normalizedSubDomain === normalizedSelected || 
-                       subDomain.includes(selectedType.toLowerCase()) ||
-                       selectedType.toLowerCase().includes(subDomain);
+                return normalizedSubDomain === normalizedSelected ||
+                  subDomain.includes(selectedType.toLowerCase()) ||
+                  selectedType.toLowerCase().includes(subDomain);
               });
             });
           }
@@ -769,12 +1538,12 @@ type WorkGuideTab = 'guidelines' | 'strategy' | 'blueprints' | 'testimonials' | 
                 const normalizedSelected = slugify(selectedFramework);
                 // Check various fields for framework matches
                 return allText.includes(selectedFramework.toLowerCase()) ||
-                       allText.includes(normalizedSelected) ||
-                       (selectedFramework === '6xd' && (allText.includes('6xd') || allText.includes('digital-framework'))) ||
-                       (selectedFramework === 'ghc' && allText.includes('ghc')) ||
-                       (selectedFramework === 'clients' && allText.includes('client')) ||
-                       (selectedFramework === 'ghc-leader' && allText.includes('ghc-leader')) ||
-                       (selectedFramework === 'testimonials-insights' && (allText.includes('testimonial') || allText.includes('insight')));
+                  allText.includes(normalizedSelected) ||
+                  (selectedFramework === '6xd' && (allText.includes('6xd') || allText.includes('digital-framework'))) ||
+                  (selectedFramework === 'ghc' && allText.includes('ghc')) ||
+                  (selectedFramework === 'clients' && allText.includes('client')) ||
+                  (selectedFramework === 'ghc-leader' && allText.includes('ghc-leader')) ||
+                  (selectedFramework === 'testimonials-insights' && (allText.includes('testimonial') || allText.includes('insight')));
               });
             });
           }
@@ -790,10 +1559,10 @@ type WorkGuideTab = 'guidelines' | 'strategy' | 'blueprints' | 'testimonials' | 
                 const normalizedSelected = slugify(selectedCategory);
                 // Check various fields for category matches
                 return allText.includes(selectedCategory.toLowerCase()) ||
-                       allText.includes(normalizedSelected) ||
-                       (selectedCategory === 'resources' && (allText.includes('resource') || allText.includes('guideline'))) ||
-                       (selectedCategory === 'policies' && (allText.includes('policy') || allText.includes('policies'))) ||
-                       (selectedCategory === 'xds' && (allText.includes('xds') || allText.includes('design-system') || allText.includes('design systems')));
+                  allText.includes(normalizedSelected) ||
+                  (selectedCategory === 'resources' && (allText.includes('resource') || allText.includes('guideline'))) ||
+                  (selectedCategory === 'policies' && (allText.includes('policy') || allText.includes('policies'))) ||
+                  (selectedCategory === 'xds' && (allText.includes('xds') || allText.includes('design-system') || allText.includes('design systems')));
               });
             });
           }
@@ -809,28 +1578,28 @@ type WorkGuideTab = 'guidelines' | 'strategy' | 'blueprints' | 'testimonials' | 
                 const normalizedSelected = slugify(selectedFramework);
                 // Check various fields for framework matches
                 return allText.includes(selectedFramework.toLowerCase()) ||
-                       allText.includes(normalizedSelected) ||
-                       (selectedFramework === 'devops' && allText.includes('devops')) ||
-                       (selectedFramework === 'dbp' && allText.includes('dbp')) ||
-                       (selectedFramework === 'dxp' && allText.includes('dxp')) ||
-                       (selectedFramework === 'dws' && allText.includes('dws')) ||
-                       (selectedFramework === 'products' && allText.includes('product')) ||
-                       (selectedFramework === 'projects' && allText.includes('project'));
+                  allText.includes(normalizedSelected) ||
+                  (selectedFramework === 'devops' && allText.includes('devops')) ||
+                  (selectedFramework === 'dbp' && allText.includes('dbp')) ||
+                  (selectedFramework === 'dxp' && allText.includes('dxp')) ||
+                  (selectedFramework === 'dws' && allText.includes('dws')) ||
+                  (selectedFramework === 'products' && allText.includes('product')) ||
+                  (selectedFramework === 'projects' && allText.includes('project'));
               });
             });
           }
-          if (locations.length)  out = out.filter(it => it.location && locations.includes(it.location));
-          if (statuses.length)   out = out.filter(it => it.status && statuses.includes(it.status));
+          if (locations.length) out = out.filter(it => it.location && locations.includes(it.location));
+          if (statuses.length) out = out.filter(it => it.status && statuses.includes(it.status));
 
-          if (sort === 'updated')       out.sort((a,b) => new Date(b.lastUpdatedAt||0).getTime() - new Date(a.lastUpdatedAt||0).getTime());
-          else if (sort === 'downloads')out.sort((a,b) => (b.downloadCount||0)-(a.downloadCount||0));
+          if (sort === 'updated') out.sort((a, b) => new Date(b.lastUpdatedAt || 0).getTime() - new Date(a.lastUpdatedAt || 0).getTime());
+          else if (sort === 'downloads') out.sort((a, b) => (b.downloadCount || 0) - (a.downloadCount || 0));
           else if (sort === 'editorsPick')
-            out.sort((a,b) => (Number(b.isEditorsPick)||0)-(Number(a.isEditorsPick)||0) ||
-                              new Date(b.lastUpdatedAt||0).getTime() - new Date(a.lastUpdatedAt||0).getTime());
+            out.sort((a, b) => (Number(b.isEditorsPick) || 0) - (Number(a.isEditorsPick) || 0) ||
+              new Date(b.lastUpdatedAt || 0).getTime() - new Date(a.lastUpdatedAt || 0).getTime());
           else
-            out.sort((a,b) => (Number(b.isEditorsPick)||0)-(Number(a.isEditorsPick)||0) ||
-                              (b.downloadCount||0)-(a.downloadCount||0) ||
-                              new Date(b.lastUpdatedAt||0).getTime() - new Date(a.lastUpdatedAt||0).getTime());
+            out.sort((a, b) => (Number(b.isEditorsPick) || 0) - (Number(a.isEditorsPick) || 0) ||
+              (b.downloadCount || 0) - (a.downloadCount || 0) ||
+              new Date(b.lastUpdatedAt || 0).getTime() - new Date(a.lastUpdatedAt || 0).getTime());
 
           // Ensure default image if missing
           const defaultImage = 'https://images.unsplash.com/photo-1498050108023-c5249f4df085?w=800&h=400&fit=crop&q=80';
@@ -863,9 +1632,9 @@ type WorkGuideTab = 'guidelines' | 'strategy' | 'blueprints' | 'testimonials' | 
           // facets query (unchanged)
           const countBy = (arr: any[] | null | undefined, key: string) => {
             const m = new Map<string, number>();
-            for (const r of (arr || [])) { const v = (r as any)[key]; if (!v) continue; m.set(v, (m.get(v)||0)+1); }
+            for (const r of (arr || [])) { const v = (r as any)[key]; if (!v) continue; m.set(v, (m.get(v) || 0) + 1); }
             return Array.from(m.entries()).map(([id, cnt]) => ({ id, name: id, count: cnt }))
-                      .sort((a,b)=> a.name.localeCompare(b.name));
+              .sort((a, b) => a.name.localeCompare(b.name));
           };
 
           // Filter facet rows for Guidelines tab to exclude Strategy/Blueprint/Testimonial
@@ -880,13 +1649,13 @@ type WorkGuideTab = 'guidelines' | 'strategy' | 'blueprints' | 'testimonials' | 
               return !hasStrategy && !hasBlueprint && !hasTestimonial;
             });
           }
-          
-          const domainFacets      = countBy(filteredFacetRows, 'domain');
-          const guideTypeFacets   = countBy(filteredFacetRows, 'guide_type');
-          const subDomainFacetsRaw= countBy(filteredFacetRows, 'sub_domain');
-          const unitFacets        = countBy(filteredFacetRows, 'unit');
-          const locationFacets    = countBy(filteredFacetRows, 'location');
-          const statusFacets      = countBy(filteredFacetRows, 'status');
+
+          const domainFacets = countBy(filteredFacetRows, 'domain');
+          const guideTypeFacets = countBy(filteredFacetRows, 'guide_type');
+          const subDomainFacetsRaw = countBy(filteredFacetRows, 'sub_domain');
+          const unitFacets = countBy(filteredFacetRows, 'unit');
+          const locationFacets = countBy(filteredFacetRows, 'location');
+          const statusFacets = countBy(filteredFacetRows, 'status');
 
           const allowedForFacets = new Set<string>();
           if (!isSpecialTab) {
@@ -931,15 +1700,320 @@ type WorkGuideTab = 'guidelines' | 'strategy' | 'blueprints' | 'testimonials' | 
         );
         const finalItems = itemsData?.length ? itemsData : getFallbackItems(marketplaceType);
         setItems(finalItems);
-        setFilteredItems(finalItems);
-        setTotalCount(finalItems.length);
+
+        // Apply filters for non-financial services
+        let filtered = finalItems;
+        if (isServicesCenter) {
+          // Filter by active tab (category)
+          const tabCategoryMap: Record<string, string> = {
+            'technology': 'Technology',
+            'business': 'Employee Services',
+            'digital_worker': 'Digital Worker',
+            'prompt_library': 'Prompt Library',
+            'ai_tools': 'AI Tools'
+          };
+
+          const activeTabCategory = tabCategoryMap[activeServiceTab];
+          if (activeTabCategory) {
+            filtered = filtered.filter(item => {
+              const itemCategory = item.category || '';
+              return itemCategory === activeTabCategory;
+            });
+          }
+
+          // Filter by serviceType
+          const serviceTypeFilter = filters.serviceType;
+          if (serviceTypeFilter) {
+            const serviceTypes = Array.isArray(serviceTypeFilter) ? serviceTypeFilter : [serviceTypeFilter];
+            if (serviceTypes.length > 0) {
+              filtered = filtered.filter(item => {
+                const itemServiceType = (item.serviceType || '').toLowerCase().trim();
+                return serviceTypes.some(filterType => {
+                  const normalizedFilter = filterType.toLowerCase().trim();
+                  // Normalize variations: 'self-service', 'self service', 'selfservice' all match
+                  const normalizeType = (type: string) => {
+                    return type.replace(/[\s-]/g, '').toLowerCase();
+                  };
+                  const normalizedItemType = normalizeType(itemServiceType);
+                  const normalizedFilterType = normalizeType(normalizedFilter);
+                  return normalizedItemType === normalizedFilterType;
+                });
+              });
+            }
+          }
+
+          // Filter by userCategory (Technology-specific)
+          const userCategoryFilter = filters.userCategory;
+          if (userCategoryFilter) {
+            const userCategories = Array.isArray(userCategoryFilter) ? userCategoryFilter : [userCategoryFilter];
+            if (userCategories.length > 0) {
+              filtered = filtered.filter(item => {
+                const itemUserCategories = item.userCategory || [];
+                const itemUserCategoriesArray = Array.isArray(itemUserCategories) ? itemUserCategories : [itemUserCategories];
+                return userCategories.some(filterCategory =>
+                  itemUserCategoriesArray.some(itemCat =>
+                    itemCat.toLowerCase() === filterCategory.toLowerCase()
+                  )
+                );
+              });
+            }
+          }
+
+          // Filter by technicalCategory (Technology-specific)
+          const technicalCategoryFilter = filters.technicalCategory;
+          if (technicalCategoryFilter) {
+            const technicalCategories = Array.isArray(technicalCategoryFilter) ? technicalCategoryFilter : [technicalCategoryFilter];
+            if (technicalCategories.length > 0) {
+              filtered = filtered.filter(item => {
+                const itemTechnicalCategories = item.technicalCategory || [];
+                const itemTechnicalCategoriesArray = Array.isArray(itemTechnicalCategories) ? itemTechnicalCategories : [itemTechnicalCategories];
+                return technicalCategories.some(filterCategory =>
+                  itemTechnicalCategoriesArray.some(itemCat =>
+                    itemCat.toLowerCase() === filterCategory.toLowerCase()
+                  )
+                );
+              });
+            }
+          }
+
+          // Filter by deviceOwnership (Technology-specific)
+          const deviceOwnershipFilter = filters.deviceOwnership;
+          if (deviceOwnershipFilter) {
+            const deviceOwnerships = Array.isArray(deviceOwnershipFilter) ? deviceOwnershipFilter : [deviceOwnershipFilter];
+            if (deviceOwnerships.length > 0) {
+              filtered = filtered.filter(item => {
+                const itemDeviceOwnerships = item.deviceOwnership || [];
+                const itemDeviceOwnershipsArray = Array.isArray(itemDeviceOwnerships) ? itemDeviceOwnerships : [itemDeviceOwnerships];
+                return deviceOwnerships.some(filterOwnership =>
+                  itemDeviceOwnershipsArray.some(itemOwn =>
+                    itemOwn.toLowerCase().replace(/[\s-]/g, '') === filterOwnership.toLowerCase().replace(/[\s-]/g, '')
+                  )
+                );
+              });
+            }
+          }
+
+          // Filter by services (Business-specific)
+          const servicesFilter = filters.services;
+          if (servicesFilter) {
+            const services = Array.isArray(servicesFilter) ? servicesFilter : [servicesFilter];
+            if (services.length > 0) {
+              filtered = filtered.filter(item => {
+                const itemServices = item.services || [];
+                const itemServicesArray = Array.isArray(itemServices) ? itemServices : [itemServices];
+                return services.some(filterService =>
+                  itemServicesArray.some(itemSvc =>
+                    itemSvc.toLowerCase().replace(/[\s_]/g, '') === filterService.toLowerCase().replace(/[\s_]/g, '')
+                  )
+                );
+              });
+            }
+          }
+
+          // Filter by documentType (Business-specific)
+          const documentTypeFilter = filters.documentType;
+          if (documentTypeFilter) {
+            const documentTypes = Array.isArray(documentTypeFilter) ? documentTypeFilter : [documentTypeFilter];
+            if (documentTypes.length > 0) {
+              filtered = filtered.filter(item => {
+                const itemDocumentTypes = item.documentType || [];
+                const itemDocumentTypesArray = Array.isArray(itemDocumentTypes) ? itemDocumentTypes : [itemDocumentTypes];
+                return documentTypes.some(filterDocType =>
+                  itemDocumentTypesArray.some(itemDocType =>
+                    itemDocType.toLowerCase() === filterDocType.toLowerCase()
+                  )
+                );
+              });
+            }
+          }
+
+          // Filter by serviceDomains (Digital Worker-specific)
+          const serviceDomainsFilter = filters.serviceDomains;
+          if (serviceDomainsFilter) {
+            const serviceDomains = Array.isArray(serviceDomainsFilter) ? serviceDomainsFilter : [serviceDomainsFilter];
+            if (serviceDomains.length > 0) {
+              filtered = filtered.filter(item => {
+                const itemServiceDomains = item.serviceDomains || [];
+                const itemServiceDomainsArray = Array.isArray(itemServiceDomains) ? itemServiceDomains : [itemServiceDomains];
+                return serviceDomains.some(filterDomain =>
+                  itemServiceDomainsArray.some(itemDomain =>
+                    itemDomain.toLowerCase().replace(/[\s_&]/g, '') === filterDomain.toLowerCase().replace(/[\s_&]/g, '')
+                  )
+                );
+              });
+            }
+          }
+
+          // Filter by aiMaturityLevel (Digital Worker-specific)
+          const aiMaturityLevelFilter = filters.aiMaturityLevel;
+          if (aiMaturityLevelFilter) {
+            const aiMaturityLevels = Array.isArray(aiMaturityLevelFilter) ? aiMaturityLevelFilter : [aiMaturityLevelFilter];
+            if (aiMaturityLevels.length > 0) {
+              filtered = filtered.filter(item => {
+                const itemMaturityLevel = item.aiMaturityLevel || '';
+                const itemMaturityLevelArray = Array.isArray(itemMaturityLevel) ? itemMaturityLevel : [itemMaturityLevel];
+                return aiMaturityLevels.some(filterLevel =>
+                  itemMaturityLevelArray.some(itemLevel =>
+                    itemLevel.toLowerCase().replace(/[\s_()]/g, '') === filterLevel.toLowerCase().replace(/[\s_()]/g, '')
+                  )
+                );
+              });
+            }
+          }
+
+          // Filter by toolCategory (AI Tools-specific)
+          const toolCategoryFilter = filters.toolCategory;
+          if (toolCategoryFilter) {
+            const toolCategories = Array.isArray(toolCategoryFilter) ? toolCategoryFilter : [toolCategoryFilter];
+            if (toolCategories.length > 0) {
+              filtered = filtered.filter(item => {
+                const itemToolCategory = item.toolCategory || '';
+                return toolCategories.some(filterCategory =>
+                  itemToolCategory.toLowerCase().replace(/[\s_]/g, '') === filterCategory.toLowerCase().replace(/[\s_]/g, '')
+                );
+              });
+            }
+          }
+
+          // Filter by deliveryMode
+          const deliveryModeFilter = filters.deliveryMode;
+          if (deliveryModeFilter) {
+            const deliveryModes = Array.isArray(deliveryModeFilter) ? deliveryModeFilter : [deliveryModeFilter];
+            if (deliveryModes.length > 0) {
+              filtered = filtered.filter(item => {
+                const itemMode = (item.deliveryMode || '').toLowerCase().trim();
+                return deliveryModes.some(filterMode => {
+                  const normalizedFilter = filterMode.toLowerCase().trim();
+                  // Normalize variations: 'inperson', 'in person', 'in-person' all match
+                  const normalizeMode = (mode: string) => {
+                    // Remove spaces and hyphens for comparison
+                    const cleaned = mode.replace(/[\s-]/g, '');
+                    if (cleaned === 'inperson' || cleaned.includes('person')) {
+                      return 'inperson';
+                    }
+                    return cleaned;
+                  };
+                  const normalizedItemMode = normalizeMode(itemMode);
+                  const normalizedFilterMode = normalizeMode(normalizedFilter);
+                  return normalizedItemMode === normalizedFilterMode;
+                });
+              });
+            }
+          }
+
+          // Filter by provider
+          const providerFilter = filters.provider;
+          if (providerFilter) {
+            const providers = Array.isArray(providerFilter) ? providerFilter : [providerFilter];
+            if (providers.length > 0) {
+              filtered = filtered.filter(item => {
+                const itemProvider = (item.provider?.name || '').toLowerCase();
+                return providers.some(filterProvider => {
+                  const normalizedFilter = filterProvider.toLowerCase();
+                  // Map filter IDs to provider names
+                  const providerMap: Record<string, string[]> = {
+                    'it_support': ['it support', 'itsupport'],
+                    'hr': ['hr'],
+                    'finance': ['finance'],
+                    'admin': ['admin', 'administrative']
+                  };
+                  const possibleNames = providerMap[normalizedFilter] || [normalizedFilter];
+                  return possibleNames.some(name => itemProvider === name || itemProvider.includes(name) || name.includes(itemProvider));
+                });
+              });
+            }
+          }
+
+          // Filter by location
+          const locationFilter = filters.location;
+          if (locationFilter) {
+            const locations = Array.isArray(locationFilter) ? locationFilter : [locationFilter];
+            if (locations.length > 0) {
+              const normalizeLocation = (loc: string) => {
+                const map: Record<string, string> = {
+                  'dubai': 'Dubai',
+                  'nairobi': 'Nairobi',
+                  'riyadh': 'Riyadh'
+                };
+                return map[loc.toLowerCase()] || loc;
+              };
+              filtered = filtered.filter(item => {
+                const itemLocation = item.location || '';
+                return locations.some(filterLocation => {
+                  const normalizedFilter = normalizeLocation(filterLocation);
+                  // Match exact or case-insensitive partial match
+                  return itemLocation === normalizedFilter ||
+                    itemLocation.toLowerCase().includes(normalizedFilter.toLowerCase()) ||
+                    normalizedFilter.toLowerCase().includes(itemLocation.toLowerCase());
+                });
+              });
+            }
+          }
+
+          // Apply search query
+          if (searchQuery) {
+            const query = searchQuery.toLowerCase();
+            filtered = filtered.filter(item => {
+              const searchableText = [
+                item.title,
+                item.description,
+                item.category,
+                item.serviceType,
+                item.deliveryMode,
+                item.provider?.name,
+                ...(item.tags || [])
+              ].filter(Boolean).join(' ').toLowerCase();
+              return searchableText.includes(query);
+            });
+          }
+        } else {
+          // For other marketplaces, apply search query if provided
+          if (searchQuery) {
+            const query = searchQuery.toLowerCase();
+            filtered = filtered.filter(item => {
+              const searchableText = [
+                item.title,
+                item.description,
+                item.category,
+                item.provider?.name,
+                ...(item.tags || [])
+              ].filter(Boolean).join(' ').toLowerCase();
+              return searchableText.includes(query);
+            });
+          }
+        }
+
+        setFilteredItems(filtered);
+        setTotalCount(filtered.length);
       } catch (err) {
         console.error(`Error fetching ${marketplaceType} items:`, err);
         setError(`Failed to load ${marketplaceType}`);
         const fallbackItems = getFallbackItems(marketplaceType);
         setItems(fallbackItems);
-        setFilteredItems(fallbackItems);
-        setTotalCount(fallbackItems.length);
+
+        // Apply filters to fallback items for Services Center
+        let filteredFallback = fallbackItems;
+        if (isServicesCenter) {
+          // Filter by active tab (category)
+          const tabCategoryMap: Record<string, string> = {
+            'technology': 'Technology',
+            'business': 'Employee Services',
+            'digital_worker': 'Digital Worker',
+            'prompt_library': 'Prompt Library',
+            'ai_tools': 'AI Tools'
+          };
+
+          const activeTabCategory = tabCategoryMap[activeServiceTab];
+          if (activeTabCategory) {
+            filteredFallback = filteredFallback.filter(item => {
+              const itemCategory = item.category || '';
+              return itemCategory === activeTabCategory;
+            });
+          }
+        }
+
+        setFilteredItems(filteredFallback);
+        setTotalCount(filteredFallback.length);
       } finally {
         setLoading(false);
       }
@@ -947,7 +2021,7 @@ type WorkGuideTab = 'guidelines' | 'strategy' | 'blueprints' | 'testimonials' | 
 
     run();
     // Keep deps lean; no need to include functions like isGuides
-  }, [marketplaceType, filters, searchQuery, queryParams, isCourses, isKnowledgeHub, currentPage, pageSize, activeTab]);
+  }, [marketplaceType, filters, searchQuery, queryParams, isCourses, isKnowledgeHub, isEvents, currentPage, pageSize, activeFilters, filterConfig, isServicesCenter, activeServiceTab, activeTab]);
 
   // Handle filter changes
   const handleFilterChange = useCallback((filterType: string, value: string) => {
@@ -964,20 +2038,20 @@ type WorkGuideTab = 'guidelines' | 'strategy' | 'blueprints' | 'testimonials' | 
       if (Array.isArray(current)) {
         const exists = current.includes(value);
         const nextValues = exists ? current.filter(v => v !== value) : [...current, value];
-        return { ...prev, [filterType]: nextValues };
+        return { ...prev, [filterType]: Array.isArray(nextValues) ? nextValues.join(',') : nextValues };
       } else {
         return { ...prev, [filterType]: value === prev[filterType] ? '' : value };
       }
     });
   }, [isCourses, isGuides, marketplaceType, toggleFilter]);
-  
+
   // Reset all filters
   const resetFilters = useCallback(() => {
     if (isCourses) {
       const newParams = new URLSearchParams();
       setSearchParams(newParams, { replace: true });
       setSearchQuery('');
-    } else if (isKnowledgeHub) {
+    } else if (isKnowledgeHub || isEvents) {
       setActiveFilters([]);
       setSearchQuery('');
     } else if (isGuides) {
@@ -987,13 +2061,13 @@ type WorkGuideTab = 'guidelines' | 'strategy' | 'blueprints' | 'testimonials' | 
       setQueryParams(newParams);
       setSearchQuery('');
     } else {
-      const empty: Record<string, string> = {};
+      const empty: Record<string, string | string[]> = {};
       filterConfig.forEach(c => { empty[c.id] = ''; });
       setFilters(empty);
       setSearchQuery('');
     }
-  }, [isCourses, isKnowledgeHub, isGuides, marketplaceType, filterConfig, setSearchParams]);
-  
+  }, [isCourses, isKnowledgeHub, isEvents, isGuides, marketplaceType, filterConfig, setSearchParams]);
+
   // Knowledge Hub filter handlers
   const handleKnowledgeHubFilterChange = useCallback((filter: string) => {
     setActiveFilters(prev => {
@@ -1004,11 +2078,60 @@ type WorkGuideTab = 'guidelines' | 'strategy' | 'blueprints' | 'testimonials' | 
       }
     });
   }, []);
-  
+
   const clearKnowledgeHubFilters = useCallback(() => {
     setActiveFilters([]);
   }, []);
-  
+
+  // Apply client-side filters to events (search is now handled server-side)
+  useEffect(() => {
+    if (!isEvents) return;
+
+    let filtered = [...items];
+
+    // Note: Search is now handled server-side in the Supabase query
+    // Only apply client-side filters that can't be done server-side
+
+    // Apply active filters that require client-side processing
+    if (activeFilters.length > 0 && filterConfig.length > 0) {
+      filtered = filtered.filter(item => {
+        return activeFilters.every(filterName => {
+          // Check if filter matches any item property
+          const category = filterConfig.find(c =>
+            c.options.some(opt => opt.name === filterName)
+          );
+          if (!category) return true;
+
+          // Match based on category type
+          // Note: Most filters are handled server-side, this is for filters that need client-side logic
+          switch (category.id) {
+            case 'delivery-mode':
+              // Handle hybrid mode or multiple delivery modes (requires client-side logic)
+              return item.location?.toLowerCase().includes(filterName.toLowerCase()) ||
+                (filterName.toLowerCase() === 'online' && item.location?.toLowerCase().includes('online'));
+            case 'duration-band':
+              // Duration filtering is done client-side since it requires calculation
+              return true; // This would need duration calculation logic
+            case 'cost-type':
+              // Price filter (if still needed)
+              const price = item.price?.toLowerCase() || '';
+              if (filterName === 'Free') return price.includes('free') || price === '0';
+              if (filterName === 'Paid') return !price.includes('free') && price !== '0';
+              return true;
+            case 'business-stage':
+              return item.businessStage === filterName;
+            default:
+              // Most filters (event-type, department, location) are handled server-side
+              return true;
+          }
+        });
+      });
+    }
+
+    setFilteredItems(filtered);
+    setTotalCount(filtered.length);
+  }, [isEvents, items, activeFilters, filterConfig]);
+
   // UI helpers
   const toggleFilters = useCallback(() => setShowFilters(prev => !prev), []);
   const toggleBookmark = useCallback((itemId: string) => {
@@ -1038,42 +2161,231 @@ type WorkGuideTab = 'guidelines' | 'strategy' | 'blueprints' | 'testimonials' | 
   return (
     <div className={`min-h-screen flex flex-col bg-gray-50 ${isGuides ? 'guidelines-theme' : ''}`}>
       <Header toggleSidebar={() => setSidebarOpen(!sidebarOpen)} sidebarOpen={sidebarOpen} />
-      <div className="container mx-auto px-4 py-8 flex-grow max-w-7xl">
+      <div className={`${isEvents ? 'max-w-7xl mx-auto px-4 sm:px-6 lg:px-8' : 'container mx-auto px-4'} py-8 flex-grow`}>
         {/* Breadcrumbs */}
-        <nav className="flex mb-4" aria-label="Breadcrumb">
+        <nav className="flex mb-4 min-h-[24px]" aria-label="Breadcrumb">
           <ol className="inline-flex items-center space-x-1 md:space-x-2">
             <li className="inline-flex items-center">
-              <Link to="/" className="text-gray-600 hover:text-gray-900 inline-flex items-center">
-                <HomeIcon size={16} className="mr-1" />
+              <Link
+                to="/"
+                className="text-gray-600 hover:text-gray-900 inline-flex items-center text-sm md:text-base transition-colors"
+                aria-label="Navigate to Home"
+              >
+                <HomeIcon size={16} className="mr-1" aria-hidden="true" />
                 <span>Home</span>
               </Link>
             </li>
-            {isGuides ? (
+            {isEvents ? (() => {
+              // Determine active tab based on pathname for Events marketplace
+              const isPulseTab = location.pathname === '/marketplace/pulse' || location.pathname.startsWith('/marketplace/pulse/');
+              const isEventsTab = location.pathname === '/marketplace/events' || location.pathname.startsWith('/marketplace/events/');
+              const isDiscussionsTab = location.pathname === '/communities' || location.pathname.startsWith('/community/');
+
+              // Determine current page label
+              let currentPageLabel = 'Events';
+              if (isPulseTab) {
+                currentPageLabel = 'Pulse';
+              } else if (isDiscussionsTab) {
+                currentPageLabel = 'Discussions';
+              }
+
+              return (
+                <>
+                  <li>
+                    <div className="flex items-center">
+                      <ChevronRightIcon size={16} className="text-gray-400 mx-1 flex-shrink-0" aria-hidden="true" />
+                      <Link
+                        to="/communities"
+                        className="text-gray-600 hover:text-gray-900 text-sm md:text-base font-medium transition-colors"
+                        aria-label="Navigate to DQ Work Communities"
+                      >
+                        DQ Work Communities
+                      </Link>
+                    </div>
+                  </li>
+                  <li aria-current="page">
+                    <div className="flex items-center min-w-[80px]">
+                      <ChevronRightIcon size={16} className="text-gray-400 mx-1 flex-shrink-0" aria-hidden="true" />
+                      <span className="text-gray-500 text-sm md:text-base font-medium whitespace-nowrap">{currentPageLabel}</span>
+                    </div>
+                  </li>
+                </>
+              );
+            })() : (
               <>
-                <li aria-current="page">
+                <li>
                   <div className="flex items-center">
-                    <ChevronRightIcon size={16} className="text-gray-400" />
-                    <span className="ml-1 text-gray-700 md:ml-2">{config.title}</span>
+                    <ChevronRightIcon size={16} className="text-gray-400 mx-1" aria-hidden="true" />
+                    <span className="ml-1 text-gray-500 md:ml-2 text-sm md:text-base">Resources</span>
                   </div>
                 </li>
+                {isGuides && (
+                  <li aria-current="page">
+                    <div className="flex items-center">
+                      <ChevronRightIcon size={16} className="text-gray-400 mx-1" aria-hidden="true" />
+                      <span className="ml-1 text-gray-700 md:ml-2 text-sm md:text-base font-medium">Guidelines</span>
+                    </div>
+                  </li>
+                )}
+                {!isGuides && (
+                  <li>
+                    <div className="flex items-center">
+                      <ChevronRightIcon size={16} className="text-gray-400" />
+                      <Link to={config.route} className="ml-1 text-gray-500 hover:text-gray-700 md:ml-2">
+                        {config.itemNamePlural}
+                      </Link>
+                    </div>
+                  </li>
+                )}
+                {isServicesCenter && activeServiceTab && (
+                  <li aria-current="page">
+                    <div className="flex items-center">
+                      <ChevronRightIcon size={16} className="text-gray-400" />
+                      <span className="ml-1 text-gray-700 md:ml-2">
+                        {activeServiceTab === 'technology' && 'Technology'}
+                        {activeServiceTab === 'business' && 'Employee Services'}
+                        {activeServiceTab === 'digital_worker' && 'Digital Worker'}
+                        {activeServiceTab === 'prompt_library' && 'Prompt Library'}
+                        {activeServiceTab === 'ai_tools' && 'AI Tools'}
+                      </span>
+                    </div>
+                  </li>
+                )}
               </>
-            ) : (
-              <li aria-current="page">
-                <div className="flex items-center">
-                  <ChevronRightIcon size={16} className="text-gray-400" />
-                  <span className="ml-1 text-gray-500 md:ml-2">{config.itemNamePlural}</span>
-                </div>
-              </li>
             )}
-          </ol>
-        </nav>
+          </ol >
+        </nav >
 
         <h1 className="text-3xl font-bold text-gray-800 mb-2">{config.title}</h1>
         <p className="text-gray-600 mb-6">{config.description}</p>
 
+        {/* Service Center Tab Description Section */}
+        {isServicesCenter && (
+          <div className="mb-6">
+            <div className="mb-4 p-4 rounded-lg shadow-sm" style={{ backgroundColor: '#FFFFFF' }}>
+              <div className="flex items-start justify-between">
+                <div className="flex-1">
+                  <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">Current focus</p>
+                  <p className="text-lg font-semibold text-gray-900 mb-1">
+                    {activeServiceTab === 'technology' && 'Technology'}
+                    {activeServiceTab === 'business' && 'Employee Services'}
+                    {activeServiceTab === 'digital_worker' && 'Digital Worker'}
+                    {activeServiceTab === 'prompt_library' && 'Prompt Library'}
+                    {activeServiceTab === 'ai_tools' && 'AI Tools'}
+                  </p>
+                </div>
+                <button className="px-3 py-1.5 rounded-full text-xs font-medium text-blue-700" style={{ backgroundColor: '#DBEAFE' }}>
+                  Tab overview
+                </button>
+              </div>
+              <p className="text-gray-600 text-sm mb-1">
+                {activeServiceTab === 'technology' && 'Access technology-related services including IT support, software requests, system access, and technical assistance.'}
+                {activeServiceTab === 'business' && 'Explore employee services including HR support, finance services, administrative requests, and operational assistance.'}
+                {activeServiceTab === 'digital_worker' && 'Discover digital worker services including automation solutions, AI agents requests, AI tools and usage guidelines'}
+                {activeServiceTab === 'prompt_library' && "A curated collection of your team's best and previously used prompts to speed up workflows and boost productivity."}
+                {activeServiceTab === 'ai_tools' && 'A centralized hub showcasing all AI tools and solutions used across the company.'}
+              </p>
+              <p className="text-xs text-gray-500">
+                {activeServiceTab === 'technology' && 'Managed by DQ IT Support and Technical teams.'}
+                {activeServiceTab === 'business' && 'Provided by DQ HR, Finance, and Administrative teams.'}
+                {activeServiceTab === 'digital_worker' && 'Handled by DQ Automation Teams.'}
+                {activeServiceTab === 'prompt_library' && 'Curated and maintained by DQ Digital Innovation Teams.'}
+                {activeServiceTab === 'ai_tools' && 'Provided by DQ AI & Innovation Teams.'}
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* Current Focus Section and Navigation Tabs - Only for Events */}
+        {isEvents && (
+          <>
+            <div className="bg-gray-50 rounded-lg p-6 mb-6 border border-gray-200 min-h-[140px]">
+              <div className="flex items-start justify-between gap-4">
+                <div className="flex-1">
+                  <div className="text-xs uppercase text-gray-500 font-medium mb-2">CURRENT FOCUS</div>
+                  <h2 className="text-xl font-semibold text-gray-900 mb-1">Events</h2>
+                  <p className="text-gray-700 leading-relaxed mb-2">
+                    Stay up to date with upcoming events, workshops, and team gatherings. Explore activities within DQ that encourage collaboration, growth, and innovation.
+                  </p>
+                </div>
+                <button className="px-4 py-2 bg-blue-50 text-blue-700 rounded-full text-sm font-medium hover:bg-blue-100 transition-colors whitespace-nowrap flex-shrink-0">
+                  Tab overview
+                </button>
+              </div>
+            </div>
+
+            <div className="mb-6">
+              <nav className="flex" aria-label="Tabs">
+                <button
+                  onClick={() => navigate('/communities')}
+                  className={`py-4 px-4 text-sm transition-colors border-b ${location.pathname === '/communities' || location.pathname.startsWith('/community/')
+                    ? 'border-blue-600 text-gray-900 font-medium'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 font-normal'
+                    }`}
+                >
+                  Discussion
+                </button>
+                <button
+                  onClick={() => navigate('/marketplace/pulse')}
+                  className={`py-4 px-4 text-sm transition-colors border-b ${location.pathname === '/marketplace/pulse' || location.pathname.startsWith('/marketplace/pulse/')
+                    ? 'border-blue-600 text-gray-900 font-medium'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 font-normal'
+                    }`}
+                >
+                  Pulse
+                </button>
+                <button
+                  onClick={() => navigate('/marketplace/events')}
+                  className={`py-4 px-4 text-sm transition-colors border-b ${location.pathname === '/marketplace/events' || location.pathname.startsWith('/marketplace/events/')
+                    ? 'border-blue-600 text-gray-900 font-medium'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 font-normal'
+                    }`}
+                >
+                  Events
+                </button>
+              </nav>
+            </div>
+          </>
+        )}
+
+        {/* Service Center Tabs */}
+        {isServicesCenter && (
+          <div className="mb-6 border-b border-gray-200">
+            <nav className="flex space-x-8" aria-label="Service tabs">
+              {[
+                { id: 'technology', label: 'Technology' },
+                { id: 'business', label: 'Employee Services' },
+                { id: 'digital_worker', label: 'Digital Worker' },
+                { id: 'prompt_library', label: 'Prompt Library' },
+                { id: 'ai_tools', label: 'AI Tools' }
+              ].map((tab) => {
+                const isActive = activeServiceTab === tab.id;
+                return (
+                  <button
+                    key={tab.id}
+                    onClick={() => {
+                      setActiveServiceTab(tab.id);
+                      const newParams = new URLSearchParams(searchParams);
+                      newParams.set('tab', tab.id);
+                      setSearchParams(newParams, { replace: true });
+                    }}
+                    className={`py-4 px-1 text-sm font-medium border-b-2 transition-colors ${isActive
+                      ? 'border-blue-700'
+                      : 'text-gray-700 border-transparent hover:text-gray-900 hover:border-gray-300'
+                      }`}
+                    style={isActive ? { color: '#030F35', borderColor: '#030F35' } : {}}
+                  >
+                    {tab.label}
+                  </button>
+                );
+              })}
+            </nav>
+          </div>
+        )}
+
+        {/* Guides Tabs Section */}
         {isGuides && (
           <>
-            {/* Tab Description - Above Navigation */}
             {activeTab && TAB_DESCRIPTIONS[activeTab] && (
               <div className="mb-4 bg-white rounded-lg p-6 border border-gray-200 relative">
                 <div className="flex justify-between items-start mb-3">
@@ -1091,19 +2403,18 @@ type WorkGuideTab = 'guidelines' | 'strategy' | 'blueprints' | 'testimonials' | 
                 )}
               </div>
             )}
-            
+
             <div className="mb-6 border-b border-gray-200">
               <nav className="flex space-x-8" aria-label="Guides navigation">
-              {(['strategy', 'guidelines', 'blueprints', 'testimonials', 'resources'] as WorkGuideTab[]).map(tab => (
+                {(['strategy', 'guidelines', 'blueprints', 'testimonials', 'glossary', 'faqs'] as WorkGuideTab[]).map(tab => (
                   <button
                     key={tab}
                     onClick={() => handleGuidesTabChange(tab)}
                     className={`
                       py-4 px-1 border-b-2 font-medium text-sm transition-colors
-                      ${
-                        activeTab === tab
-                          ? 'border-[var(--guidelines-primary)] text-[var(--guidelines-primary)]'
-                          : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                      ${activeTab === tab
+                        ? 'border-[var(--guidelines-primary)] text-[var(--guidelines-primary)]'
+                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                       }
                     `}
                     aria-current={activeTab === tab ? 'page' : undefined}
@@ -1117,27 +2428,34 @@ type WorkGuideTab = 'guidelines' | 'strategy' | 'blueprints' | 'testimonials' | 
         )}
 
         {/* Search + Sort */}
-        <div className="mb-6 flex items-center gap-3">
-          <div className="flex-1">
-            <SearchBar
-              searchQuery={isGuides ? (queryParams.get('q') || '') : searchQuery}
-              placeholder={isGuides || isKnowledgeHub ? "Search in DQ Knowledge Center" : undefined}
-              ariaLabel={isGuides || isKnowledgeHub ? "Search in DQ Knowledge Center" : undefined}
-              setSearchQuery={(q: string) => {
-                if (isGuides) {
-                  const next = new URLSearchParams(queryParams.toString());
-                  next.delete('page');
-                  if (q) next.set('q', q); else next.delete('q');
-                  const qs = next.toString();
-                  window.history.replaceState(null, '', `${window.location.pathname}${qs ? '?' + qs : ''}`);
-                  setQueryParams(new URLSearchParams(next.toString()));
-                } else {
-                  setSearchQuery(q);
+        {!(isGuides && activeTab === 'glossary') && (
+          <div className="mb-6 flex items-center gap-3">
+            <div className="flex-1">
+              <SearchBar
+                searchQuery={isGuides ? (queryParams.get('q') || '') : searchQuery}
+                setSearchQuery={(q: string) => {
+                  if (isGuides) {
+                    const next = new URLSearchParams(queryParams.toString());
+                    next.delete('page');
+                    if (q) next.set('q', q); else next.delete('q');
+                    const qs = next.toString();
+                    window.history.replaceState(null, '', `${window.location.pathname}${qs ? '?' + qs : ''}`);
+                    setQueryParams(new URLSearchParams(next.toString()));
+                  } else {
+                    setSearchQuery(q);
+                  }
+                }}
+                placeholder={
+                  isEvents
+                    ? "Search events by title, description, category, or location..."
+                    : isGuides
+                      ? "Search guides..."
+                      : "Search..."
                 }
-              }}
-            />
+              />
+            </div>
           </div>
-        </div>
+        )}
 
         <div className="flex flex-col xl:flex-row gap-6">
           {/* Mobile filter toggle */}
@@ -1152,14 +2470,14 @@ type WorkGuideTab = 'guidelines' | 'strategy' | 'blueprints' | 'testimonials' | 
                 <FilterIcon size={18} />
                 {showFilters ? 'Hide Filters' : 'Show Filters'}
               </button>
-              {(isCourses ? Object.values(urlBasedFilters).some(f => Array.isArray(f) && f.length > 0) : 
-                 isKnowledgeHub ? activeFilters.length > 0 :
-                 isGuides ? false :
-                 Object.values(filters).some(f => (Array.isArray(f) ? f.length > 0 : f !== ''))) && (
-                <button onClick={resetFilters} className="ml-2 text-blue-600 text-sm font-medium whitespace-nowrap px-3 py-2">
-                  Reset
-                </button>
-              )}
+              {(isCourses ? Object.values(urlBasedFilters).some(f => Array.isArray(f) && f.length > 0) :
+                isKnowledgeHub || isEvents ? activeFilters.length > 0 :
+                  isGuides ? false :
+                    Object.values(filters).some(f => (Array.isArray(f) ? f.length > 0 : f !== ''))) && (
+                  <button onClick={resetFilters} className="ml-2 text-blue-600 text-sm font-medium whitespace-nowrap px-3 py-2">
+                    Reset
+                  </button>
+                )}
             </div>
           </div>
 
@@ -1187,6 +2505,53 @@ type WorkGuideTab = 'guidelines' | 'strategy' | 'blueprints' | 'testimonials' | 
                 <div className="p-4">
                   {isGuides ? (
                     <GuidesFilters activeTab={activeTab} facets={facets} query={queryParams} onChange={(next) => { next.delete('page'); const qs = next.toString(); window.history.replaceState(null, '', `${window.location.pathname}${qs ? '?' + qs : ''}`); setQueryParams(new URLSearchParams(next.toString())); track('Guides.FilterChanged', { params: Object.fromEntries(next.entries()) }); }} />
+                  ) : isKnowledgeHub || isEvents ? (
+                    <div className="space-y-0">
+                      {filterConfig.map(category => {
+                        const isExpanded = expandedFilter === category.id;
+                        return (
+                          <div key={category.id} className="border-b border-gray-100">
+                            <button
+                              onClick={() => setExpandedFilter(isExpanded ? null : category.id)}
+                              type="button"
+                              aria-expanded={isExpanded}
+                            >
+                              <span>{category.title}</span>
+                              <ChevronDown
+                                size={16}
+                                className={`text-gray-500 flex-shrink-0 transition-transform duration-300 ease-in-out ${isExpanded ? 'rotate-180' : ''
+                                  }`}
+                              />
+                            </button>
+                            <div
+                              className={`overflow-hidden transition-all duration-300 ease-in-out ${isExpanded ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'
+                                }`}
+                            >
+                              <div className="pb-3 space-y-2">
+                                {category.options.map(option => (
+                                  <div key={option.id} className="flex items-center">
+                                    <input
+                                      type="checkbox"
+                                      id={`mobile-${category.id}-${option.id}`}
+                                      checked={activeFilters.includes(option.name)}
+                                      onChange={() => handleKnowledgeHubFilterChange(option.name)}
+                                      className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                                    />
+                                    <label
+                                      htmlFor={`mobile-${category.id}-${option.id}`}
+                                      className="ml-2 text-sm text-gray-700 cursor-pointer"
+                                    >
+                                      {option.name}
+                                    </label>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+
                   ) : (
                     <FilterSidebar
                       filters={isCourses ? urlBasedFilters : (Object.fromEntries(Object.entries(filters).map(([k, v]) => [k, Array.isArray(v) ? v : (v ? [v] : [])])) as Record<string, string[]>)}
@@ -1206,26 +2571,61 @@ type WorkGuideTab = 'guidelines' | 'strategy' | 'blueprints' | 'testimonials' | 
             {isGuides ? (
               <GuidesFilters activeTab={activeTab} facets={facets} query={queryParams} onChange={(next) => { next.delete('page'); const qs = next.toString(); window.history.replaceState(null, '', `${window.location.pathname}${qs ? '?' + qs : ''}`); setQueryParams(new URLSearchParams(next.toString())); track('Guides.FilterChanged', { params: Object.fromEntries(next.entries()) }); }} />
             ) : (
-              <div className="bg-white rounded-lg shadow p-4 sticky top-24">
+              <div className="bg-white rounded-lg shadow p-4 sticky top-24 max-h-[calc(100vh-7rem)] overflow-y-auto filter-sidebar-scroll">
                 <div className="flex justify-between items-center mb-4">
                   <h2 className="text-lg font-semibold">Filters</h2>
-                  {(isCourses ? Object.values(urlBasedFilters).some(f => Array.isArray(f) && f.length > 0) : 
-                     isKnowledgeHub ? activeFilters.length > 0 :
-                     Object.values(filters).some(f => (Array.isArray(f) ? f.length > 0 : f !== ''))) && (
-                    <button onClick={resetFilters} className="text-blue-600 text-sm font-medium">Reset All</button>
-                  )}
+                  {(isCourses ? Object.values(urlBasedFilters).some(f => Array.isArray(f) && f.length > 0) :
+                    isKnowledgeHub || isEvents ? activeFilters.length > 0 :
+                      Object.values(filters).some(f => (Array.isArray(f) ? f.length > 0 : f !== ''))) && (
+                      <button onClick={resetFilters} className="text-blue-600 text-sm font-medium">Reset All</button>
+                    )}
                 </div>
-                {isKnowledgeHub ? (
-                  <div className="space-y-4">
-                    {filterConfig.map(category => <div key={category.id} className="border-b border-gray-100 pb-3">
-                        <h3 className="font-medium text-gray-900 mb-2">{category.title}</h3>
-                        <div className="space-y-2">
-                          {category.options.map(option => <div key={option.id} className="flex items-center">
-                              <input type="checkbox" id={`desktop-${category.id}-${option.id}`} checked={activeFilters.includes(option.name)} onChange={() => handleKnowledgeHubFilterChange(option.name)} className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
-                              <label htmlFor={`desktop-${category.id}-${option.id}`} className="ml-2 text-sm text-gray-700">{option.name}</label>
-                            </div>)}
+                {isKnowledgeHub || isEvents ? (
+                  <div className="space-y-0">
+                    {filterConfig.map(category => {
+                      const isExpanded = expandedFilter === category.id;
+                      return (
+                        <div key={category.id} className="border-b border-gray-100">
+                          <button
+                            className="flex w-full justify-between items-center text-left font-medium text-gray-900 py-3 hover:text-gray-700 transition-colors"
+                            onClick={() => setExpandedFilter(isExpanded ? null : category.id)}
+                            type="button"
+                            aria-expanded={isExpanded}
+                          >
+                            <span>{category.title}</span>
+                            <ChevronDown
+                              size={16}
+                              className={`text-gray-500 flex-shrink-0 transition-transform duration-300 ease-in-out ${isExpanded ? 'rotate-180' : ''
+                                }`}
+                            />
+                          </button>
+                          <div
+                            className={`overflow-hidden transition-all duration-300 ease-in-out ${isExpanded ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'
+                              }`}
+                          >
+                            <div className="pb-3 space-y-2">
+                              {category.options.map(option => (
+                                <div key={option.id} className="flex items-center">
+                                  <input
+                                    type="checkbox"
+                                    id={`desktop-${category.id}-${option.id}`}
+                                    checked={activeFilters.includes(option.name)}
+                                    onChange={() => handleKnowledgeHubFilterChange(option.name)}
+                                    className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                                  />
+                                  <label
+                                    htmlFor={`desktop-${category.id}-${option.id}`}
+                                    className="ml-2 text-sm text-gray-700 cursor-pointer"
+                                  >
+                                    {option.name}
+                                  </label>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
                         </div>
-                      </div>)}
+                      );
+                    })}
                   </div>
                 ) : (
                   <FilterSidebar
@@ -1246,7 +2646,7 @@ type WorkGuideTab = 'guidelines' | 'strategy' | 'blueprints' | 'testimonials' | 
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
                 {[...Array(6)].map((_, idx) => <CourseCardSkeleton key={idx} />)}
               </div>
-            ) : error && !isGuides && !isKnowledgeHub ? (
+            ) : error && !isGuides && !isKnowledgeHub && !isEvents ? (
               <ErrorDisplay message={error} onRetry={retryFetch} />
             ) : isKnowledgeHub ? (
               <KnowledgeHubGrid
@@ -1260,54 +2660,66 @@ type WorkGuideTab = 'guidelines' | 'strategy' | 'blueprints' | 'testimonials' | 
               />
             ) : isGuides ? (
               <>
-                {activeTab === 'resources' ? (
+                {activeTab === 'faqs' ? (
+                  <FAQsPageContent />
+                ) : activeTab === 'glossary' ? (
                   <>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-                      {/* Glossary Card */}
-                      <Link to="/marketplace/guides/glossary" className="bg-white rounded-lg shadow-md border border-gray-200 p-6 hover:shadow-lg transition-shadow cursor-pointer block">
-                        <div className="flex items-center mb-4">
-                          <div className="w-12 h-12 bg-[var(--guidelines-primary-surface)] rounded-lg flex items-center justify-center mr-4">
-                            <svg className="w-6 h-6 text-[var(--guidelines-primary)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                            </svg>
-                          </div>
-                          <h3 className="text-xl font-semibold text-gray-800">Glossary</h3>
-                        </div>
-                        <p className="text-gray-600 mb-4">
-                          Comprehensive dictionary of DQ terminology, acronyms, and key concepts to help you understand our language and processes.
-                        </p>
-                        <div className="flex items-center text-[var(--guidelines-primary)] font-medium">
-                          <span>View Glossary</span>
-                          <svg className="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                          </svg>
-                        </div>
-                      </Link>
-
-                      {/* FAQs Card */}
-                      <Link to="/marketplace/guides/faqs" className="bg-white rounded-lg shadow-md border border-gray-200 p-6 hover:shadow-lg transition-shadow cursor-pointer block">
-                        <div className="flex items-center mb-4">
-                          <div className="w-12 h-12 bg-[var(--guidelines-primary-surface)] rounded-lg flex items-center justify-center mr-4">
-                            <svg className="w-6 h-6 text-[var(--guidelines-primary)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                            </svg>
-                          </div>
-                          <h3 className="text-xl font-semibold text-gray-800">FAQs</h3>
-                        </div>
-                        <p className="text-gray-600 mb-4">
-                          Frequently asked questions about DQ processes, tools, workflows, and best practices with detailed answers and guidance.
-                        </p>
-                        <div className="flex items-center text-[var(--guidelines-primary)] font-medium">
-                          <span>View FAQs</span>
-                          <svg className="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                          </svg>
-                        </div>
-                      </Link>
+                    {/* Global Search Bar for Glossary */}
+                    <div className="mb-6">
+                      <div className="relative">
+                        <input
+                          type="text"
+                          value={queryParams.get('q') || ''}
+                          onChange={(e) => {
+                            const next = new URLSearchParams(queryParams.toString());
+                            next.delete('page');
+                            if (e.target.value) {
+                              next.set('q', e.target.value);
+                            } else {
+                              next.delete('q');
+                            }
+                            const qs = next.toString();
+                            if (typeof window !== 'undefined') {
+                              window.history.replaceState(null, '', `${window.location.pathname}${qs ? '?' + qs : ''}`);
+                            }
+                            setQueryParams(new URLSearchParams(next.toString()));
+                          }}
+                          placeholder="Search DQ terms (e.g. DWS, CWS, Agile TMS)"
+                          className="w-full px-4 py-3 pl-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[var(--guidelines-primary)] focus:border-[var(--guidelines-primary)] outline-none"
+                        />
+                        <svg
+                          className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                        </svg>
+                      </div>
                     </div>
+                    <GlossaryGrid
+                      items={filteredGlossaryTerms}
+                      onClickTerm={(term) => {
+                        navigate(`/marketplace/guides/glossary/${term.id}`);
+                      }}
+                      hideEmptyState={false}
+                    />
+                  </>
+                ) : activeTab === 'testimonials' ? (
+                  <TestimonialsGrid
+                    items={filteredItems}
+                    onClickGuide={(g) => {
+                      const qs = queryParams.toString();
+                      navigate(`/marketplace/guides/${encodeURIComponent(g.slug || g.id)}`, {
+                        state: { fromQuery: qs, activeTab }
+                      });
+                    }}
+                  />
+                ) : (
+                  <>
                     <GuidesGrid
                       items={filteredItems}
-                      hideEmptyState={activeTab === 'resources'}
+                      hideEmptyState={false}
                       onClickGuide={(g) => {
                         const qs = queryParams.toString();
                         navigate(`/marketplace/guides/${encodeURIComponent(g.slug || g.id)}`, {
@@ -1339,52 +2751,6 @@ type WorkGuideTab = 'guidelines' | 'strategy' | 'blueprints' | 'testimonials' | 
                       </div>
                     )}
                   </>
-                ) : activeTab === 'testimonials' ? (
-                  <TestimonialsGrid
-                    items={filteredItems}
-                    onClickGuide={(g) => {
-                      const qs = queryParams.toString();
-                      navigate(`/marketplace/guides/${encodeURIComponent(g.slug || g.id)}`, {
-                        state: { fromQuery: qs, activeTab }
-                      });
-                    }}
-                  />
-                ) : (
-                  <>
-                    <GuidesGrid
-                      items={filteredItems}
-                      hideEmptyState={activeTab === 'resources'}
-                      onClickGuide={(g) => {
-                        const qs = queryParams.toString();
-                        navigate(`/marketplace/guides/${encodeURIComponent(g.slug || g.id)}`, {
-                          state: { fromQuery: qs, activeTab }
-                        });
-                      }}
-                    />
-                    {totalPages > 1 && (
-                      <div className="mt-6 flex items-center justify-center gap-4">
-                    <button
-                      type="button"
-                      onClick={() => goToPage(currentPage - 1)}
-                      disabled={currentPage === 1}
-                      className="px-4 py-2 rounded border border-gray-200 text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      Previous
-                    </button>
-                    <span className="text-sm text-gray-600">
-                      Page {currentPage} of {totalPages}
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => goToPage(currentPage + 1)}
-                      disabled={currentPage >= totalPages}
-                      className="px-4 py-2 rounded border border-gray-200 text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      Next
-                    </button>
-                      </div>
-                    )}
-                  </>
                 )}
               </>
             ) : (
@@ -1404,23 +2770,26 @@ type WorkGuideTab = 'guidelines' | 'strategy' | 'blueprints' | 'testimonials' | 
                 onToggleBookmark={toggleBookmark}
                 onAddToComparison={handleAddToComparison}
                 promoCards={promoCards}
+                activeServiceTab={activeServiceTab}
               />
             )}
           </div>
         </div>
 
         {/* Comparison modal */}
-        {showComparison && (
-          <MarketplaceComparison
-            items={compareItems}
-            onClose={() => setShowComparison(false)}
-            onRemoveItem={handleRemoveFromComparison}
-            marketplaceType={marketplaceType}
-          />
-        )}
+        {
+          showComparison && (
+            <MarketplaceComparison
+              items={compareItems}
+              onClose={() => setShowComparison(false)}
+              onRemoveItem={handleRemoveFromComparison}
+              marketplaceType={marketplaceType}
+            />
+          )
+        }
       </div>
       <Footer isLoggedIn={false} />
-    </div>
+    </div >
   );
 };
 

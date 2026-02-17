@@ -6,7 +6,7 @@ import { Textarea } from '@/communities/components/ui/textarea';
 import { Shield, EyeOff, Check, Trash2, AlertTriangle, Copy, Eye, RotateCcw } from 'lucide-react';
 import { useAuth } from '@/communities/contexts/AuthProvider';
 import { toast } from 'sonner';
-import { ModerationAPI } from '@/services/ModerationAPI';
+import { ModerationAPI } from '@/communities/services/ModerationAPI';
 import { useNavigate } from 'react-router-dom';
 interface InlineModeratorControlsProps {
   postId: string;
@@ -36,7 +36,7 @@ export function InlineModeratorControls({
       targetId: postId,
       action,
       reason: 'Quick moderation action'
-    }, user.email);
+    }, user.email, user.id);
     if (result.success) {
       toast.success(`Content ${action}d successfully`);
       onActionComplete?.();
@@ -54,7 +54,7 @@ export function InlineModeratorControls({
       action: currentAction,
       reason: actionReason || undefined,
       message: currentAction === 'warn' ? actionReason : undefined
-    }, user.email);
+    }, user.email, user.id);
     if (result.success) {
       toast.success(`Content ${currentAction === 'delete' ? 'deleted' : currentAction === 'warn' ? 'warning sent' : `${currentAction}d`} successfully`);
       setActionReason('');
@@ -149,7 +149,7 @@ export function InlineModeratorControls({
                 Approve
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => handleQuickAction('restore')} className="gap-2">
-                <RotateCcw className="h-4 w-4 text-blue-600" />
+                <RotateCcw className="h-4 w-4 text-dq-navy" />
                 Restore
               </DropdownMenuItem>
             </>}

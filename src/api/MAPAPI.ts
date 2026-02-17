@@ -17,6 +17,10 @@ export type LocationItem = {
   city: string;
   country: string;
   coordinates: { lng: number; lat: number } | null;
+  /** Optional brand color for this marker (overrides type-based color when set) */
+  markerColor?: string;
+  /** Optional client filter key for Discover DQ ecosystem filters */
+  filterKey?: string;
   tags?: string[];
   contact?: string;
   email?: string;
@@ -158,6 +162,146 @@ export const DQ_LOCATIONS: LocationItem[] = [
     knowledgeCenterUrl: '/knowledge-center/neom',
     heroImageUrl: 'https://images.unsplash.com/photo-1476610182048-b716b8518aae?auto=format&fit=crop&w=1600&q=80',
     heroImageAlt: 'Futuristic desert cityscape',
+  },
+  {
+    id: 'stc-riyadh',
+    name: 'STC – Riyadh',
+    type: 'Client',
+    address: 'Riyadh, Saudi Arabia',
+    city: 'Riyadh',
+    country: 'Saudi Arabia',
+    coordinates: { lng: 46.6753, lat: 24.7136 },
+    tags: ['client'],
+    category: 'Telecommunications',
+    description:
+      'STC partnership supporting digital banking and ecosystem services across the Kingdom.',
+    services: ['Digital Banking', 'Customer Experience', 'Platform Enablement'],
+  },
+  {
+    id: 'saib-jeddah',
+    name: 'SAIB – Saudi Investment Bank (Jeddah)',
+    type: 'Bank',
+    address: 'Jeddah, Saudi Arabia',
+    city: 'Jeddah',
+    country: 'Saudi Arabia',
+    coordinates: { lng: 39.1925, lat: 21.4858 },
+    tags: ['bank', 'client'],
+    category: 'Financial Services',
+    description:
+      'Saudi Investment Bank presence in Jeddah, supporting retail and corporate banking initiatives.',
+    services: ['Retail Banking', 'Corporate Banking', 'Digital Transformation'],
+  },
+  {
+    id: 'neom-managed-ea-inc01',
+    name: 'NEOM Managed EA | INC01',
+    type: 'Client',
+    address: 'NEOM, Tabuk, Saudi Arabia',
+    city: 'Tabuk',
+    country: 'Saudi Arabia',
+    coordinates: { lng: 35.1128, lat: 28.1122 },
+    tags: ['client', 'strategic'],
+    category: 'Smart City Development',
+    description:
+      'Enterprise architecture and incubation programmes supporting NEOM’s giga-project portfolio.',
+    services: ['Enterprise Architecture', 'Programme Incubation', 'Digital Strategy'],
+  },
+  {
+    id: 'kf-managed-db',
+    name: 'KF Managed DB',
+    type: 'Client',
+    address: 'Riyadh, Saudi Arabia',
+    city: 'Riyadh',
+    country: 'Saudi Arabia',
+    coordinates: { lng: 46.6753, lat: 24.7136 },
+    tags: ['client', 'entrepreneurship'],
+    category: 'Financial Services',
+    description:
+      'Khalifa Fund managed delivery backbone supporting SME and entrepreneurship programmes.',
+    services: ['SME Platforms', 'Digital Lending', 'Operations Enablement'],
+  },
+  {
+    id: 'kf-ej',
+    name: 'KF EJ',
+    type: 'Client',
+    address: 'Riyadh, Saudi Arabia',
+    city: 'Riyadh',
+    country: 'Saudi Arabia',
+    coordinates: { lng: 46.6753, lat: 24.7136 },
+    tags: ['client', 'entrepreneurship'],
+    category: 'Financial Services',
+    description:
+      'Khalifa Fund Enterprise Journey initiatives enabling founders across the region.',
+    services: ['Entrepreneur Journey Design', 'Digital Channels', 'Advisory'],
+  },
+  {
+    id: 'sca-riyadh',
+    name: 'SCA – Supervisory & Control Authority',
+    type: 'Authority',
+    address: 'Riyadh, Saudi Arabia',
+    city: 'Riyadh',
+    country: 'Saudi Arabia',
+    coordinates: { lng: 46.6753, lat: 24.7136 },
+    tags: ['authority', 'regulator'],
+    category: 'Public Sector',
+    description:
+      'Regulatory and supervisory authority engagements focused on risk, compliance, and supervision.',
+    services: ['Supervision Frameworks', 'RegTech', 'Regulatory Design'],
+  },
+  {
+    id: 'moi-i360',
+    name: 'MoI I360',
+    type: 'Authority',
+    address: 'Riyadh, Saudi Arabia',
+    city: 'Riyadh',
+    country: 'Saudi Arabia',
+    coordinates: { lng: 46.6753, lat: 24.7136 },
+    tags: ['client', 'strategic', 'public-sector'],
+    category: 'Ministry of Interior',
+    description:
+      'Integrated 360° public safety and citizen experience programmes with the Ministry of Interior.',
+    services: ['Public Safety Platforms', 'Experience Design', 'Data & Insights'],
+  },
+  {
+    id: 'adib-managed-ea',
+    name: 'ADIB Managed EA',
+    type: 'Client',
+    address: 'Abu Dhabi, United Arab Emirates',
+    city: 'Abu Dhabi',
+    country: 'United Arab Emirates',
+    coordinates: { lng: 54.3773, lat: 24.4539 },
+    tags: ['client', 'banking'],
+    category: 'Financial Services',
+    description:
+      'Managed enterprise architecture services for Abu Dhabi Islamic Bank, enabling digital banking growth.',
+    services: ['Enterprise Architecture', 'Digital Banking Platforms', 'Core Modernisation'],
+  },
+  {
+    id: 'dfsa-abu-dhabi',
+    name: 'DFSA – Abu Dhabi Collaboration',
+    type: 'Authority',
+    address: 'Abu Dhabi, United Arab Emirates',
+    city: 'Abu Dhabi',
+    country: 'United Arab Emirates',
+    coordinates: { lng: 54.3773, lat: 24.4539 },
+    tags: ['regulator', 'financial'],
+    category: 'Financial Regulation',
+    description:
+      'Regulatory innovation and collaboration programmes supporting capital markets and supervision in Abu Dhabi.',
+    services: ['Regulatory Design', 'Supervision Platforms', 'RegTech Advisory'],
+  },
+  {
+    id: 'dewa-ea',
+    name: 'DEWA EA',
+    type: 'Utility',
+    address: 'Dubai, United Arab Emirates',
+    city: 'Dubai',
+    country: 'United Arab Emirates',
+    coordinates: { lng: 55.2708, lat: 25.2048 },
+    tags: ['utility', 'energy'],
+    category: 'Energy & Utilities',
+    description:
+      'Enterprise architecture and transformation support for Dubai Electricity and Water Authority.',
+    services: ['Enterprise Architecture', 'Smart Grid Strategy', 'Sustainability Programmes'],
   },
 ];
 

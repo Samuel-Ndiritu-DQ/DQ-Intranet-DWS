@@ -13,8 +13,16 @@ import {
     CalendarIcon,
     UserIcon,
     TagIcon,
+    UploadCloudIcon,
 } from 'lucide-react';
-export function DocumentTable({ documents, onViewDocument }: { documents: any, onViewDocument: (document: any) => void; }) {
+
+interface DocumentTableProps {
+    documents: any[];
+    onViewDocument: (document: any) => void;
+    onUploadDocument?: (documentType?: string) => void;
+}
+
+export function DocumentTable({ documents, onViewDocument, onUploadDocument }: DocumentTableProps) {
     const [sortField, setSortField] = useState('uploadDate');
     const [sortDirection, setSortDirection] = useState('desc');
     const [expandedRows, setExpandedRows] = useState<any[]>([]);
@@ -70,13 +78,15 @@ export function DocumentTable({ documents, onViewDocument }: { documents: any, o
                 return 'bg-yellow-100 text-yellow-800';
             case 'Expired':
                 return 'bg-red-100 text-red-800';
+            case 'Required':
+                return 'bg-red-50 text-red-600 border border-red-100 font-medium';
             default:
                 return 'bg-gray-100 text-gray-800';
         }
     };
     // Format date for display
     const formatDate = (dateString: string) => {
-        if (!dateString) return 'N/A';
+        if (!dateString || dateString === 'N/A') return '-';
         const date = new Date(dateString);
         return date.toLocaleDateString('en-US', {
             year: 'numeric',
@@ -217,12 +227,24 @@ export function DocumentTable({ documents, onViewDocument }: { documents: any, o
                                         </span>
                                     </td>
                                     <td className="px-4 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                        <button
-                                            className="text-blue-600 hover:text-blue-800 px-2 py-1"
-                                            onClick={() => onViewDocument(doc)}
-                                        >
-                                            <EyeIcon size={16} className="inline mr-1" /> View
-                                        </button>
+                                        {doc.isMissing ? (
+                                            <button
+                                                className="text-red-600 hover:text-red-800 px-2 py-1 flex items-center gap-1"
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    onUploadDocument?.(doc.fieldName || doc.name);
+                                                }}
+                                            >
+                                                <UploadCloudIcon size={16} /> Upload
+                                            </button>
+                                        ) : (
+                                            <button
+                                                className="text-blue-600 hover:text-blue-800 px-2 py-1"
+                                                onClick={() => onViewDocument(doc)}
+                                            >
+                                                <EyeIcon size={16} className="inline mr-1" /> View
+                                            </button>
+                                        )}
                                     </td>
                                 </tr>
                             ))

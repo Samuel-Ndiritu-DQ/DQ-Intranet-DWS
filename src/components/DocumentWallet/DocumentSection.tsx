@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useCallback } from "react";
 import {
     FileIcon,
     FileTextIcon,
@@ -10,11 +10,33 @@ import {
     CheckIcon,
     AlertCircleIcon,
 } from "lucide-react";
-export function DocumentsPage({ title, documents }: { title: string, documents: any[]; }) {
-    const [docs, setDocs] = useState(documents);
+
+type DocumentStatus = "Approved" | "Pending" | "Rejected" | string;
+
+type DocumentItem = {
+    id: string;
+    name: string;
+    type: string;
+    size: string;
+    uploadDate: string;
+    status: DocumentStatus;
+};
+
+type UploadingFile = DocumentItem & {
+    progress: number;
+    status: "uploading" | "complete";
+};
+
+type DocumentsPageProps = {
+    readonly title: string;
+    readonly documents: DocumentItem[];
+};
+
+export function DocumentsPage({ title, documents }: DocumentsPageProps) {
+    const [docs, setDocs] = useState<DocumentItem[]>(documents);
     const [isDragging, setIsDragging] = useState(false);
-    const [uploadingFiles, setUploadingFiles] = useState([]);
-    const fileInputRef = useRef(null);
+    const [uploadingFiles, setUploadingFiles] = useState<UploadingFile[]>([]);
+    const fileInputRef = useRef<HTMLInputElement | null>(null);
     // Get icon based on file type
     const getFileIcon = (type: string) => {
         switch (type) {
@@ -46,88 +68,83 @@ export function DocumentsPage({ title, documents }: { title: string, documents: 
         }
     };
     // Handle file input change
-    const handleFileChange = (e: any) => {
-        const files = Array.from(e.target.files);
+    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const files = Array.from(e.target.files ?? []);
         handleFiles(files);
     };
     // Handle drag and drop
-    const handleDragOver = (e: any) => {
+    const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
         e.preventDefault();
         setIsDragging(true);
     };
     const handleDragLeave = () => {
         setIsDragging(false);
     };
-    const handleDrop = (e: any) => {
+    const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
         e.preventDefault();
         setIsDragging(false);
         const files = Array.from(e.dataTransfer.files);
         handleFiles(files);
     };
     // Process files
-    const handleFiles = (files: any) => {
-        const newUploadingFiles = files.map((file: any) => ({
-            id: Date.now() + Math.random().toString(36).substr(2, 9),
+    const handleFiles = (files: File[]) => {
+        const newUploadingFiles: UploadingFile[] = files.map((file) => ({
+            id: `${Date.now()}-${Math.random().toString(36).slice(2, 11)}`,
             name: file.name,
             type: getFileType(file.name),
             size: formatFileSize(file.size),
             progress: 0,
+            uploadDate: new Date().toLocaleDateString(),
             status: "uploading",
         }));
-        setUploadingFiles([...uploadingFiles, ...newUploadingFiles] as any);
-        // Simulate upload progress
-        newUploadingFiles.forEach((file: any) => {
-            simulateUpload(file.id);
+        setUploadingFiles((prev) => [...prev, ...newUploadingFiles]);
+        newUploadingFiles.forEach((file) => {
+            simulateUpload(file);
         });
     };
     // Simulate file upload
-    const simulateUpload = (fileId: string) => {
+    const simulateUpload = (uploadFile: UploadingFile) => {
         let progress = 0;
         const interval = setInterval(() => {
             progress += Math.floor(Math.random() * 10) + 5;
             if (progress >= 100) {
                 clearInterval(interval);
                 progress = 100;
-                // Add to documents after "upload" completes
-                setUploadingFiles((prev: any) =>
-                    prev.map((file: any) =>
-                        file.id === fileId
+                setUploadingFiles((prev) =>
+                    prev.map((file) =>
+                        file.id === uploadFile.id
                             ? {
-                                ...file,
-                                progress,
-                                status: "complete",
-                            }
+                                  ...file,
+                                  progress,
+                                  status: "complete",
+                              }
                             : file
                     )
                 );
                 setTimeout(() => {
-                    const uploadedFile = uploadingFiles.find(
-                        (file: any) => file.id === fileId
-                    ) as any;
-                    if (uploadedFile) {
-                        const newDoc = {
-                            id: fileId,
-                            name: uploadedFile.name,
-                            type: uploadedFile.type,
-                            size: uploadedFile.size,
-                            uploadDate: new Date().toLocaleDateString(),
+                    setDocs((prev) => [
+                        ...prev,
+                        {
+                            id: uploadFile.id,
+                            name: uploadFile.name,
+                            type: uploadFile.type,
+                            size: uploadFile.size,
+                            uploadDate: uploadFile.uploadDate,
                             status: "Pending",
-                        };
-                        setDocs([...docs, newDoc]);
-                        // Remove from uploading files
-                        setUploadingFiles((prev: any) =>
-                            prev.filter((file: any) => file.id !== fileId)
-                        );
-                    }
-                }, 1000);
+                        },
+                    ]);
+                    setUploadingFiles((prev) =>
+                        prev.filter((file) => file.id !== uploadFile.id)
+                    );
+                }, 500);
             } else {
-                setUploadingFiles((prev: any) =>
-                    prev.map((file: any) =>
-                        file.id === fileId
+                setUploadingFiles((prev) =>
+                    prev.map((file) =>
+                        file.id === uploadFile.id
                             ? {
-                                ...file,
-                                progress,
-                            }
+                                  ...file,
+                                  progress,
+                              }
                             : file
                     )
                 );
@@ -135,7 +152,7 @@ export function DocumentsPage({ title, documents }: { title: string, documents: 
         }, 300);
     };
     // Get file type from extension
-    const getFileType = (filename: any) => {
+    const getFileType = (filename: string) => {
         const ext = filename.split(".").pop().toLowerCase();
         if (["jpg", "jpeg", "png", "gif", "webp"].includes(ext)) return "image";
         if (["pdf"].includes(ext)) return "pdf";
@@ -146,14 +163,14 @@ export function DocumentsPage({ title, documents }: { title: string, documents: 
     };
     // Format file size
     const formatFileSize = (bytes: number) => {
-        if (bytes < 1024) return bytes + " B";
-        if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + " KB";
-        return (bytes / (1024 * 1024)).toFixed(1) + " MB";
+        if (bytes < 1024) return `${bytes} B`;
+        if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+        return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
     };
     // Handle document deletion
-    const handleDeleteDocument = (id: string) => {
-        setDocs(docs.filter((doc) => doc.id !== id));
-    };
+    const handleDeleteDocument = useCallback((id: string) => {
+        setDocs((prev) => prev.filter((doc) => doc.id !== id));
+    }, []);
     return (
         <div className="border border-gray-200 rounded-lg overflow-hidden">
             <div className="bg-gray-50 border-b border-gray-200 px-4 py-3">
@@ -161,20 +178,24 @@ export function DocumentsPage({ title, documents }: { title: string, documents: 
             </div>
             {/* Upload area */}
             <div
-                className={`p-4 sm:p-6 border-b border-gray-200 ${isDragging ? "bg-blue-50" : "bg-white"
-                    }`}
+                className={`p-4 sm:p-6 border-b border-gray-200 ${isDragging ? "bg-blue-50" : "bg-white"}`}
                 onDragOver={handleDragOver}
                 onDragLeave={handleDragLeave}
                 onDrop={handleDrop}
             >
-                <div
-                    className={`border-2 border-dashed rounded-lg p-4 sm:p-6 flex flex-col items-center justify-center cursor-pointer min-h-[120px] ${isDragging
+                <button
+                    type="button"
+                    className={`w-full border-2 border-dashed rounded-lg p-4 sm:p-6 flex flex-col items-center justify-center min-h-[120px] ${isDragging
                         ? "border-blue-400 bg-blue-50"
                         : "border-gray-300 hover:border-blue-400"
                         }`}
-                    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-                    // @ts-ignore
-                    onClick={() => fileInputRef.current.click()}
+                    onClick={() => fileInputRef.current?.click()}
+                    onKeyDown={(e) => {
+                        if (e.key === "Enter" || e.key === " ") {
+                            e.preventDefault();
+                            fileInputRef.current?.click();
+                        }
+                    }}
                 >
                     <UploadIcon
                         size={24}
@@ -194,7 +215,7 @@ export function DocumentsPage({ title, documents }: { title: string, documents: 
                         multiple
                         onChange={handleFileChange}
                     />
-                </div>
+                </button>
             </div>
             {/* Uploading files */}
             {uploadingFiles.length > 0 && (
@@ -203,7 +224,7 @@ export function DocumentsPage({ title, documents }: { title: string, documents: 
                         Uploading {uploadingFiles.length} file(s)
                     </h4>
                     <div className="space-y-3">
-                        {uploadingFiles.map((file: any) => (
+                        {uploadingFiles.map((file: UploadingFile) => (
                             <div
                                 key={file.id}
                                 className="bg-white p-3 rounded border border-gray-200"

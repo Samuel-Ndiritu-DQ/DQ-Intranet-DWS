@@ -2,9 +2,9 @@ import React from "react";
 import type { ProductClass } from "@/data/products";
 
 interface ClassFilterProps {
-  classes: ProductClass[];
-  activeId: string;
-  onSelect: (id: string) => void;
+  readonly classes: readonly ProductClass[];
+  readonly activeId: string;
+  readonly onSelect: (id: string) => void;
 }
 
 export function ClassFilter({ classes, activeId, onSelect }: ClassFilterProps) {

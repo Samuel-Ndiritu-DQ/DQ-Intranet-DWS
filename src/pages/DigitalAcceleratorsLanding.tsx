@@ -131,7 +131,7 @@ const acceleratorSections: AcceleratorSection[] = [
   },
 ];
 
-function SectionImage({ src, alt }: { src?: string; alt?: string }) {
+function SectionImage({ src, alt }: { readonly src?: string; readonly alt?: string }) {
   if (!src) {
     return (
       <div className="w-full max-w-full lg:w-[736px] h-[416px] rounded-2xl border border-white/15 bg-white/10 backdrop-blur-sm" />
@@ -339,7 +339,7 @@ export function DigitalAcceleratorsLanding() {
               
               {/* Data Streams - Platform Data Flow */}
               <g opacity="0.6">
-                {[...Array(10)].map((_, i) => (
+                {Array.from({ length: 10 }).map((_, i) => (
                   <circle
                     key={`data-${i}`}
                     cx={250 + (i * 150)}
@@ -353,7 +353,7 @@ export function DigitalAcceleratorsLanding() {
                     filter="url(#productGlow)"
                   />
                 ))}
-                {[...Array(8)].map((_, i) => (
+                {Array.from({ length: 8 }).map((_, i) => (
                   <circle
                     key={`data2-${i}`}
                     cx={300 + (i * 180)}
@@ -399,7 +399,7 @@ export function DigitalAcceleratorsLanding() {
               </g>
               
               {/* Acceleration Indicators - Speed Lines */}
-              {[...Array(6)].map((_, i) => (
+              {Array.from({ length: 6 }).map((_, i) => (
                 <line
                   key={`accel-${i}`}
                   x1={300 + i * 250}
@@ -432,7 +432,7 @@ export function DigitalAcceleratorsLanding() {
               
               {/* Platform Grid Lines */}
               <g stroke="url(#gridGradient)" strokeWidth="0.8">
-                {[...Array(10)].map((_, i) => (
+                {Array.from({ length: 10 }).map((_, i) => (
                   <line
                     key={`v-${i}`}
                     x1={i * 192}
@@ -446,7 +446,7 @@ export function DigitalAcceleratorsLanding() {
                     }}
                   />
                 ))}
-                {[...Array(8)].map((_, i) => (
+                {Array.from({ length: 8 }).map((_, i) => (
                   <line
                     key={`h-${i}`}
                     x1="0"
@@ -590,7 +590,7 @@ export function DigitalAcceleratorsLanding() {
                   <FadeInUpOnScroll>
                     <div
                       className={`grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-16 items-start ${
-                        !isEven ? 'lg:flex-row-reverse' : ''
+                        isEven ? '' : 'lg:flex-row-reverse'
                       }`}
                     >
                       <div className={isEven ? 'lg:order-1' : 'lg:order-2'}>

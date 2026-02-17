@@ -141,30 +141,31 @@ export const DNAHexagonDiagram: React.FC<HexagonDiagramProps> = ({ nodes }) => {
               const x1 = s.x;
               const y1 = yAnchor;
 
-              const { x2, y2, tx, ty, ta } =
-                c.side === "left"
-                  ? {
-                      x2: x1 - H_LEN,
-                      y2: y1,
-                      tx: x1 - H_LEN - PAD_SIDE,
-                      ty: y1 - 10,
-                      ta: "end" as const,
-                    }
-                  : c.side === "right"
-                  ? {
-                      x2: x1 + H_LEN,
-                      y2: y1,
-                      tx: x1 + H_LEN + PAD_SIDE,
-                      ty: y1 - 10,
-                      ta: "start" as const,
-                    }
-                  : {
-                      x2: x1,
-                      y2: s.y + V_LEN,
-                      tx: x1,
-                      ty: s.y + V_LEN + PAD_BOTTOM,
-                      ta: "middle" as const,
-                    };
+              let x2: number;
+              let y2: number;
+              let tx: number;
+              let ty: number;
+              let ta: "start" | "end" | "middle";
+
+              if (c.side === "left") {
+                x2 = x1 - H_LEN;
+                y2 = y1;
+                tx = x2 - PAD_SIDE;
+                ty = y2 - 10;
+                ta = "end";
+              } else if (c.side === "right") {
+                x2 = x1 + H_LEN;
+                y2 = y1;
+                tx = x2 + PAD_SIDE;
+                ty = y2 - 10;
+                ta = "start";
+              } else {
+                x2 = x1;
+                y2 = s.y + V_LEN;
+                tx = x2;
+                ty = y2 + PAD_BOTTOM;
+                ta = "middle";
+              }
 
               return (
                 <g key={c.role}>

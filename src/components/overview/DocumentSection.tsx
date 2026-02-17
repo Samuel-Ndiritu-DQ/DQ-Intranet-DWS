@@ -169,11 +169,14 @@ export function DocumentSection({ title, documents }: DocumentSectionProps) {
             <h3 className="font-medium text-gray-700">{title}</h3>
         </div>
         {/* Upload area */}
-        <div className={`p-4 sm:p-6 border-b border-gray-200 ${isDragging ? 'bg-blue-50' : 'bg-white'}`} onDragOver={handleDragOver} onDragLeave={handleDragLeave} onDrop={handleDrop}>
+        <div className={`p-4 sm:p-6 border-b border-gray-200 ${isDragging ? 'bg-blue-50' : 'bg-white'}`}>
             <button
                 type="button"
                 className={`w-full border-2 border-dashed rounded-lg p-4 sm:p-6 flex flex-col items-center justify-center cursor-pointer min-h-[120px] ${isDragging ? 'border-blue-400 bg-blue-50' : 'border-gray-300 hover:border-blue-400'}`}
                 onClick={() => fileInputRef.current?.click()}
+                onDragOver={handleDragOver}
+                onDragLeave={handleDragLeave}
+                onDrop={handleDrop}
                 onKeyDown={(e) => {
                     if (e.key === 'Enter' || e.key === ' ') {
                         e.preventDefault();

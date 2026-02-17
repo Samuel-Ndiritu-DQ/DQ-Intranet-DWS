@@ -461,6 +461,7 @@ type LandingOverrides = {
   responseTags?: string[];
   responsesCTALabel?: string;
   responsesCTATo?: string;
+  responsesCTALocked?: boolean;
   bottomCTA?: string;
   actionCards?: ActionCard[];
   finalHeadline?: string;
@@ -919,6 +920,7 @@ function SectionCarousel({ // NOSONAR: props are intentionally mutable
   const bottomCTA = content?.bottomCTA ?? 'Explore all Seven Responses together →'; // NOSONAR: reserved for future use
   const responsesCTALabel = content?.responsesCTALabel;
   const responsesCTATo = content?.responsesCTATo;
+  const responsesCTALocked = content?.responsesCTALocked ?? Boolean(responsesCTALabel && /coming soon/i.test(responsesCTALabel));
 
   useEffect(() => {
     setActiveTag(carouselIndex);
@@ -942,6 +944,7 @@ function SectionCarousel({ // NOSONAR: props are intentionally mutable
         itemLabel="Perspective"
         ctaLabel={responsesCTALabel}
         ctaTo={responsesCTATo}
+        ctaLocked={responsesCTALocked}
       />
     );
   }
@@ -977,6 +980,7 @@ function SectionCarousel({ // NOSONAR: props are intentionally mutable
       itemLabel="Response"
       ctaLabel={responsesCTALabel}
       ctaTo={responsesCTATo}
+      ctaLocked={responsesCTALocked}
     />
   );
 }
@@ -1144,6 +1148,7 @@ function SevenResponsesRailCarousel({ // NOSONAR: props are intentionally mutabl
   itemLabel = 'Response',
   ctaLabel,
   ctaTo,
+  ctaLocked,
 }: {
   id: string;
   title: string;
@@ -1155,11 +1160,13 @@ function SevenResponsesRailCarousel({ // NOSONAR: props are intentionally mutabl
   itemLabel?: string;
   ctaLabel?: string;
   ctaTo?: string;
+  ctaLocked?: boolean;
 }) {
   const [emblaRef, emblaApi] = useEmblaCarousel({ loop: true, align: 'start' });
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
   const navigate = useNavigate();
+  const isCTALocked = ctaLocked ?? Boolean(ctaLabel && /coming soon/i.test(ctaLabel));
 
   const onSelect = useCallback(() => {
     if (!emblaApi) return;
@@ -1202,14 +1209,14 @@ function SevenResponsesRailCarousel({ // NOSONAR: props are intentionally mutabl
   }, [emblaApi]);
 
   const handleCTA = useCallback(() => {
-    if (!ctaTo) return;
+    if (!ctaTo || isCTALocked) return;
     const isExternal = /^https?:\/\//i.test(ctaTo);
     if (isExternal) {
       window.open(ctaTo, '_blank', 'noopener,noreferrer');
       return;
     }
     navigate(ctaTo);
-  }, [ctaTo, navigate]);
+  }, [ctaTo, navigate, isCTALocked]);
 
   return (
     <section id={id} className="relative py-24 bg-white">
@@ -1324,16 +1331,25 @@ function SevenResponsesRailCarousel({ // NOSONAR: props are intentionally mutabl
                 ))}
               </div>
 
-              {ctaLabel && ctaTo ? (
+              {ctaLabel ? (
                 <div className="mt-12 flex justify-center">
                   <button
                     type="button"
-                    onClick={handleCTA}
-                    className="inline-flex items-center gap-3 rounded-xl bg-[#151c2d] px-7 py-3.5 text-white font-semibold shadow-[0_10px_28px_rgba(12,20,40,0.28)] transition hover:-translate-y-0.5 hover:shadow-[0_14px_34px_rgba(12,20,40,0.32)]"
+                    onClick={isCTALocked ? undefined : handleCTA}
+                    aria-disabled={isCTALocked}
+                    disabled={isCTALocked}
+                    className={[
+                      'inline-flex items-center gap-3 rounded-xl px-7 py-3.5 font-semibold transition border',
+                      isCTALocked
+                        ? 'bg-white text-[#9aa4c6] border-[#e5e9f5] cursor-not-allowed shadow-[0_6px_16px_rgba(12,20,40,0.12)]'
+                        : 'bg-[#151c2d] text-white border-transparent shadow-[0_10px_28px_rgba(12,20,40,0.28)] hover:-translate-y-0.5 hover:shadow-[0_14px_34px_rgba(12,20,40,0.32)]'
+                    ].join(' ')}
                   >
-                    <BookOpen className="h-5 w-5" />
+                    {isCTALocked ? <Lock className="h-5 w-5" /> : <BookOpen className="h-5 w-5" />}
                     <span className="text-base">{ctaLabel}</span>
-                    <ArrowRight className="h-5 w-5" />
+                    {isCTALocked ? (
+                      <span className="text-[10px] uppercase tracking-[0.2em] text-[#9aa4c6]">(Coming soon)</span>
+                    ) : <ArrowRight className="h-5 w-5" />}
                   </button>
                 </div>
               ) : null}

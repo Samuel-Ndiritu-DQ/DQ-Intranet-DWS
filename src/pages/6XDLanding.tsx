@@ -232,6 +232,7 @@ export default function SixXDLanding() {
         ],
         responseCards: SIXXD_CARDS,
         responsesCTALabel: "Read the 6xD Books",
+        responsesCTALocked: true,
         responsesCTATo: "/6xd-products#products",
         bottomCTA: "",
         actionCards: SIXXD_ACTIONS,

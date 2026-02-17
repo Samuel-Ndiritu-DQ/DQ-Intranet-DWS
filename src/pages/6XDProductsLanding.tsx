@@ -144,7 +144,7 @@ const PRODUCT_CLASSES: ProductClass[] = [
         subtitle: 'Strategy, Architecture, Roadmaps',
         description:
           'Blueprint-based advisory defining digital strategy, architecture, operating models, and sector transformation roadmaps.',
-        cta: 'Explore Design Services',
+        cta: 'Understand DBP Design',
         icon: Briefcase,
       },
       {
@@ -152,7 +152,7 @@ const PRODUCT_CLASSES: ProductClass[] = [
         subtitle: 'Platform Implementation',
         description:
           'Blueprint-driven SaaS implementations operationalising Experience 4.0, Agility 4.0, Intelligence 4.0, Workspace 4.0, and Sector 4.0 platforms.',
-        cta: 'Explore Deploy Services',
+        cta: 'Understand DBP Deploy',
         icon: Layers,
       },
     ],
@@ -171,7 +171,7 @@ const PRODUCT_CLASSES: ProductClass[] = [
         subtitle: 'Specification & Orchestration Platform',
         description:
           'End-to-end DBP specification and orchestration platform accelerating strategy, design, deployment, and adoption across the organisation.',
-        cta: 'Request Demo',
+        cta: 'Explore DTMP',
         icon: RotateCcw,
       },
       {
@@ -179,7 +179,7 @@ const PRODUCT_CLASSES: ProductClass[] = [
         subtitle: 'Transformation as a Service',
         description:
           'Marketplace-driven managed transformation enabling scalable Transformation-as-a-Service across sectors.',
-        cta: 'Request Demo',
+        cta: 'Explore TMaaS',
         icon: Briefcase,
       },
       {
@@ -187,7 +187,7 @@ const PRODUCT_CLASSES: ProductClass[] = [
         subtitle: 'AI-Guided Transformation',
         description:
           'AI-guided digital twin platform reinforcing precision transformation and continuous execution discipline.',
-        cta: 'Request Demo',
+        cta: 'Explore DTO4T',
         icon: Zap,
       },
     ],
@@ -205,7 +205,7 @@ const PRODUCT_CLASSES: ProductClass[] = [
         name: 'DTMI',
         subtitle: 'Digital Transformation Market Insights',
         description: 'Global digital transformation insights structured by 6xD and sector lenses.',
-        cta: 'Browse Insights',
+        cta: 'Explore DTMI',
         icon: Brain,
       },
       {
@@ -213,7 +213,7 @@ const PRODUCT_CLASSES: ProductClass[] = [
         subtitle: 'Digital Transformation Academy',
         description:
           'Digital Transformation Academy building competencies required to operate in Digital Cognitive Organisations.',
-        cta: 'Browse Courses',
+        cta: 'Start in DTMA',
         icon: GraduationCap,
       },
       {
@@ -221,7 +221,7 @@ const PRODUCT_CLASSES: ProductClass[] = [
         subtitle: 'Published Intellectual Foundation',
         description:
           "Published intellectual foundation codifying DQ's transformation frameworks and execution discipline.",
-        cta: 'Browse Books',
+        cta: 'Read 6xD Books',
         icon: BookOpen,
       },
     ],
@@ -240,7 +240,7 @@ const PRODUCT_CLASSES: ProductClass[] = [
         subtitle: 'Consumer Ecosystems',
         description:
           'Consumer and experience ecosystems powered by unified DBPs enabling near-perfect life transactions.',
-        cta: 'Book Consultation',
+        cta: 'Explore B2B2C Platform',
         icon: ArrowRightLeft,
       },
       {
@@ -248,7 +248,7 @@ const PRODUCT_CLASSES: ProductClass[] = [
         subtitle: 'Enterprise Ecosystems',
         description:
           'Enterprise and partner ecosystems enabling scalable, real-time collaboration and digital transactions.',
-        cta: 'Book Consultation',
+        cta: 'Explore B2B2B Platform',
         icon: Users,
       },
     ],
@@ -402,13 +402,13 @@ export default function SixXDProductsLanding() {
                 asChild
               >
                 <a
-                  href="https://digital-qatalyst.shorthandstories.com/4d9b256d-1632-4c32-bc0c-73d9cdfa57fc/index.html"
+                  href="/marketplace/guides/dq-6xd"
                   target="_blank"
                   rel="noreferrer"
                   className="inline-flex items-center"
                 >
                   <BookOpen className="mr-2 h-4 w-4" />
-                  Read the Agile 6xD Storybook
+                  Explore 6xD & DTMI
                   <ArrowRight className="ml-2 h-4 w-4" />
                 </a>
               </Button>
@@ -464,6 +464,11 @@ export default function SixXDProductsLanding() {
           </div>
 
           <div className="gradient-divider mb-10 mt-10" />
+          <div className="flex justify-center">
+            <Button variant="outline" asChild>
+              <a href="#products">See All Product Classes</a>
+            </Button>
+          </div>
         </div>
       </section>
 
@@ -512,15 +517,22 @@ export default function SixXDProductsLanding() {
           </div>
 
           <motion.div
-            className="mt-12 flex justify-center"
+            className="mt-12 flex flex-wrap justify-center gap-4"
             initial={{ opacity: 0, y: 15 }}
             whileInView={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.3 }}
             viewport={{ once: true, margin: '-50px' }}
           >
-            <Button size="lg" className="rounded-full px-8 font-semibold text-white gradient-hero hover:opacity-90">
-              Read the 6XD Book
-              <ArrowRight className="ml-2 h-4 w-4" />
+            <Button size="lg" className="rounded-full px-8 font-semibold text-white gradient-hero hover:opacity-90" asChild>
+              <a href="/marketplace/guides/dq-6xd">
+                Read the 6xD Foundations
+                <ArrowRight className="ml-2 h-4 w-4" />
+              </a>
+            </Button>
+            <Button size="lg" variant="outline" className="border-[#25406F] text-[#25406F] hover:bg-[#25406F]/5" asChild>
+              <a href="/marketplace/guides/dq-6xd">
+                Explore DTMI Insights
+              </a>
             </Button>
           </motion.div>
         </div>
@@ -713,6 +725,15 @@ export default function SixXDProductsLanding() {
                     </motion.a>
                   ))}
                 </div>
+                <a
+                  href={group.items.find((i) => i.href)?.href ?? '#'}
+                  target={group.items.find((i) => i.href)?.href ? '_blank' : undefined}
+                  rel={group.items.find((i) => i.href)?.href ? 'noreferrer' : undefined}
+                  className="mt-4 inline-flex items-center gap-1.5 text-sm font-semibold text-primary transition-all duration-200 hover:gap-2.5"
+                >
+                  Read More
+                  <ArrowRight className="h-3.5 w-3.5" />
+                </a>
               </motion.div>
             ))}
           </div>
@@ -842,14 +863,14 @@ export default function SixXDProductsLanding() {
                 transition={{ duration: 0.5, delay: 0.24 }}
                 viewport={{ once: true }}
               >
-                Every DQ product begins in live delivery and is structured to scale across sectors.
+                Internal first. Delivery proven. Navigate the system.
               </motion.p>
             </div>
 
             <div className="flex flex-col gap-4">
               {[
-                { label: 'Explore DQ Products', icon: ShoppingBag, href: 'https://corp-web.qatalyst.tech/products' },
-                { label: 'Explore DQ Services', icon: BookOpen, href: 'https://corp-web.qatalyst.tech/services' },
+                { label: 'Explore Product Marketplace', icon: ShoppingBag, href: '/marketplace/directory/products' },
+                { label: 'Explore 6xD & DTMI', icon: BookOpen, href: '/marketplace/guides/dq-6xd' },
               ].map((item, index) => {
                 const Icon = item.icon;
                 return (

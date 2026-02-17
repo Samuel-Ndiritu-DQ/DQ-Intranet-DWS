@@ -151,7 +151,19 @@ const useTabOverflow = (containerRef: React.RefObject<HTMLDivElement>, tabsRef: 
     return () => resizeObserver.disconnect();
   }, dependencies);
 
-  return showNavigation;
+  const scrollLeft = () => {
+    if (tabsRef.current) {
+      tabsRef.current.scrollBy({ left: -200, behavior: 'smooth' });
+    }
+  };
+
+  const scrollRight = () => {
+    if (tabsRef.current) {
+      tabsRef.current.scrollBy({ left: 200, behavior: 'smooth' });
+    }
+  };
+
+  return { showNavigation, scrollLeft, scrollRight };
 };
 
 // Custom hook to handle sticky bottom CTA visibility
@@ -178,6 +190,122 @@ const useStickyBottomCTA = (summaryCardRef: React.RefObject<HTMLDivElement>) => 
   }, [summaryCardRef]);
 
   return showStickyBottomCTA;
+};
+
+// Custom hook to manage active tab
+const useActiveTab = (customTabs: any, defaultTabs: any[]) => {
+  const [activeTab, setActiveTab] = useState<string>(defaultTabs[0]?.id || 'about');
+
+  useEffect(() => {
+    if (customTabs && customTabs.length > 0) {
+      setActiveTab(customTabs[0].id);
+    }
+  }, [customTabs]);
+
+  return [activeTab, setActiveTab] as const;
+};
+
+// Custom hook to handle redirect timer cleanup
+const useRedirectTimer = () => {
+  const [redirectTimer, setRedirectTimer] = useState<NodeJS.Timeout | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (redirectTimer) {
+        clearTimeout(redirectTimer);
+      }
+    };
+  }, [redirectTimer]);
+
+  return [redirectTimer, setRedirectTimer] as const;
+};
+
+// Custom hook to fetch and manage item details
+const useItemDetails = (
+  itemId: string | undefined,
+  marketplaceType: string,
+  bookmarkedItems: string[],
+  shouldTakeAction: boolean,
+  config: any,
+  navigate: any,
+  fetchRelatedEventsData: any,
+  fetchRelatedItemsData: any,
+  handleEventsMarketplace: any,
+  handleNonEventsMarketplace: any
+) => {
+  const [item, setItem] = useState<any>(null);
+  const [relatedItems, setRelatedItems] = useState<any[]>([]);
+  const [relatedEventsLoading, setRelatedEventsLoading] = useState(false);
+  const [isBookmarked, setIsBookmarked] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [redirectTimer, setRedirectTimer] = useRedirectTimer();
+
+  useEffect(() => {
+    const fetchItemDetails = async () => {
+      if (!itemId) return;
+      setLoading(true);
+      setError(null);
+      
+      if (redirectTimer) {
+        clearTimeout(redirectTimer);
+        setRedirectTimer(null);
+      }
+      
+      try {
+        let itemData: any = null;
+        try {
+          itemData = await fetchMarketplaceItemDetails(marketplaceType, itemId);
+        } catch (fetchError) {
+          console.error(`Error fetching ${marketplaceType} item details:`, fetchError);
+        }
+        
+        if (marketplaceType === 'events') {
+          await handleEventsMarketplace(itemData, itemId);
+        } else {
+          await handleNonEventsMarketplace(itemData);
+        }
+
+        if (shouldTakeAction) {
+          setTimeout(() => {
+            const actionSection = document.getElementById('action-section');
+            if (actionSection) {
+              actionSection.scrollIntoView({ behavior: 'smooth' });
+            }
+          }, 100);
+        }
+      } catch (err) {
+        console.error(`Error in marketplace details page:`, err);
+        if (marketplaceType === 'events') {
+          setError(`Failed to load event details: ${err instanceof Error ? err.message : 'Unknown error'}`);
+        } else {
+          const fallbackItem = getFallbackItemDetails(marketplaceType, 'generic-fallback');
+          setItem(fallbackItem);
+          setRelatedItems(getFallbackItems(marketplaceType));
+          setError(null);
+        }
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchItemDetails();
+  }, [itemId, marketplaceType, bookmarkedItems, shouldTakeAction, navigate, config]);
+
+  return {
+    item,
+    setItem,
+    relatedItems,
+    setRelatedItems,
+    relatedEventsLoading,
+    setRelatedEventsLoading,
+    isBookmarked,
+    setIsBookmarked,
+    loading,
+    error,
+    setError,
+    redirectTimer,
+    setRedirectTimer
+  };
 };
 
 interface MarketplaceDetailsPageProps {
@@ -233,7 +361,6 @@ const MarketplaceDetailsPage: React.FC<MarketplaceDetailsPageProps> = ({
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [redirectTimer, setRedirectTimer] = useState<NodeJS.Timeout | null>(null);
   const [isRequestFormOpen, setIsRequestFormOpen] = useState(false);
   const [isTechSupportFormOpen, setIsTechSupportFormOpen] = useState(false);
   const mainContentRef = useRef<HTMLDivElement>(null);
@@ -244,44 +371,14 @@ const MarketplaceDetailsPage: React.FC<MarketplaceDetailsPageProps> = ({
   const contentColumnRef = useRef<HTMLDivElement>(null);
   
   // Use custom hooks to reduce complexity
-  const showNavigation = useTabOverflow(containerRef, tabsRef, [item, config.tabs]);
+  const { showNavigation, scrollLeft, scrollRight } = useTabOverflow(containerRef, tabsRef, [item, config.tabs]);
   const showStickyBottomCTA = useStickyBottomCTA(summaryCardRef);
-  // Clear any redirect timers when component unmounts
-  useEffect(() => {
-    return () => {
-      if (redirectTimer) {
-        clearTimeout(redirectTimer);
-      }
-    };
-  }, [redirectTimer]);
-  const scrollLeft = () => {
-    if (tabsRef.current) {
-      tabsRef.current.scrollBy({
-        left: -200,
-        behavior: 'smooth'
-      });
-    }
-  };
-  const scrollRight = () => {
-    if (tabsRef.current) {
-      tabsRef.current.scrollBy({
-        left: 200,
-        behavior: 'smooth'
-      });
-    }
-  };
+  const [redirectTimer, setRedirectTimer] = useRedirectTimer();
+  
   // Check for custom tabs for this service
   const customTabs = item ? getCustomTabs(marketplaceType, item.id) : undefined;
   const tabsToUse = customTabs || config.tabs;
-  // Add state for active tab
-  const [activeTab, setActiveTab] = useState<string>(config.tabs[0]?.id || 'about');
-
-  // Update active tab when custom tabs are loaded
-  useEffect(() => {
-    if (customTabs && customTabs.length > 0) {
-      setActiveTab(customTabs[0].id);
-    }
-  }, [customTabs]);
+  const [activeTab, setActiveTab] = useActiveTab(customTabs, config.tabs);
 
   // Helper function to fetch related events
   const fetchRelatedEventsData = async (itemData: any, itemId: string) => {

@@ -79,16 +79,16 @@ const neutralFallback = '/image.png'
 const stringHash = (value: string): number => {
   let hash = 0
   for (let i = 0; i < value.length; i++) {
-    hash = (hash * 31 + value.charCodeAt(i)) >>> 0
+    hash = (hash * 31 + value.codePointAt(i)!) >>> 0
   }
   return hash
 }
 
 // Check if guide is HoV (House of Values) related
 function isHOVGuide(g: GuideLike): boolean {
-  const slug = (g.slug || '').toLowerCase()
-  const title = (g.title || '').toLowerCase()
-  const subDomain = (g.subDomain || '').toLowerCase()
+  const slug = (g.slug ?? '').toLowerCase()
+  const title = (g.title ?? '').toLowerCase()
+  const subDomain = (g.subDomain ?? '').toLowerCase()
   
   // Main HoV guides
   const hovSlugs = [
@@ -143,9 +143,9 @@ function isGHCGuide(g: GuideLike): boolean {
     return false
   }
   
-  const slug = (g.slug || '').toLowerCase()
-  const title = (g.title || '').toLowerCase()
-  const subDomain = (g.subDomain || '').toLowerCase()
+  const slug = (g.slug ?? '').toLowerCase()
+  const title = (g.title ?? '').toLowerCase()
+  const subDomain = (g.subDomain ?? '').toLowerCase()
   
   // Check for GHC-specific slugs
   const ghcSlugs = [
@@ -177,91 +177,117 @@ function isGHCGuide(g: GuideLike): boolean {
   return false
 }
 
-export function getGuideImageUrl(g: GuideLike): string {
-  const slug = (g.slug || '').toLowerCase()
-  const title = (g.title || '').toLowerCase()
-  
-  // Determine guide categories first
-  const isBlueprint = (g.domain || '').toLowerCase().includes('blueprint') || 
-                      (g.guideType || '').toLowerCase().includes('blueprint')
-  const isStrategy = (g.domain || '').toLowerCase().includes('strategy') || 
-                     (g.guideType || '').toLowerCase().includes('strategy')
-  const isTestimonial = (g.domain || '').toLowerCase().includes('testimonial') ||
-                        (g.guideType || '').toLowerCase().includes('testimonial')
-  
-  // Check if this is a guidelines guide - only apply guidelines image if domain is explicitly "Guidelines"
-  // This ensures the image only appears in the guidelines tab, not products/blueprints tab
-  const isGuidelinesDomain = (g.domain || '').toLowerCase().trim() === 'guidelines' ||
-                             (g.domain || '').toLowerCase().trim() === 'guideline'
-  
-  // Only apply guidelines image if domain is explicitly Guidelines (not for products/blueprints)
-  if (isGuidelinesDomain && !isHOVGuide(g) && !isGHCGuide(g) && !isBlueprint && !isStrategy && !isTestimonial) {
-    return GUIDELINES_IMAGE
-  }
-  
-  // For non-guidelines guides, prioritize heroImageUrl if it's a valid URL
-  const src = (g.heroImageUrl || '').trim()
-  if (src && src.startsWith('http')) {
-    return src
-  }
-  
-  // Check for specific guide images (DQ Vision and Mission, etc.)
+// Helper: Check if guide is blueprint/product
+function isBlueprintGuide(g: GuideLike): boolean {
+  return (g.domain ?? '').toLowerCase().includes('blueprint') || 
+         (g.guideType ?? '').toLowerCase().includes('blueprint')
+}
+
+// Helper: Check if guide is strategy
+function isStrategyGuide(g: GuideLike): boolean {
+  return (g.domain ?? '').toLowerCase().includes('strategy') || 
+         (g.guideType ?? '').toLowerCase().includes('strategy')
+}
+
+// Helper: Check if guide is testimonial
+function isTestimonialGuide(g: GuideLike): boolean {
+  return (g.domain ?? '').toLowerCase().includes('testimonial') ||
+         (g.guideType ?? '').toLowerCase().includes('testimonial')
+}
+
+// Helper: Check if guide is guidelines domain
+function isGuidelinesDomain(g: GuideLike): boolean {
+  const domain = (g.domain ?? '').toLowerCase().trim()
+  return domain === 'guidelines' || domain === 'guideline'
+}
+
+// Helper: Get hero image if valid
+function getValidHeroImage(g: GuideLike): string | null {
+  const src = g.heroImageUrl?.trim() ?? ''
+  return src?.startsWith('http') ? src : null
+}
+
+// Helper: Find specific guide image
+function findSpecificGuideImage(slug: string, title: string): string | null {
   for (const [guideSlug, imageUrl] of Object.entries(specificGuideImages)) {
     if (slug === guideSlug || slug.includes(guideSlug) || title.includes(guideSlug)) {
       return imageUrl
     }
   }
+  return null
+}
+
+// Helper: Get HoV guide image
+function getHoVGuideImage(g: GuideLike, slug: string): string {
+  // Check for specific guiding value images
+  for (const [valueSlug, imageUrl] of Object.entries(hovValueImages)) {
+    if (slug.includes(valueSlug)) {
+      return imageUrl
+    }
+  }
   
-  // Check if this is an HoV guide - use appropriate HoV images
-  if (isHOVGuide(g)) {
-    // Check for specific guiding value images
-    for (const [valueSlug, imageUrl] of Object.entries(hovValueImages)) {
-      if (slug.includes(valueSlug)) {
-        return imageUrl
-      }
-    }
-    
-    // Main HoV guides (dq-hov, dq-competencies) use the house-of-values image
-    if (slug === 'dq-hov' || slug === 'dq-competencies' || slug.includes('house-of-values')) {
-      return HOV_IMAGE
-    }
-    
-    // Default HoV image for other HoV-related guides
+  // Main HoV guides use the house-of-values image
+  if (slug === 'dq-hov' || slug === 'dq-competencies' || slug.includes('house-of-values')) {
     return HOV_IMAGE
   }
   
-  // Check if this is a GHC guide - use golden honeycomb image
-  if (isGHCGuide(g)) {
-    return GHC_IMAGE
-  }
-  
-  // Check if this is a blueprint/product
-  if (isBlueprint) {
-    // Check for product-specific metadata and use its image
-    const productMeta = getProductMetadata(g.title)
-    if (productMeta?.imageUrl) {
-      return productMeta.imageUrl
-    }
-    // Fallback to generic product image
-    return 'https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?q=80&w=2970&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D'
-  }
+  return HOV_IMAGE
+}
 
-  // Check if this is a strategy guide - use dark abstract images
-  if (isStrategy && strategyFallbacks.length) {
-    const key = (g.slug || g.id || g.title || '').trim()
-    const idx = key ? stringHash(key) % strategyFallbacks.length : 0
-    return strategyFallbacks[idx]
+// Helper: Get blueprint guide image
+function getBlueprintGuideImage(g: GuideLike): string {
+  const productMeta = getProductMetadata(g.title)
+  if (productMeta?.imageUrl) {
+    return productMeta.imageUrl
   }
+  return 'https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?q=80&w=2970&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D'
+}
+
+// Helper: Get strategy guide image
+function getStrategyGuideImage(g: GuideLike): string {
+  if (!strategyFallbacks.length) return neutralFallback
   
-  // Fallback to domain-based images
+  const key = (g.slug ?? g.id ?? g.title ?? '').trim()
+  const idx = key ? stringHash(key) % strategyFallbacks.length : 0
+  return strategyFallbacks[idx]
+}
+
+// Helper: Get fallback image by domain or type
+function getFallbackImage(g: GuideLike): string {
   const byDomain = g.domain ? domainFallbacks[g.domain] : undefined
   if (byDomain) return byDomain
   
-  // Fallback to type-based images
   const byType = g.guideType ? typeFallbacks[g.guideType] : undefined
   if (byType) return byType
   
-  // Final fallback
   return neutralFallback
+}
+
+export function getGuideImageUrl(g: GuideLike): string {
+  const slug = (g.slug ?? '').toLowerCase()
+  const title = (g.title ?? '').toLowerCase()
+  
+  // Check for guidelines domain first
+  if (isGuidelinesDomain(g) && !isHOVGuide(g) && !isGHCGuide(g) && 
+      !isBlueprintGuide(g) && !isStrategyGuide(g) && !isTestimonialGuide(g)) {
+    return GUIDELINES_IMAGE
+  }
+  
+  // Check for valid hero image
+  const heroImage = getValidHeroImage(g)
+  if (heroImage) return heroImage
+  
+  // Check for specific guide images
+  const specificImage = findSpecificGuideImage(slug, title)
+  if (specificImage) return specificImage
+  
+  // Check guide type categories
+  if (isHOVGuide(g)) return getHoVGuideImage(g, slug)
+  if (isGHCGuide(g)) return GHC_IMAGE
+  if (isBlueprintGuide(g)) return getBlueprintGuideImage(g)
+  if (isStrategyGuide(g)) return getStrategyGuideImage(g)
+  
+  // Final fallback
+  return getFallbackImage(g)
 }
 

@@ -571,77 +571,75 @@ const NewsDetailPage: React.FC = () => {
           {/* Dark Overlay */}
           <div className="absolute inset-0 bg-gradient-to-b from-slate-900/90 via-slate-800/85 to-slate-900/90" />
           
-          {/* Breadcrumb Navigation - For blogs, news, announcements, and podcasts */}
-          {shouldUseNewLayout && (
-            <div className="relative z-10 w-full pt-4">
-              <div className="mx-auto max-w-7xl px-6 py-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2 text-sm text-white/90">
-                    <Link 
-                      to="/"
-                      className="hover:text-white hover:underline transition-colors"
-                    >
-                      Home
-                    </Link>
-                    <ChevronRightIcon size={16} />
-                    <Link 
-                      to={(() => {
-                        const params = new URLSearchParams(location.search);
-                        const tab = params.get('tab');
-                        return tab ? `/marketplace/opportunities?tab=${tab}` : '/marketplace/opportunities';
-                      })()}
-                      className="hover:text-white hover:underline transition-colors"
-                    >
-                      DQ Media Center
-                    </Link>
-                    <ChevronRightIcon size={16} />
-                    <span className="text-white font-medium">{generateTitle(article)}</span>
-                  </div>
-                  <div className="flex gap-2 text-sm">
-                    <button 
-                      type="button"
-                      onClick={() => {
-                        if (navigator.share) {
-                          navigator.share({
-                            title: article.title,
-                            text: article.excerpt,
-                            url: window.location.href,
-                          }).catch(() => {
-                            // User cancelled or error occurred
-                          });
-                        } else {
-                          navigator.clipboard.writeText(window.location.href).then(() => {
-                            // Optional: Show a toast notification
-                            alert('Link copied to clipboard!');
-                          }).catch(() => {
-                            // Clipboard error
-                          });
-                        }
-                      }}
-                      className="inline-flex items-center gap-1 rounded-lg border border-white/30 bg-white/10 backdrop-blur-sm px-3 py-2 text-white hover:bg-white/20 transition-colors cursor-pointer"
-                      aria-label="Share article"
-                    >
-                      <Share2 size={16} />
-                      Share
-                    </button>
-                    <button 
-                      type="button"
-                      onClick={() => setIsBookmarked(!isBookmarked)}
-                      className={`inline-flex items-center gap-1 rounded-lg border border-white/30 backdrop-blur-sm px-3 py-2 transition-colors cursor-pointer ${
-                        isBookmarked 
-                          ? 'bg-white/20 text-white border-white/40' 
-                          : 'bg-white/10 text-white hover:bg-white/20'
-                      }`}
-                      aria-label={isBookmarked ? 'Remove bookmark' : 'Save article'}
-                    >
-                      <BookmarkIcon size={16} fill={isBookmarked ? 'currentColor' : 'none'} />
-                      Save
-                    </button>
-                  </div>
+          {/* Breadcrumb Navigation - For all news, announcements, blogs, and podcasts */}
+          <div className="relative z-10 w-full pt-4">
+            <div className="mx-auto max-w-7xl px-6 py-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2 text-sm text-white/90">
+                  <Link 
+                    to="/"
+                    className="hover:text-white hover:underline transition-colors"
+                  >
+                    Home
+                  </Link>
+                  <ChevronRightIcon size={16} />
+                  <Link 
+                    to={(() => {
+                      const params = new URLSearchParams(location.search);
+                      const tab = params.get('tab');
+                      return tab ? `/marketplace/opportunities?tab=${tab}` : '/marketplace/opportunities';
+                    })()}
+                    className="hover:text-white hover:underline transition-colors"
+                  >
+                    DQ Media Center
+                  </Link>
+                  <ChevronRightIcon size={16} />
+                  <span className="text-white font-medium">{generateTitle(article)}</span>
+                </div>
+                <div className="flex gap-2 text-sm">
+                  <button 
+                    type="button"
+                    onClick={() => {
+                      if (navigator.share) {
+                        navigator.share({
+                          title: article.title,
+                          text: article.excerpt,
+                          url: window.location.href,
+                        }).catch(() => {
+                          // User cancelled or error occurred
+                        });
+                      } else {
+                        navigator.clipboard.writeText(window.location.href).then(() => {
+                          // Optional: Show a toast notification
+                          alert('Link copied to clipboard!');
+                        }).catch(() => {
+                          // Clipboard error
+                        });
+                      }
+                    }}
+                    className="inline-flex items-center gap-1 rounded-lg border border-white/30 bg-white/10 backdrop-blur-sm px-3 py-2 text-white hover:bg-white/20 transition-colors cursor-pointer"
+                    aria-label="Share article"
+                  >
+                    <Share2 size={16} />
+                    Share
+                  </button>
+                  <button 
+                    type="button"
+                    onClick={() => setIsBookmarked(!isBookmarked)}
+                    className={`inline-flex items-center gap-1 rounded-lg border border-white/30 backdrop-blur-sm px-3 py-2 transition-colors cursor-pointer ${
+                      isBookmarked 
+                        ? 'bg-white/20 text-white border-white/40' 
+                        : 'bg-white/10 text-white hover:bg-white/20'
+                    }`}
+                    aria-label={isBookmarked ? 'Remove bookmark' : 'Save article'}
+                  >
+                    <BookmarkIcon size={16} fill={isBookmarked ? 'currentColor' : 'none'} />
+                    Save
+                  </button>
                 </div>
               </div>
             </div>
-          )}
+          </div>
           
           {/* Content */}
           <div className="relative z-10 mx-auto max-w-7xl px-6 py-20 md:py-24 w-full flex-1 flex items-center">

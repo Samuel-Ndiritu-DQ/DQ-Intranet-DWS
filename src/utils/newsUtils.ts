@@ -73,6 +73,71 @@ export const toTitleCase = (text: string): string => {
 };
 
 /**
+ * Helper: Get location prefix for title
+ */
+const getLocationPrefix = (location?: string): string | null => {
+  if (!location) return null;
+  const locationMap: Record<string, string> = {
+    'Dubai': 'DXB',
+    'Nairobi': 'NBO',
+    'Riyadh': 'KSA',
+    'Remote': 'Remote'
+  };
+  return locationMap[location] || location;
+};
+
+/**
+ * Helper: Get type prefix for title
+ */
+const getTypePrefix = (item: NewsItem): string | null => {
+  if (item.newsType) return item.newsType;
+  if (item.type === 'Thought Leadership') return 'Blog';
+  if (item.type) return item.type;
+  return null;
+};
+
+/**
+ * Helper: Extract title from excerpt
+ */
+const getTitleFromExcerpt = (excerpt?: string): string | null => {
+  if (!excerpt?.trim()) return null;
+  const excerptWords = excerpt.trim().split(' ');
+  if (excerptWords.length === 0) return null;
+  const titleFromExcerpt = excerptWords.slice(0, 8).join(' ');
+  return titleFromExcerpt.length > 20 ? titleFromExcerpt : null;
+};
+
+/**
+ * Helper: Extract title from content
+ */
+const getTitleFromContent = (content?: string): string | null => {
+  if (!content) return null;
+  const firstLine = content.split('\n').find(line => line.trim() && !line.trim().startsWith('#'));
+  if (!firstLine) return null;
+  const cleanLine = firstLine.trim().replaceAll(/^#+\s+/g, '').replaceAll('**', '').substring(0, 60);
+  return cleanLine.length > 15 ? cleanLine : null;
+};
+
+/**
+ * Helper: Extract title from ID
+ */
+const getTitleFromId = (id?: string): string | null => {
+  if (!id) return null;
+  const idParts = id.split('-');
+  const meaningfulParts = idParts
+    .filter(part => part.length > 2 && !['dq', 'the', 'and', 'for'].includes(part.toLowerCase()))
+    .map(part => part.charAt(0).toUpperCase() + part.slice(1));
+  return meaningfulParts.length > 0 ? meaningfulParts.join(' ') : null;
+};
+
+/**
+ * Helper: Combine parts into title
+ */
+const combineTitleParts = (parts: string[], mainTitle: string): string => {
+  return parts.length > 0 ? `${parts.join(' | ')} | ${mainTitle}` : mainTitle;
+};
+
+/**
  * Generate an appropriate title for news items that don't have one
  */
 export const generateTitle = (item: NewsItem): string => {
@@ -81,70 +146,27 @@ export const generateTitle = (item: NewsItem): string => {
     return item.title;
   }
 
-  // Generate title based on available information
+  // Build prefix parts
   const parts: string[] = [];
+  const locationPrefix = getLocationPrefix(item.location);
+  if (locationPrefix) parts.push(locationPrefix);
+  
+  const typePrefix = getTypePrefix(item);
+  if (typePrefix) parts.push(typePrefix);
 
-  // Add location prefix if available
-  if (item.location) {
-    const locationMap: Record<string, string> = {
-      'Dubai': 'DXB',
-      'Nairobi': 'NBO',
-      'Riyadh': 'KSA',
-      'Remote': 'Remote'
-    };
-    parts.push(locationMap[item.location] || item.location);
-  }
+  // Try different sources for main title
+  const excerptTitle = getTitleFromExcerpt(item.excerpt);
+  if (excerptTitle) return combineTitleParts(parts, excerptTitle);
 
-  // Add type/newsType information
-  if (item.newsType) {
-    parts.push(item.newsType);
-  } else if (item.type) {
-    if (item.type === 'Thought Leadership') {
-      parts.push('Blog');
-    } else {
-      parts.push(item.type);
-    }
-  }
+  const contentTitle = getTitleFromContent(item.content);
+  if (contentTitle) return combineTitleParts(parts, contentTitle);
 
-  // Try to extract title from excerpt
-  if (item.excerpt?.trim()) {
-    const excerptWords = item.excerpt.trim().split(' ');
-    if (excerptWords.length > 0) {
-      // Take first 8 words and capitalize
-      const titleFromExcerpt = excerptWords.slice(0, 8).join(' ');
-      if (titleFromExcerpt.length > 20) {
-        return parts.length > 0 ? `${parts.join(' | ')} | ${titleFromExcerpt}` : titleFromExcerpt;
-      }
-    }
-  }
-
-  // Try to extract from content if available
-  if (item.content) {
-    const firstLine = item.content.split('\n').find(line => line.trim() && !line.trim().startsWith('#'));
-    if (firstLine) {
-      const cleanLine = firstLine.trim().replace(/^#+\s+/, '').replace(/\*\*/g, '').substring(0, 60);
-      if (cleanLine.length > 15) {
-        return parts.length > 0 ? `${parts.join(' | ')} | ${cleanLine}` : cleanLine;
-      }
-    }
-  }
-
-  // Fallback based on ID patterns
-  if (item.id) {
-    const idParts = item.id.split('-');
-    const meaningfulParts = idParts
-      .filter(part => part.length > 2 && !['dq', 'the', 'and', 'for'].includes(part.toLowerCase()))
-      .map(part => part.charAt(0).toUpperCase() + part.slice(1));
-    
-    if (meaningfulParts.length > 0) {
-      const idTitle = meaningfulParts.join(' ');
-      return parts.length > 0 ? `${parts.join(' | ')} | ${idTitle}` : idTitle;
-    }
-  }
+  const idTitle = getTitleFromId(item.id);
+  if (idTitle) return combineTitleParts(parts, idTitle);
 
   // Final fallback
   const typeLabel = item.type === 'Thought Leadership' ? 'Blog' : (item.newsType || item.type || 'Announcement');
-  return parts.length > 0 ? `${parts.join(' | ')} | ${typeLabel}` : typeLabel;
+  return combineTitleParts(parts, typeLabel);
 };
 
 /**
@@ -205,7 +227,7 @@ export const getFallbackImage = (itemId: string, fallbackImages: string[]): stri
   if (!itemId || !fallbackImages.length) {
     return fallbackImages[0] || '';
   }
-  const hash = Math.abs(itemId.split('').reduce((sum, char) => sum + char.charCodeAt(0), 0));
+  const hash = Math.abs(itemId.split('').reduce((sum, char) => sum + char.codePointAt(0)!, 0));
   return fallbackImages[hash % fallbackImages.length] || fallbackImages[0];
 };
 
@@ -213,7 +235,7 @@ export const getFallbackImage = (itemId: string, fallbackImages: string[]): stri
  * Format time in seconds to mm:ss format
  */
 export const formatTime = (seconds: number): string => {
-  if (isNaN(seconds) || !isFinite(seconds) || seconds < 0) return '0:00';
+  if (Number.isNaN(seconds) || !Number.isFinite(seconds) || seconds < 0) return '0:00';
   const mins = Math.floor(seconds / 60);
   const secs = Math.floor(seconds % 60);
   return `${mins}:${secs.toString().padStart(2, '0')}`;

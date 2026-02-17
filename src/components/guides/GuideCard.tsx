@@ -1,4 +1,4 @@
-import React, { KeyboardEvent } from 'react'
+import React from 'react'
 import { toTimeBucket } from '../../utils/guides'
 import { getGuideImageUrl } from '../../utils/guideImageMap'
 

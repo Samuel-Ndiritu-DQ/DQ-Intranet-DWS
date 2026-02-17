@@ -1,8 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
-import { readFileSync } from 'fs';
-import { fileURLToPath } from 'url';
-import { dirname, join } from 'path';
-import { execSync } from 'child_process';
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+import { dirname, join } from 'node:path';
 import dotenv from 'dotenv';
 
 dotenv.config();
@@ -33,6 +32,87 @@ if (!projectRef) {
 
 const supabase = createClient(supabaseUrl, serviceRoleKey);
 
+async function tryConnection(Client, connectionString, index, total) {
+  console.log(`   Trying connection ${index}/${total}...`);
+  const client = new Client({
+    connectionString,
+    ssl: { rejectUnauthorized: false }
+  });
+  await client.connect();
+  console.log(`✅ Connected via connection method ${index}\n`);
+  return client;
+}
+
+async function connectToDatabase(Client, projectRef, dbPassword) {
+  const connectionStrings = [
+    `postgresql://postgres:${encodeURIComponent(dbPassword)}@db.${projectRef}.supabase.co:5432/postgres`,
+    `postgresql://postgres.${projectRef}:${encodeURIComponent(dbPassword)}@aws-0-us-east-1.pooler.supabase.com:6543/postgres`,
+    `postgresql://postgres.${projectRef}:${encodeURIComponent(dbPassword)}@aws-0-us-east-1.pooler.supabase.com:5432/postgres`,
+    `postgresql://postgres.${projectRef}:${encodeURIComponent(dbPassword)}@${projectRef}.pooler.supabase.com:6543/postgres`,
+  ];
+  
+  console.log('🔌 Connecting to database...');
+  let lastError;
+  
+  for (let i = 0; i < connectionStrings.length; i++) {
+    try {
+      return await tryConnection(Client, connectionStrings[i], i + 1, connectionStrings.length);
+    } catch (error) {
+      lastError = error;
+      if (i < connectionStrings.length - 1) {
+        console.log(`   Failed: ${error.message.substring(0, 60)}...`);
+      }
+    }
+  }
+  
+  console.error('❌ All connection methods failed');
+  console.error('   Last error:', lastError?.message);
+  console.error('\n💡 Please check:');
+  console.error('   1. Your SUPABASE_DB_PASSWORD is correct');
+  console.error('   2. Database password can be found at:');
+  console.error(`      https://app.supabase.com/project/${projectRef}/settings/database`);
+  console.error('   3. Or run the migration manually in Supabase SQL Editor\n');
+  throw new Error('Failed to connect to database');
+}
+
+async function executeMigrationSQL(client, migrationSQL) {
+  console.log('⏳ Executing migration SQL...');
+  try {
+    await client.query(migrationSQL);
+    console.log('✅ Migration executed successfully!\n');
+  } catch (sqlError) {
+    if (sqlError.message.includes('already exists') || sqlError.message.includes('duplicate')) {
+      console.log('⚠️  Some objects may already exist (this is OK)\n');
+    } else {
+      throw sqlError;
+    }
+  }
+}
+
+async function verifyMigration(client) {
+  console.log('🔍 Verifying migration...');
+  const result = await client.query(`
+    SELECT EXISTS (
+      SELECT FROM information_schema.tables 
+      WHERE table_schema = 'public' 
+      AND table_name = 'marketplace_services'
+    );
+  `);
+
+  if (result.rows[0].exists) {
+    console.log('✅ Table "marketplace_services" exists!\n');
+    
+    const countResult = await client.query('SELECT COUNT(*) FROM marketplace_services');
+    console.log(`📊 Current row count: ${countResult.rows[0].count}\n`);
+    
+    console.log('🎉 Migration complete! You can now seed the services:');
+    console.log('   npm run db:seed-services\n');
+  } else {
+    console.log('❌ Table verification failed - table does not exist');
+    throw new Error('Table was not created');
+  }
+}
+
 async function executeMigrationViaPostgres() {
   console.log('🚀 Running migration via PostgreSQL connection...\n');
 
@@ -40,7 +120,7 @@ async function executeMigrationViaPostgres() {
     const pg = await import('pg');
     const { Client } = pg.default || pg;
 
-    if (!dbPassword) {
+    if (dbPassword === null || dbPassword === undefined) {
       console.log('❌ SUPABASE_DB_PASSWORD not set');
       console.log('\n💡 To get your database password:');
       console.log(`   1. Go to: https://app.supabase.com/project/${projectRef}/settings/database`);
@@ -49,96 +129,14 @@ async function executeMigrationViaPostgres() {
       throw new Error('Database password required');
     }
 
-    // Read the migration SQL file
     const migrationPath = join(__dirname, '..', 'supabase', 'marketplace-services-schema.sql');
     const migrationSQL = readFileSync(migrationPath, 'utf8');
-
     console.log('📄 Migration file loaded');
 
-    // Try multiple connection formats
-    const connectionStrings = [
-      // Direct connection
-      `postgresql://postgres:${encodeURIComponent(dbPassword)}@db.${projectRef}.supabase.co:5432/postgres`,
-      // Pooler connection (transaction mode)
-      `postgresql://postgres.${projectRef}:${encodeURIComponent(dbPassword)}@aws-0-us-east-1.pooler.supabase.com:6543/postgres`,
-      // Pooler connection (session mode)
-      `postgresql://postgres.${projectRef}:${encodeURIComponent(dbPassword)}@aws-0-us-east-1.pooler.supabase.com:5432/postgres`,
-      // Alternative pooler format
-      `postgresql://postgres.${projectRef}:${encodeURIComponent(dbPassword)}@${projectRef}.pooler.supabase.com:6543/postgres`,
-    ];
+    const client = await connectToDatabase(Client, projectRef, dbPassword);
     
-    console.log('🔌 Connecting to database...');
-    let client;
-    let lastError;
-    
-    // Try each connection string
-    for (let i = 0; i < connectionStrings.length; i++) {
-      try {
-        console.log(`   Trying connection ${i + 1}/${connectionStrings.length}...`);
-        client = new Client({
-          connectionString: connectionStrings[i],
-          ssl: { rejectUnauthorized: false }
-        });
-        await client.connect();
-        console.log(`✅ Connected via connection method ${i + 1}\n`);
-        break;
-      } catch (error) {
-        lastError = error;
-        if (i < connectionStrings.length - 1) {
-          console.log(`   Failed: ${error.message.substring(0, 60)}...`);
-        }
-      }
-    }
-    
-    if (!client || !client._connected) {
-      console.error('❌ All connection methods failed');
-      console.error('   Last error:', lastError?.message);
-      console.error('\n💡 Please check:');
-      console.error('   1. Your SUPABASE_DB_PASSWORD is correct');
-      console.error('   2. Database password can be found at:');
-      console.error(`      https://app.supabase.com/project/${projectRef}/settings/database`);
-      console.error('   3. Or run the migration manually in Supabase SQL Editor\n');
-      throw new Error('Failed to connect to database');
-    }
-
-    // Execute the migration SQL
-    console.log('⏳ Executing migration SQL...');
-    try {
-      await client.query(migrationSQL);
-      console.log('✅ Migration executed successfully!\n');
-    } catch (sqlError) {
-      // Check if it's a "already exists" error (safe to ignore for DROP TABLE IF EXISTS)
-      if (sqlError.message.includes('already exists') || sqlError.message.includes('duplicate')) {
-        console.log('⚠️  Some objects may already exist (this is OK)\n');
-      } else {
-        throw sqlError;
-      }
-    }
-
-    // Verify the table was created
-    console.log('🔍 Verifying migration...');
-    const result = await client.query(`
-      SELECT EXISTS (
-        SELECT FROM information_schema.tables 
-        WHERE table_schema = 'public' 
-        AND table_name = 'marketplace_services'
-      );
-    `);
-
-    if (result.rows[0].exists) {
-      console.log('✅ Table "marketplace_services" exists!\n');
-      
-      // Check row count
-      const countResult = await client.query('SELECT COUNT(*) FROM marketplace_services');
-      console.log(`📊 Current row count: ${countResult.rows[0].count}\n`);
-      
-      console.log('🎉 Migration complete! You can now seed the services:');
-      console.log('   npm run db:seed-services\n');
-    } else {
-      console.log('❌ Table verification failed - table does not exist');
-      throw new Error('Table was not created');
-    }
-
+    await executeMigrationSQL(client, migrationSQL);
+    await verifyMigration(client);
     await client.end();
 
   } catch (error) {
@@ -151,10 +149,9 @@ async function executeMigrationViaPostgres() {
   }
 }
 
-// Check if table already exists
 async function checkTableExists() {
   try {
-    const { data, error } = await supabase
+    const { error } = await supabase
       .from('marketplace_services')
       .select('*')
       .limit(1);
@@ -163,10 +160,12 @@ async function checkTableExists() {
       if (error.code === 'PGRST116' || error.message.includes('does not exist')) {
         return false;
       }
-      throw error;
+      console.error('Unexpected error checking table:', error.message);
+      return false;
     }
     return true;
   } catch (error) {
+    console.error('Error checking table existence:', error.message);
     return false;
   }
 }
@@ -189,7 +188,7 @@ async function main() {
     
     console.log(`   Current row count: ${count || 0}\n`);
     
-    const readline = await import('readline');
+    const readline = await import('node:readline');
     const rl = readline.createInterface({
       input: process.stdin,
       output: process.stdout
@@ -212,12 +211,4 @@ async function main() {
   await executeMigrationViaPostgres();
 }
 
-main().catch((error) => {
-  console.error('\n❌ Migration failed:', error.message);
-  console.error('\n💡 Alternative: Run migration manually');
-  console.error('   1. Go to https://app.supabase.com');
-  console.error('   2. Open SQL Editor');
-  console.error('   3. Copy contents of: supabase/marketplace-services-schema.sql');
-  console.error('   4. Paste and run\n');
-  process.exit(1);
-});
+await main();

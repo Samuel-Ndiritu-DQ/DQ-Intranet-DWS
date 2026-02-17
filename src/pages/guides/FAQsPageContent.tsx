@@ -158,7 +158,7 @@ const FAQsPageContent: React.FC = () => {
   })
 
   // Get all available categories
-  const categories = Array.from(new Set(FAQS_DATA.map(faq => faq.category))).sort()
+  const categories = Array.from(new Set(FAQS_DATA.map(faq => faq.category))).sort((a, b) => a.localeCompare(b))
 
   return (
     <div>

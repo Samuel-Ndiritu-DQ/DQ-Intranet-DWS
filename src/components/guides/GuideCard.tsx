@@ -1,11 +1,26 @@
-import React from 'react'
+import React, { KeyboardEvent } from 'react'
 import { toTimeBucket } from '../../utils/guides'
 import { getGuideImageUrl } from '../../utils/guideImageMap'
-import { useNavigate } from 'react-router-dom'
-import { supabaseClient } from '../../lib/supabaseClient'
+
+type Guide = {
+  id: string
+  title: string
+  summary?: string | null
+  estimatedTimeMin?: number | null
+  lastUpdatedAt?: string | null
+  domain?: string | null
+  guideType?: string | null
+  heroImageUrl?: string | null
+  hero_image_url?: string | null
+  slug?: string | null
+  unit?: string | null
+  location?: string | null
+  authorName?: string | null
+  authorOrg?: string | null
+}
 
 export interface GuideCardProps {
-  guide: any
+  guide: Guide
   onClick: () => void
 }
 
@@ -13,33 +28,10 @@ export const GuideCard: React.FC<GuideCardProps> = ({ guide, onClick }) => {
   const timeBucket = toTimeBucket(guide.estimatedTimeMin)
   const lastUpdated = guide.lastUpdatedAt ? new Date(guide.lastUpdatedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : ''
   const domain = guide.domain as string | undefined
-  const navigate = useNavigate()
-  const isBlueprint = ((guide.domain || '').toLowerCase().includes('blueprint')) || ((guide.guideType || '').toLowerCase().includes('blueprint'))
-  const handleViewGuideline = async (e: React.MouseEvent) => {
-    e.stopPropagation()
-    try {
-      const { data, error } = await supabaseClient
-        .from('guides')
-        .select('slug')
-        .eq('status', 'Approved')
-        .ilike('domain', 'guidelines')
-        .eq('title', guide.title)
-        .maybeSingle()
-      if (!error && data?.slug) {
-        navigate(`/marketplace/guides/${encodeURIComponent(data.slug)}`, { state: { fromBlueprint: true } })
-        return
-      }
-    } catch (e) {
-      // Log and fall back to client-side navigation
-      console.error('GuideCard: failed to resolve guideline slug', e)
-    }
-    // Fallback to Guidelines tab search
-    navigate(`/marketplace/guides?tab=guidelines&q=${encodeURIComponent(guide.title)}`)
-  }
   const formatLabel = (value?: string | null) => {
     if (!value) return ''
     return value
-      .replace(/[_-]+/g, ' ')
+      .replaceAll(/[_-]+/g, ' ')
       .split(' ')
       .filter(Boolean)
       .map(part => part.charAt(0).toUpperCase() + part.slice(1))
@@ -47,13 +39,13 @@ export const GuideCard: React.FC<GuideCardProps> = ({ guide, onClick }) => {
   }
   const normalizeTag = (value?: string | null) => {
     if (!value) return ''
-    const cleaned = value.toLowerCase().replace(/[_-]+/g, ' ').trim()
+    const cleaned = value.toLowerCase().replaceAll(/[_-]+/g, ' ').trim()
     return cleaned.endsWith('s') ? cleaned.slice(0, -1) : cleaned
   }
   const domainLabel = formatLabel(domain)
   const isDuplicateTag = normalizeTag(domain) !== '' && normalizeTag(domain) === normalizeTag(guide.guideType)
   // Ensure we're using the correct property name - check both camelCase and snake_case
-  const heroImage = guide.heroImageUrl || (guide as any).hero_image_url || null
+  const heroImage = guide.heroImageUrl ?? guide.hero_image_url ?? null
   const imageUrl = getGuideImageUrl({
     heroImageUrl: heroImage,
     domain: guide.domain,
@@ -73,8 +65,22 @@ export const GuideCard: React.FC<GuideCardProps> = ({ guide, onClick }) => {
     }
   }
   
+  const handleKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault()
+      onClick()
+    }
+  }
+
   return (
-    <div className="bg-white rounded-lg shadow p-4 hover:shadow-md transition-shadow cursor-pointer h-full flex flex-col" onClick={onClick}>
+    <div
+      className="bg-white rounded-lg shadow p-4 hover:shadow-md transition-shadow cursor-pointer h-full flex flex-col"
+      onClick={onClick}
+      role="button"
+      tabIndex={0}
+      onKeyDown={handleKeyDown}
+      aria-label={`Open guide ${guide.title}`}
+    >
       {imageUrl && (
         <img 
           src={imageUrl} 

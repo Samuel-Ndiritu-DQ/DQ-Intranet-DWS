@@ -18,7 +18,7 @@ const formatDate = (input: string) =>
   new Date(input).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 
 export function BlogCard({ item, href }: BlogCardProps) {
-  const hash = Math.abs(item.id.split('').reduce((sum, char) => sum + char.charCodeAt(0), 0));
+  const hash = Math.abs(item.id.split('').reduce((sum, char) => sum + (char.codePointAt(0) ?? 0), 0));
   const imageSrc = item.image || fallbackImages[hash % fallbackImages.length];
 
   return (

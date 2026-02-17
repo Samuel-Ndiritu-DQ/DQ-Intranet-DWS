@@ -11,8 +11,8 @@ interface DocumentItem {
 }
 
 interface DocumentSectionProps {
-  title: string;
-  documents: DocumentItem[];
+  readonly title: string;
+  readonly documents: DocumentItem[];
 }
 
 interface UploadingFile {
@@ -73,13 +73,13 @@ export function DocumentSection({ title, documents }: DocumentSectionProps) {
     const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
         e.preventDefault();
         setIsDragging(false);
-        const files = Array.from(e.dataTransfer.files);
+        const files = Array.from(e.dataTransfer?.files ?? []);
         handleFiles(files);
     };
     // Process files
     const handleFiles = (files: File[]) => {
         const newUploadingFiles: UploadingFile[] = files.map(file => ({
-            id: Date.now() + Math.random().toString(36).substr(2, 9),
+            id: `${Date.now()}-${Math.random().toString(36).slice(2, 11)}`,
             name: file.name,
             type: getFileType(file.name),
             size: formatFileSize(file.size),
@@ -146,7 +146,7 @@ export function DocumentSection({ title, documents }: DocumentSectionProps) {
     };
     // Get file type from extension
     const getFileType = (filename: string): UploadingFile['type'] => {
-        const ext = filename.split('.').pop().toLowerCase();
+        const ext = filename.split('.').pop()?.toLowerCase() ?? '';
         if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext)) return 'image';
         if (['pdf'].includes(ext)) return 'pdf';
         if (['xls', 'xlsx', 'csv'].includes(ext)) return 'spreadsheet';
@@ -170,7 +170,17 @@ export function DocumentSection({ title, documents }: DocumentSectionProps) {
         </div>
         {/* Upload area */}
         <div className={`p-4 sm:p-6 border-b border-gray-200 ${isDragging ? 'bg-blue-50' : 'bg-white'}`} onDragOver={handleDragOver} onDragLeave={handleDragLeave} onDrop={handleDrop}>
-            <div className={`border-2 border-dashed rounded-lg p-4 sm:p-6 flex flex-col items-center justify-center cursor-pointer min-h-[120px] ${isDragging ? 'border-blue-400 bg-blue-50' : 'border-gray-300 hover:border-blue-400'}`} onClick={() => fileInputRef.current?.click()}>
+            <button
+                type="button"
+                className={`w-full border-2 border-dashed rounded-lg p-4 sm:p-6 flex flex-col items-center justify-center cursor-pointer min-h-[120px] ${isDragging ? 'border-blue-400 bg-blue-50' : 'border-gray-300 hover:border-blue-400'}`}
+                onClick={() => fileInputRef.current?.click()}
+                onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        fileInputRef.current?.click();
+                    }
+                }}
+            >
                 <UploadIcon size={24} className={isDragging ? 'text-blue-500' : 'text-gray-400'} />
                 <p className="mt-2 text-sm text-gray-600 text-center">
                     <span className="font-medium text-blue-600">Click to upload</span>{' '}
@@ -180,7 +190,7 @@ export function DocumentSection({ title, documents }: DocumentSectionProps) {
                     PDF, Word, Excel, PowerPoint, or image files
                 </p>
                 <input type="file" ref={fileInputRef} className="hidden" multiple onChange={handleFileChange} />
-            </div>
+            </button>
         </div>
         {/* Uploading files */}
         {uploadingFiles.length > 0 && <div className="p-4 border-b border-gray-200 bg-gray-50">

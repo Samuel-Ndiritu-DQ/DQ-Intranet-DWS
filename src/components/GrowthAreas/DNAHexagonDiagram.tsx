@@ -236,7 +236,7 @@ export const DNAHexagonDiagram: React.FC<HexagonDiagramProps> = ({ nodes }) => {
                 }}>{n.growthIndex}</div>
               </div>
             </div>
-          </button>
+          </div>
         );
       })}
     </div>

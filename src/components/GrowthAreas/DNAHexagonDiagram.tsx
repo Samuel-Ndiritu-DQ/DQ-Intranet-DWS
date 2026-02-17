@@ -184,25 +184,18 @@ export const DNAHexagonDiagram: React.FC<HexagonDiagramProps> = ({ nodes }) => {
         const top  = CANVAS_H / 2 + POS[n.role].y;
 
         return (
-          <button
+          <div
             key={n.id}
-            onClick={() => setOpen(n.id)}
             style={{
               position: "absolute",
-              left: left,
-              top: top,
+              left,
+              top,
               transform: "translate(-50%, -50%)",
-              background: "transparent", 
-              border: 0, 
-              padding: 0, 
-              cursor: "pointer",
+              background: "transparent",
+              border: 0,
+              padding: 0,
+              cursor: "default",
               transition: "transform .15s ease, filter .15s ease"
-            }}
-            onMouseEnter={(e) => { 
-              (e.currentTarget as HTMLButtonElement).style.transform = "translate(-50%, -50%) scale(1.03)"; 
-            }}
-            onMouseLeave={(e) => { 
-              (e.currentTarget as HTMLButtonElement).style.transform = "translate(-50%, -50%)"; 
             }}
           >
             <div style={{ position: "relative" }}>

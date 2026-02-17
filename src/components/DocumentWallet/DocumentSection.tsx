@@ -181,13 +181,11 @@ export function DocumentsPage({ title, documents }: DocumentsPageProps) {
                 <h3 className="font-medium text-gray-700">{title}</h3>
             </div>
             {/* Upload area */}
-            <div
+            <section
                 className={`p-4 sm:p-6 border-b border-gray-200 ${isDragging ? "bg-blue-50" : "bg-white"}`}
                 onDragOver={handleDragOver}
                 onDragLeave={handleDragLeave}
                 onDrop={handleDrop}
-                role="region"
-                tabIndex={0}
                 aria-label="Upload files by clicking or dragging into this area"
             >
                 <button
@@ -223,7 +221,7 @@ export function DocumentsPage({ title, documents }: DocumentsPageProps) {
                         onChange={handleFileChange}
                     />
                 </button>
-            </div>
+            </section>
             {/* Uploading files */}
             {uploadingFiles.length > 0 && (
                 <div className="p-4 border-b border-gray-200 bg-gray-50">

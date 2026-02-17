@@ -129,20 +129,18 @@ export function DocumentsPage({ title, documents }: DocumentsPageProps) {
                     : file
             )
         );
-        setTimeout(() => {
-            setDocs((prev) => [
-                ...prev,
-                {
-                    id: uploadFile.id,
-                    name: uploadFile.name,
-                    type: uploadFile.type,
-                    size: uploadFile.size,
-                    uploadDate: uploadFile.uploadDate,
-                    status: "Pending",
-                },
-            ]);
-            setUploadingFiles((prev) => prev.filter((file) => file.id !== uploadFile.id));
-        }, 500);
+        setDocs((prev) => [
+            ...prev,
+            {
+                id: uploadFile.id,
+                name: uploadFile.name,
+                type: uploadFile.type,
+                size: uploadFile.size,
+                uploadDate: uploadFile.uploadDate,
+                status: "Pending",
+            },
+        ]);
+        setUploadingFiles((prev) => prev.filter((file) => file.id !== uploadFile.id));
     }, []);
 
     const simulateUpload = (uploadFile: UploadingFile) => {

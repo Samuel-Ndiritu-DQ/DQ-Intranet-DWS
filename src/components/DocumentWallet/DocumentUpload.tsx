@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useRef, useState } from 'react';
 import {
     UploadIcon,
     XIcon,
@@ -7,9 +7,32 @@ import {
     CalendarIcon,
 } from 'lucide-react';
 import { createDocument } from '../../services/DataverseService';
-export function DocumentUpload({ onClose, onUpload, categories }: { onClose: () => void, onUpload: (document: any) => void, categories: string[]; }) {
+
+type DocumentMetadata = {
+    name: string;
+    category: string;
+    description: string;
+    expiryDate: string | null;
+    tags: string[];
+    isConfidential: boolean;
+    fileType: string;
+    fileSize: string;
+    uploadDate: string;
+    uploadedBy: string;
+    status: string;
+    fileUrl: string;
+    versionNumber: number;
+};
+
+type DocumentUploadProps = {
+    readonly onClose: () => void;
+    readonly onUpload: (document: DocumentMetadata) => void;
+    readonly categories: string[];
+};
+
+export function DocumentUpload({ onClose, onUpload, categories }: DocumentUploadProps) {
     const [isDragging, setIsDragging] = useState(false);
-    const [file, setFile] = useState<any>(null);
+    const [file, setFile] = useState<File | null>(null);
     const [uploadProgress, setUploadProgress] = useState(0);
     const [formData, setFormData] = useState({
         name: '',
@@ -19,9 +42,9 @@ export function DocumentUpload({ onClose, onUpload, categories }: { onClose: () 
         tags: '',
         isConfidential: false,
     });
-    const [errors, setErrors] = useState<any>({});
+    const [errors, setErrors] = useState<Record<string, string>>({});
     const [isUploading, setIsUploading] = useState(false);
-    const fileInputRef = useRef(null);
+    const fileInputRef = useRef<HTMLInputElement | null>(null);
     // Handle drag events
     const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
         e.preventDefault();
@@ -30,7 +53,7 @@ export function DocumentUpload({ onClose, onUpload, categories }: { onClose: () 
     const handleDragLeave = () => {
         setIsDragging(false);
     };
-    const handleDrop = (e: any) => {
+    const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
         e.preventDefault();
         setIsDragging(false);
         const droppedFile = e.dataTransfer.files[0];
@@ -43,7 +66,7 @@ export function DocumentUpload({ onClose, onUpload, categories }: { onClose: () 
         }
     };
     // Handle file input change
-    const handleFileChange = (e: any) => {
+    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const selectedFile = e.target.files[0];
         if (selectedFile) {
             setFile(selectedFile);
@@ -54,7 +77,7 @@ export function DocumentUpload({ onClose, onUpload, categories }: { onClose: () 
         }
     };
     // Handle form input changes
-    const handleInputChange = (e: any) => {
+    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
         const { name, value, type, checked } = e.target;
         setFormData({
             ...formData,
@@ -62,9 +85,9 @@ export function DocumentUpload({ onClose, onUpload, categories }: { onClose: () 
         });
     };
     // Get file type from extension
-    const getFileType = (filename: any) => {
+    const getFileType = (filename: string) => {
         if (!filename) return 'file';
-        const ext = filename.split('.').pop().toLowerCase();
+        const ext = filename.split('.').pop()?.toLowerCase() || '';
         if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext)) return 'image';
         if (['pdf'].includes(ext)) return 'pdf';
         if (['xls', 'xlsx', 'csv'].includes(ext)) return 'spreadsheet';
@@ -104,7 +127,7 @@ export function DocumentUpload({ onClose, onUpload, categories }: { onClose: () 
                 throw new Error('Upload failed');
             }
             const result = await response.json();
-            const fileUrl = (result?.urls && result.urls[0]) || result?.url;
+            const fileUrl = result?.urls?.[0] || result?.url;
             // Create document metadata in Dataverse
             const newDocument = {
                 name: formData.name,
@@ -114,7 +137,7 @@ export function DocumentUpload({ onClose, onUpload, categories }: { onClose: () 
                 tags: formData.tags
                     .split(',')
                     .map((tag) => tag.trim())
-                    .filter((tag) => tag),
+                    .filter(Boolean),
                 isConfidential: formData.isConfidential,
                 fileType: getFileType(file.name),
                 fileSize: formatFileSize(file.size),
@@ -145,7 +168,7 @@ export function DocumentUpload({ onClose, onUpload, categories }: { onClose: () 
     };
     // Validate form
     const validateForm = () => {
-        const newErrors: any = {};
+        const newErrors: Record<string, string> = {};
         if (!formData.name.trim()) newErrors.name = 'Document name is required';
         if (!formData.category) newErrors.category = 'Category is required';
         if (!file) newErrors.file = 'Please upload a file';
@@ -153,7 +176,7 @@ export function DocumentUpload({ onClose, onUpload, categories }: { onClose: () 
         return Object.keys(newErrors).length === 0;
     };
     // Handle form submission
-    const handleSubmit = async (e: any) => {
+    const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
         if (validateForm()) {
             await uploadToAzure();
@@ -175,15 +198,20 @@ export function DocumentUpload({ onClose, onUpload, categories }: { onClose: () 
                 </div>
                 <form onSubmit={handleSubmit} className="p-4">
                     {/* File Upload */}
-                    {!file ? (
-                        <div
-                            className={`border-2 border-dashed rounded-lg p-6 flex flex-col items-center justify-center cursor-pointer mb-6 ${isDragging ? 'border-blue-400 bg-blue-50' : 'border-gray-300 hover:border-blue-400'}`}
-                            // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-                            // @ts-ignore
+                    {file === null ? (
+                        <button
+                            type="button"
+                            className={`border-2 border-dashed rounded-lg p-6 flex flex-col items-center justify-center cursor-pointer mb-6 w-full ${isDragging ? 'border-blue-400 bg-blue-50' : 'border-gray-300 hover:border-blue-400'}`}
                             onClick={() => fileInputRef.current?.click()}
                             onDragOver={handleDragOver}
                             onDragLeave={handleDragLeave}
                             onDrop={handleDrop}
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter' || e.key === ' ') {
+                                    e.preventDefault();
+                                    fileInputRef.current?.click();
+                                }
+                            }}
                         >
                             <UploadIcon
                                 size={32}
@@ -208,7 +236,7 @@ export function DocumentUpload({ onClose, onUpload, categories }: { onClose: () 
                             {errors.file && (
                                 <p className="text-red-500 text-xs mt-1">{errors.file}</p>
                             )}
-                        </div>
+                        </button>
                     ) : (
                         <div className="bg-gray-50 rounded-lg p-4 mb-6 border border-gray-200">
                             <div className="flex items-center">
@@ -253,13 +281,14 @@ export function DocumentUpload({ onClose, onUpload, categories }: { onClose: () 
                             )}
                         </div>
                     )}
-                    {/* Document Metadata */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
-                        <div className="col-span-2">
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                        {/* Document Metadata */}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+                            <div className="col-span-2">
+                            <label htmlFor="document-name" className="block text-sm font-medium text-gray-700 mb-1">
                                 Document Name*
                             </label>
                             <input
+                                id="document-name"
                                 type="text"
                                 name="name"
                                 value={formData.name}
@@ -269,12 +298,13 @@ export function DocumentUpload({ onClose, onUpload, categories }: { onClose: () 
                             {errors.name && (
                                 <p className="text-red-500 text-xs mt-1">{errors.name}</p>
                             )}
-                        </div>
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                            </div>
+                            <div>
+                            <label htmlFor="document-category" className="block text-sm font-medium text-gray-700 mb-1">
                                 Category*
                             </label>
                             <select
+                                id="document-category"
                                 name="category"
                                 value={formData.category}
                                 onChange={handleInputChange}
@@ -289,13 +319,14 @@ export function DocumentUpload({ onClose, onUpload, categories }: { onClose: () 
                             {errors.category && (
                                 <p className="text-red-500 text-xs mt-1">{errors.category}</p>
                             )}
-                        </div>
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                            </div>
+                            <div>
+                            <label htmlFor="document-expiry" className="block text-sm font-medium text-gray-700 mb-1">
                                 Expiry Date
                             </label>
                             <div className="relative">
                                 <input
+                                    id="document-expiry"
                                     type="date"
                                     name="expiryDate"
                                     value={formData.expiryDate}
@@ -306,24 +337,26 @@ export function DocumentUpload({ onClose, onUpload, categories }: { onClose: () 
                                     <CalendarIcon size={16} />
                                 </div>
                             </div>
-                        </div>
-                        <div className="col-span-2">
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                            </div>
+                            <div className="col-span-2">
+                            <label htmlFor="document-description" className="block text-sm font-medium text-gray-700 mb-1">
                                 Description
                             </label>
                             <textarea
+                                id="document-description"
                                 name="description"
                                 value={formData.description}
                                 onChange={handleInputChange}
                                 rows={3}
                                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                             ></textarea>
-                        </div>
-                        <div className="col-span-2">
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                            </div>
+                            <div className="col-span-2">
+                            <label htmlFor="document-tags" className="block text-sm font-medium text-gray-700 mb-1">
                                 Tags (comma separated)
                             </label>
                             <input
+                                id="document-tags"
                                 type="text"
                                 name="tags"
                                 value={formData.tags}

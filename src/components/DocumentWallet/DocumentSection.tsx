@@ -186,6 +186,9 @@ export function DocumentsPage({ title, documents }: DocumentsPageProps) {
                 onDragOver={handleDragOver}
                 onDragLeave={handleDragLeave}
                 onDrop={handleDrop}
+                role="region"
+                tabIndex={0}
+                aria-label="Upload files by clicking or dragging into this area"
             >
                 <button
                     type="button"

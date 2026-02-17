@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React from "react";
 
 /* ===== Visual tokens ===== */
 const NAVY = "#131E42";
@@ -45,16 +45,16 @@ const DY: Record<Role, number> = {
 };
 
 interface Node {
-  id: number;
-  role: Role;
-  title: string;
-  subtitle: string;
-  fill: "navy" | "white";
-  growthIndex: number;
+  readonly id: number;
+  readonly role: Role;
+  readonly title: string;
+  readonly subtitle: string;
+  readonly fill: "navy" | "white";
+  readonly growthIndex: number;
 }
 
 interface HexagonDiagramProps {
-  nodes: Node[];
+  readonly nodes: Node[];
 }
 
 const CALLOUTS: { role: Role; text: string; side: Side }[] = [
@@ -68,10 +68,10 @@ const CALLOUTS: { role: Role; text: string; side: Side }[] = [
 ];
 
 /* ===== Hex (flat-top) ===== */
-function Hex({ fill, id }: { fill: "navy" | "white"; id?: number }) {
+function Hex({ fill, id }: { readonly fill: "navy" | "white"; readonly id?: number }) {
   const w = HEX_W, h = HEX_H;
   const d = `M${w/2} 4 L${w-4} ${h*0.25} L${w-4} ${h*0.75} L${w/2} ${h-4} L4 ${h*0.75} L4 ${h*0.25} Z`;
-  const uniqueId = id ?? Math.random().toString(36).substr(2, 9);
+  const uniqueId = id ?? Math.random().toString(36).slice(2, 11);
   
   if (fill === "white") {
     return (
@@ -124,8 +124,6 @@ function anchor(role: Role, side: Side) {
 }
 
 export const DNAHexagonDiagram: React.FC<HexagonDiagramProps> = ({ nodes }) => {
-  const [open, setOpen] = useState<number | null>(null);
-
   return (
     <div style={{ position: "relative", width: CANVAS_W, height: CANVAS_H, margin: "0 auto", maxWidth: "100%" }}>
       {/* Connectors */}
@@ -136,30 +134,43 @@ export const DNAHexagonDiagram: React.FC<HexagonDiagramProps> = ({ nodes }) => {
         preserveAspectRatio="xMidYMid meet"
         style={{ position: "absolute", left: 0, top: 0 }}
       >
-        {CALLOUTS.map((c, i) => {
-          const s = anchor(c.role, c.side);
-          const yAnchor = c.side === "bottom" ? s.y : s.y + DY[c.role];
+            {CALLOUTS.map((c) => {
+              const s = anchor(c.role, c.side);
+              const yAnchor = c.side === "bottom" ? s.y : s.y + DY[c.role];
 
-          const x1 = s.x, y1 = yAnchor;
-          let x2 = s.x, y2 = yAnchor, tx = x2, ty = y2;
-          let ta: "start" | "end" | "middle" = "middle";
+              const x1 = s.x;
+              const y1 = yAnchor;
 
-          if (c.side === "left") {
-            x2 = x1 - H_LEN; y2 = y1;
-            tx = x2 - PAD_SIDE; ty = y2 - 10; ta = "end";
-          } else if (c.side === "right") {
-            x2 = x1 + H_LEN; y2 = y1;
-            tx = x2 + PAD_SIDE; ty = y2 - 10; ta = "start";
-          } else {
-            x2 = x1; y2 = s.y + V_LEN;
-            tx = x2; ty = y2 + PAD_BOTTOM; ta = "middle";
-          }
+              const { x2, y2, tx, ty, ta } =
+                c.side === "left"
+                  ? {
+                      x2: x1 - H_LEN,
+                      y2: y1,
+                      tx: x1 - H_LEN - PAD_SIDE,
+                      ty: y1 - 10,
+                      ta: "end" as const,
+                    }
+                  : c.side === "right"
+                  ? {
+                      x2: x1 + H_LEN,
+                      y2: y1,
+                      tx: x1 + H_LEN + PAD_SIDE,
+                      ty: y1 - 10,
+                      ta: "start" as const,
+                    }
+                  : {
+                      x2: x1,
+                      y2: s.y + V_LEN,
+                      tx: x1,
+                      ty: s.y + V_LEN + PAD_BOTTOM,
+                      ta: "middle" as const,
+                    };
 
-          return (
-            <g key={i}>
-              <line x1={x1} y1={y1} x2={x2} y2={y2} stroke={LINE} strokeWidth={2} strokeLinecap="round" />
-              <circle cx={x2} cy={y2} r={5} fill={LINE} />
-              <text x={tx} y={ty} textAnchor={ta} fontSize={14} fontWeight={700} fill={NAVY}>
+              return (
+                <g key={c.role}>
+                  <line x1={x1} y1={y1} x2={x2} y2={y2} stroke={LINE} strokeWidth={2} strokeLinecap="round" />
+                  <circle cx={x2} cy={y2} r={5} fill={LINE} />
+                  <text x={tx} y={ty} textAnchor={ta} fontSize={14} fontWeight={700} fill={NAVY}>
                 {c.text}
               </text>
             </g>

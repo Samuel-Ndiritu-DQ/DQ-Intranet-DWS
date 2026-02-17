@@ -3,7 +3,7 @@
 # Helper script to switch branches while handling case-sensitivity conflicts
 # Usage: ./scripts/switch-branch.sh <branch-name>
 
-if [ -z "$1" ]; then
+if [[ -z "$1" ]]; then
     echo "Usage: ./scripts/switch-branch.sh <branch-name>"
     exit 1
 fi
@@ -12,13 +12,13 @@ BRANCH=$1
 
 # Check if we're already on the target branch
 CURRENT_BRANCH=$(git branch --show-current)
-if [ "$CURRENT_BRANCH" = "$BRANCH" ]; then
+if [[ "$CURRENT_BRANCH" = "$BRANCH" ]]; then
     echo "Already on branch $BRANCH"
     exit 0
 fi
 
 # Remove the problematic file if it exists (case-insensitive filesystem issue)
-if [ -f "src/pages/guides/GhcGlossaryPage.tsx" ] || [ -f "src/pages/guides/GHCGlossaryPage.tsx" ]; then
+if [[ -f "src/pages/guides/GhcGlossaryPage.tsx" ]] || [[ -f "src/pages/guides/GHCGlossaryPage.tsx" ]]; then
     echo "Cleaning up case-sensitivity conflict..."
     rm -f src/pages/guides/GhcGlossaryPage.tsx src/pages/guides/GHCGlossaryPage.tsx
 fi

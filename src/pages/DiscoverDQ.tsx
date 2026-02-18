@@ -1,464 +1,180 @@
-import React, { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import clsx from "clsx";
-import { XIcon } from "lucide-react";
+import React, { useEffect, useState } from "react";
 import { Header } from "../components/Header/Header";
 import { Footer } from "../components/Footer/Footer";
-import Discover_VisionMissionSection from "../components/Discover/Discover_VisionMissionSection";
-import Discover_DNASection from "../components/Discover/Discover_DNASection";
-import Discover_SixDigitalSection from "../components/Discover/Discover_SixDigitalSection";
-import Discover_DirectorySection from "../components/Discover/Discover_DirectorySection";
-import MapCard from "../components/map/MapCard";
-import type { LocationItem } from "../api/MAPAPI";
-import Discover_HeroSection from "../components/Discover/Discover_HeroSection";
-import styles from "./DiscoverDQ.module.css";
 
 const DiscoverDQ: React.FC = () => {
-  const navigate = useNavigate();
-  const [supportOpen, setSupportOpen] = useState(false);
-  const [supportStatus, setSupportStatus] = useState<string | null>(null);
-  const [isSubmittingSupport, setSubmittingSupport] = useState(false);
-  type ClientFilterKey =
-    | "STC"
-    | "SAIB"
-    | "NEOM"
-    | "ADIB"
-    | "Khalifa Fund"
-    | "Khalifa Fund EJ"
-    | "DEWA"
-    | "DFSA"
-    | "SCA"
-    | "MoI";
-
-  type ClientLocation = LocationItem & {
-    filterKey: ClientFilterKey;
-    markerColor: string;
-  };
-
-  const CLIENT_LOCATIONS: ClientLocation[] = [
-    {
-      id: "stc-riyadh",
-      name: "Saudi Telecom Company (stc)",
-      type: "Client",
-      address: "Saudi Telecom Company (stc)",
-      city: "Riyadh",
-      country: "Saudi Arabia",
-      coordinates: { lng: 46.6753, lat: 24.7136 },
-      markerColor: "#7C3AED", // purple
-      filterKey: "STC",
-      website: "https://www.stc.com.sa/",
-      description:
-        "A leading Saudi telecommunications and digital services group delivering connectivity, cloud, and enterprise solutions.",
-    },
-    {
-      id: "saib-riyadh",
-      name: "The Saudi Investment Bank (SAIB)",
-      type: "Client",
-      address: "The Saudi Investment Bank (SAIB)",
-      city: "Riyadh",
-      country: "Saudi Arabia",
-      coordinates: { lng: 46.6753, lat: 24.7136 },
-      markerColor: "#1F2933", // dark gray/black-gold vibe
-      filterKey: "SAIB",
-      website: "https://www.saib.com.sa/",
-      description:
-        "A Saudi financial institution providing corporate, retail, and investment banking services across the Kingdom.",
-    },
-    {
-      id: "neom-tabuk",
-      name: "NEOM",
-      type: "Client",
-      address: "NEOM",
-      city: "Tabuk Region",
-      country: "Saudi Arabia",
-      coordinates: { lng: 35.1128, lat: 28.1122 },
-      markerColor: "#D97706", // gold
-      filterKey: "NEOM",
-      website: "https://www.neom.com/",
-      description:
-        "A Saudi giga-project initiative applying advanced enterprise architecture to enable a future-ready smart city.",
-    },
-    {
-      id: "adib-abu-dhabi",
-      name: "Abu Dhabi Islamic Bank (ADIB)",
-      type: "Client",
-      address: "Abu Dhabi Islamic Bank (ADIB)",
-      city: "Abu Dhabi",
-      country: "United Arab Emirates",
-      coordinates: { lng: 54.3773, lat: 24.4539 },
-      markerColor: "#162862", // dark blue
-      filterKey: "ADIB",
-      website: "https://www.adib.ae/",
-      description:
-        "A UAE-based Sharia-compliant bank offering retail, corporate, and wholesale Islamic financial services.",
-    },
-    {
-      id: "kf-abu-dhabi",
-      name: "Khalifa Fund for Enterprise Development",
-      type: "Client",
-      address: "Khalifa Fund for Enterprise Development",
-      city: "Abu Dhabi",
-      country: "United Arab Emirates",
-      coordinates: { lng: 54.3773, lat: 24.4539 },
-      markerColor: "#16A34A", // green
-      filterKey: "Khalifa Fund",
-      website: "https://www.khalifafund.ae/",
-      description:
-        "A UAE government-backed entity supporting SMEs through funding, advisory services, and entrepreneurship programs.",
-    },
-    {
-      id: "kf-ej-abu-dhabi",
-      name: "Khalifa Fund – Enterprise Journey",
-      type: "Client",
-      address: "Khalifa Fund – Enterprise Journey",
-      city: "Abu Dhabi",
-      country: "United Arab Emirates",
-      coordinates: { lng: 54.3773, lat: 24.4539 },
-      markerColor: "#16A34A", // green
-      filterKey: "Khalifa Fund EJ",
-      website: "https://www.khalifafund.ae/",
-      description:
-        "A structured digital initiative supporting enterprise growth and governance within the UAE ecosystem.",
-    },
-    {
-      id: "dewa-dubai",
-      name: "Dubai Electricity & Water Authority (DEWA)",
-      type: "Client",
-      address: "Dubai Electricity & Water Authority (DEWA)",
-      city: "Dubai",
-      country: "United Arab Emirates",
-      coordinates: { lng: 55.2708, lat: 25.2048 },
-      markerColor: "#16A34A", // green (primary)
-      filterKey: "DEWA",
-      website: "https://www.dewa.gov.ae/",
-      description:
-        "Dubai's primary utility provider delivering electricity, water, and smart infrastructure services.",
-    },
-    {
-      id: "dfsa-dubai",
-      name: "Dubai Financial Services Authority (DFSA)",
-      type: "Client",
-      address: "Dubai Financial Services Authority (DFSA)",
-      city: "Dubai",
-      country: "United Arab Emirates",
-      coordinates: { lng: 55.2708, lat: 25.2048 },
-      markerColor: "#4B5563", // dark gray
-      filterKey: "DFSA",
-      website: "https://www.dfsa.ae/",
-      description:
-        "The independent regulator overseeing financial services conducted in or from the Dubai International Financial Centre.",
-    },
-    {
-      id: "sca-abu-dhabi",
-      name: "Securities & Commodities Authority (SCA)",
-      type: "Client",
-      address: "Securities & Commodities Authority (SCA)",
-      city: "Abu Dhabi",
-      country: "United Arab Emirates",
-      coordinates: { lng: 54.3773, lat: 24.4539 },
-      markerColor: "#D97706", // gold
-      filterKey: "SCA",
-      website: "https://www.sca.gov.ae/",
-      description:
-        "The UAE federal authority regulating securities markets and protecting investor interests.",
-    },
-    {
-      id: "moi-i360-abu-dhabi",
-      name: "UAE Ministry of Interior (MoI – I360)",
-      type: "Client",
-      address: "UAE Ministry of Interior (MoI – I360)",
-      city: "Abu Dhabi",
-      country: "United Arab Emirates",
-      coordinates: { lng: 54.3773, lat: 24.4539 },
-      markerColor: "#DC2626", // red accent
-      filterKey: "MoI",
-      website: "https://www.moi.gov.ae/",
-      description:
-        "A UAE Ministry of Interior initiative enabling integrated digital intelligence and data-driven security operations.",
-    },
-  ];
-
-  const CLIENT_FILTERS: { key: ClientFilterKey; label: string }[] = [
-    { key: "STC", label: "STC" },
-    { key: "SAIB", label: "SAIB" },
-    { key: "NEOM", label: "NEOM" },
-    { key: "ADIB", label: "ADIB" },
-    { key: "Khalifa Fund", label: "Khalifa Fund" },
-    { key: "Khalifa Fund EJ", label: "Khalifa Fund EJ" },
-    { key: "DEWA", label: "DEWA" },
-    { key: "DFSA", label: "DFSA" },
-    { key: "SCA", label: "SCA" },
-    { key: "MoI", label: "MoI" },
-  ];
-
-  const [selectedTypes, setSelectedTypes] = useState<Set<ClientFilterKey>>(new Set());
-  const [selectedLocationId, setSelectedLocationId] = useState<string | null>(null);
-
-  const prefersReducedMotion = useMemo(
-    () =>
-      typeof window !== "undefined" &&
-      window.matchMedia("(prefers-reduced-motion: reduce)").matches,
-    [],
-  );
+  const [timeLeft, setTimeLeft] = useState({
+    days: 0,
+    hours: 0,
+    minutes: 0,
+    seconds: 0
+  });
 
   useEffect(() => {
-    if (!supportOpen) return;
-    const handleKey = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        setSupportOpen(false);
+    // Set target date to March 17, 2026 at midnight UTC
+    const targetDate = new Date('2026-03-17T00:00:00Z').getTime();
+
+    const updateCountdown = () => {
+      const now = Date.now();
+      const difference = targetDate - now;
+
+      if (difference > 0) {
+        const days = Math.floor(difference / (1000 * 60 * 60 * 24));
+        const hours = Math.floor((difference % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+        const minutes = Math.floor((difference % (1000 * 60 * 60)) / (1000 * 60));
+        const seconds = Math.floor((difference % (1000 * 60)) / 1000);
+
+        setTimeLeft({ days, hours, minutes, seconds });
+      } else {
+        // If the target date has passed, show zeros
+        setTimeLeft({ days: 0, hours: 0, minutes: 0, seconds: 0 });
       }
     };
-    document.addEventListener("keydown", handleKey);
-    return () => document.removeEventListener("keydown", handleKey);
-  }, [supportOpen]);
 
-  const filteredLocations = useMemo(() => {
-    if (!selectedTypes.size) return CLIENT_LOCATIONS;
-    return CLIENT_LOCATIONS.filter((location) => selectedTypes.has(location.filterKey));
-  }, [selectedTypes]);
+    // Update immediately when component mounts
+    updateCountdown();
+    
+    // Then update every second
+    const interval = setInterval(updateCountdown, 1000);
 
-  useEffect(() => {
-    if (!selectedLocationId) return;
-    if (!filteredLocations.some((location) => location.id === selectedLocationId)) {
-      setSelectedLocationId(null);
-    }
-  }, [filteredLocations, selectedLocationId]);
-
-  const toggleType = (type: LocationCategory) => {
-    setSelectedTypes((prev) => {
-      const next = new Set(prev);
-      if (next.has(type)) {
-        next.delete(type);
-      } else {
-        next.add(type);
-      }
-      return next;
-    });
-  };
-
-  const clearTypes = () => {
-    setSelectedTypes(new Set());
-    setSelectedLocationId(null);
-  };
-
-  const handleExploreLearningCenter = () => {
-    navigate("/resource-coming-soon?title=DQ%20Learning%20Center%20(Courses%20%26%20Curricula)");
-  };
-
-  const handleExploreKnowledgeCenter = () => {
-    navigate("/insight-coming-soon?title=DQ%20Knowledge%20Center%20(Work%20Guide%20-%20Strategy)");
-  };
-
-  const handleSupportSubmit: React.FormEventHandler<HTMLFormElement> = (event) => {
-    event.preventDefault();
-    if (isSubmittingSupport) return;
-    const data = new FormData(event.currentTarget);
-    const name = String(data.get("name") || "").trim();
-    const email = String(data.get("email") || "").trim();
-    const message = String(data.get("message") || "").trim();
-    if (!name || !email || !message) {
-      setSupportStatus("Please complete all fields.");
-      return;
-    }
-    setSubmittingSupport(true);
-    setSupportStatus(null);
-    setTimeout(() => {
-      setSubmittingSupport(false);
-      setSupportStatus("Thanks! A DQ specialist will reply shortly.");
-      event.currentTarget.reset();
-    }, 900);
-  };
+    // Cleanup interval on component unmount
+    return () => clearInterval(interval);
+  }, []);
 
   return (
     <>
       <Header />
-      <main
-        id="app-content"
-        className={`${styles.dwsDiscover} ${prefersReducedMotion ? styles.reducedMotion : ""} relative z-0 bg-transparent`}
-      >
-        {/* Hero */}
-        <Discover_HeroSection />
-
-        {/* Map Section */}
-        <section
-          id="growth-areas"
-          className="bg-white py-20 scroll-mt-[72px]"
+      <main className="min-h-screen flex flex-col">
+        {/* Coming Soon Section */}
+        <div 
+          className="flex-1 flex items-center justify-center relative overflow-hidden"
+          style={{
+            background: 'linear-gradient(135deg, #0f1629 0%, #162862 50%, #1e3a8a 100%)'
+          }}
         >
-          <div className="mx-auto flex max-w-6xl flex-col px-6 text-center sm:px-10 lg:px-12">
-            <h2
-              className="font-bold text-center"
-              style={{
-                fontFamily:
-                  'ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji"',
-                fontSize: "30px",
-                fontWeight: 700,
-                fontStyle: "normal",
-                textTransform: "none",
-                textAlign: "center",
-                color: "#162862", // DWS Primary Dark Blue
-                margin: 0,
-              }}
-            >
-              Discover the DigitalQatalyst Ecosystem
-            </h2>
-            <p
-              className="mx-auto max-w-[680px]"
-              style={{
-                fontFamily:
-                  'ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji"',
-                fontSize: "16px",
-                fontWeight: 400,
-                fontStyle: "normal",
-                lineHeight: 1.5,
-                textAlign: "center",
-                textTransform: "none",
-                color: "#4B5563",
-                marginTop: "16px",
-                marginBottom: "24px",
-              }}
-            >
-              Explore DigitalQatalyst’s clients and partners through verified engagement locations across key regional markets.
+          {/* Background Pattern */}
+          <div className="absolute inset-0 opacity-10">
+            <div className="absolute inset-0" style={{
+              backgroundImage: `radial-gradient(circle at 25% 25%, rgba(255,255,255,0.1) 0%, transparent 50%),
+                               radial-gradient(circle at 75% 75%, rgba(255,255,255,0.1) 0%, transparent 50%)`
+            }} />
+          </div>
+
+          <div className="relative z-10 text-center px-6 max-w-4xl mx-auto min-h-screen flex flex-col justify-center">
+            {/* Logo/Brand */}
+            <div className="mb-8">
+              <h1 className="text-5xl md:text-6xl font-bold text-white mb-2 tracking-tight">
+                Discover DQ
+              </h1>
+              <p className="text-lg md:text-xl text-gray-300 font-medium tracking-wider uppercase">
+                EXPLORE THE DIGITALQATALYST ECOSYSTEM
+              </p>
+            </div>
+
+            {/* Coming Soon Title */}
+            <div className="mb-12">
+              <h2 className="text-4xl md:text-5xl font-bold text-white mb-4">
+                Coming <span style={{ color: '#FB5535' }}>Soon</span>
+              </h2>
+              <p className="text-lg md:text-xl text-gray-300 max-w-2xl mx-auto leading-relaxed">
+                We're building an extraordinary discovery experience. <span style={{ color: '#FB5535' }}>Discover DQ</span> will showcase 
+                our ecosystem, partnerships, and the digital transformation journey that powers innovation across the region.
+              </p>
+            </div>
+
+            {/* Countdown Timer */}
+            <div className="mb-12">
+              <div className="flex justify-center gap-4 md:gap-8 mb-8">
+                <div className="bg-black/30 backdrop-blur-sm rounded-lg p-4 md:p-6 min-w-[80px] md:min-w-[100px] border border-white/10">
+                  <div className="text-3xl md:text-4xl font-bold text-white mb-1 tabular-nums">
+                    {String(timeLeft.days).padStart(2, '0')}
+                  </div>
+                  <div className="text-xs md:text-sm text-gray-400 uppercase tracking-wider">
+                    DAYS
+                  </div>
+                </div>
+                <div className="bg-black/30 backdrop-blur-sm rounded-lg p-4 md:p-6 min-w-[80px] md:min-w-[100px] border border-white/10">
+                  <div className="text-3xl md:text-4xl font-bold text-white mb-1 tabular-nums">
+                    {String(timeLeft.hours).padStart(2, '0')}
+                  </div>
+                  <div className="text-xs md:text-sm text-gray-400 uppercase tracking-wider">
+                    HOURS
+                  </div>
+                </div>
+                <div className="bg-black/30 backdrop-blur-sm rounded-lg p-4 md:p-6 min-w-[80px] md:min-w-[100px] border border-white/10">
+                  <div className="text-3xl md:text-4xl font-bold text-white mb-1 tabular-nums">
+                    {String(timeLeft.minutes).padStart(2, '0')}
+                  </div>
+                  <div className="text-xs md:text-sm text-gray-400 uppercase tracking-wider">
+                    MINUTES
+                  </div>
+                </div>
+                <div className="bg-black/30 backdrop-blur-sm rounded-lg p-4 md:p-6 min-w-[80px] md:min-w-[100px] border border-white/10">
+                  <div className="text-3xl md:text-4xl font-bold text-white mb-1 tabular-nums">
+                    {String(timeLeft.seconds).padStart(2, '0')}
+                  </div>
+                  <div className="text-xs md:text-sm text-gray-400 uppercase tracking-wider">
+                    SECONDS
+                  </div>
+                </div>
+              </div>
+              
+              {/* Debug info to verify countdown is working */}
+              <div className="text-xs text-gray-500 text-center">
+                Countdown to March 17, 2026: {timeLeft.days}d {timeLeft.hours}h {timeLeft.minutes}m {timeLeft.seconds}s
+              </div>
+            </div>
+
+            {/* Features Preview */}
+            <div className="mb-12">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-3xl mx-auto">
+                <div className="text-center">
+                  <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-white/10 flex items-center justify-center">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" className="text-white">
+                      <path d="M12 2L2 7L12 12L22 7L12 2Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                      <path d="M2 17L12 22L22 17" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                      <path d="M2 12L12 17L22 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                  </div>
+                  <h3 className="text-white font-semibold mb-2">Ecosystem Map</h3>
+                  <p className="text-gray-400 text-sm">Interactive visualization of our global partnerships and client engagements</p>
+                </div>
+                <div className="text-center">
+                  <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-white/10 flex items-center justify-center">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" className="text-white">
+                      <path d="M9 11H15M9 15H15M17 21L12 16L7 21V5C7 4.46957 7.21071 3.96086 7.58579 3.58579C7.96086 3.21071 8.46957 3 9 3H15C15.5304 3 16.0391 3.21071 16.4142 3.58579C16.7893 3.96086 17 4.46957 17 5V21Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                  </div>
+                  <h3 className="text-white font-semibold mb-2">Success Stories</h3>
+                  <p className="text-gray-400 text-sm">Real transformation journeys and measurable impact across industries</p>
+                </div>
+                <div className="text-center">
+                  <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-white/10 flex items-center justify-center">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" className="text-white">
+                      <path d="M17 21V19C17 17.9391 16.5786 16.9217 15.8284 16.1716C15.0783 15.4214 14.0609 15 13 15H5C3.93913 15 2.92172 15.4214 2.17157 16.1716C1.42143 16.9217 1 17.9391 1 19V21M23 21V19C22.9993 18.1137 22.7044 17.2528 22.1614 16.5523C21.6184 15.8519 20.8581 15.3516 20 15.13M16 3.13C16.8604 3.35031 17.623 3.85071 18.1676 4.55232C18.7122 5.25392 19.0078 6.11683 19.0078 7.005C19.0078 7.89318 18.7122 8.75608 18.1676 9.45769C17.623 10.1593 16.8604 10.6597 16 10.88M13 7C13 9.20914 11.2091 11 9 11C6.79086 11 5 9.20914 5 7C5 4.79086 6.79086 3 9 3C11.2091 3 13 4.79086 13 7Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                  </div>
+                  <h3 className="text-white font-semibold mb-2">Team Directory</h3>
+                  <p className="text-gray-400 text-sm">Meet the experts and leaders driving digital transformation</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Stay Tuned */}
+            <div className="mb-16">
+              <p className="text-gray-400 uppercase tracking-wider text-sm font-medium">
+                STAY TUNED
+              </p>
+            </div>
+          </div>
+
+          {/* Footer Text - Fixed Position */}
+          <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 z-20">
+            <p className="text-xs text-gray-500 uppercase tracking-wider">
+              POWERED BY DIGITAL QATALYST
             </p>
           </div>
-
-          <div className="mx-auto mt-6 max-w-[1226px] px-4 sm:px-6 lg:px-8">
-            <div className="mb-6 flex flex-wrap items-center justify-center gap-3">
-              {CLIENT_FILTERS.map(({ key, label }) => {
-                const location = CLIENT_LOCATIONS.find((loc) => loc.filterKey === key);
-                const color = location?.markerColor ?? "#162862";
-                const isActive = selectedTypes.has(key);
-
-                return (
-                  <button
-                    key={key}
-                    type="button"
-                    onClick={() => toggleType(key)}
-                    className="px-4 py-2 rounded-full text-sm font-semibold transition-all duration-200 hover:scale-105"
-                    style={{
-                      backgroundColor: isActive ? color : "#FFFFFF",
-                      border: `1.5px solid ${color}`,
-                      color: isActive ? "#FFFFFF" : color,
-                      boxShadow: isActive ? `0 4px 12px ${color}40` : "none",
-                    }}
-                  >
-                    {label}
-                  </button>
-                );
-              })}
-              {selectedTypes.size > 0 && (
-                <button
-                  type="button"
-                  onClick={clearTypes}
-                  className="px-4 py-2 rounded-full text-sm font-semibold transition-all duration-200 border border-[#162862] text-[#162862] bg-white hover:bg-[#162862] hover:text-white"
-                >
-                  Clear
-                </button>
-              )}
-            </div>
-
-            <div className="relative z-0 h-[420px] md:h-[520px] lg:h-[608px] xl:h-[608px] overflow-hidden rounded-2xl bg-white shadow-xl">
-              <MapCard
-                className="h-full w-full"
-                locations={filteredLocations}
-                selectedId={selectedLocationId}
-                onSelect={(location: LocationItem) => setSelectedLocationId(location.id)}
-                onClearFilters={selectedTypes.size ? clearTypes : undefined}
-              />
-            </div>
-          </div>
-        </section>
-
-        {/* Vision & Mission */}
-        <Discover_VisionMissionSection />
-
-        {/* DQ DNA */}
-        <Discover_DNASection
-          onExploreLearningCenter={handleExploreLearningCenter}
-          onExploreKnowledgeCenter={handleExploreKnowledgeCenter}
-        />
-
-        {/* Six Digital Architecture */}
-        <Discover_SixDigitalSection />
-
-        {/* Directory */}
-        <Discover_DirectorySection />
-
-        {supportOpen && (
-          <div className={styles.modalOverlay} role="dialog" aria-modal="true">
-            <div className={styles.modalCard}>
-              <div className={styles.modalHeader}>
-                <div>
-                  <div style={{ fontWeight: 700, fontSize: "1.2rem", marginBottom: "0.25rem" }}>
-                    DQ Support
-                  </div>
-                  <div style={{ color: "var(--dws-muted)" }}>
-                    Our support desk responds within one business day.
-                  </div>
-                </div>
-                <button
-                  className={styles.closeButton}
-                  onClick={() => setSupportOpen(false)}
-                  aria-label="Close support form"
-                >
-                  <XIcon size={18} />
-                </button>
-              </div>
-              <form className={styles.modalBody} onSubmit={handleSupportSubmit}>
-                <label>
-                  <span style={{ color: "var(--dws-muted)" }}>Name</span>
-                  <input
-                    name="name"
-                    type="text"
-                    required
-                    style={{
-                      width: "100%",
-                      padding: "0.9rem 1rem",
-                      borderRadius: "12px",
-                      border: `1px solid var(--dws-border)`
-                    }}
-                  />
-                </label>
-                <label>
-                  <span style={{ color: "var(--dws-muted)" }}>Work Email</span>
-                  <input
-                    name="email"
-                    type="email"
-                    required
-                    style={{
-                      width: "100%",
-                      padding: "0.9rem 1rem",
-                      borderRadius: "12px",
-                      border: `1px solid var(--dws-border)`
-                    }}
-                  />
-                </label>
-                <label>
-                  <span style={{ color: "var(--dws-muted)" }}>How can we help?</span>
-                  <textarea
-                    name="message"
-                    rows={4}
-                    required
-                    style={{
-                      width: "100%",
-                      padding: "0.9rem 1rem",
-                      borderRadius: "12px",
-                      border: `1px solid var(--dws-border)`
-                    }}
-                  />
-                </label>
-                {supportStatus && <div style={{ color: "var(--dws-muted)" }}>{supportStatus}</div>}
-                <div className={styles.modalFooter}>
-                  <button type="button" className={styles.closeButton} onClick={() => setSupportOpen(false)}>
-                    Cancel
-                  </button>
-                  <button type="submit" className={styles.btnPrimary} disabled={isSubmittingSupport}>
-                    {isSubmittingSupport ? "Sending…" : "Submit"}
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>
-        )}
+        </div>
       </main>
       <Footer />
     </>

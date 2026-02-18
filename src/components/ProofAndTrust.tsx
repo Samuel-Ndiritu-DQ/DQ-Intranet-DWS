@@ -3,7 +3,6 @@ import {
   Star,
   Play,
   X,
-  User,
   ChevronLeft,
   ChevronRight,
 } from 'lucide-react';
@@ -121,36 +120,64 @@ const TestimonialCard = ({ testimonial }: { testimonial: Testimonial }) => {
 };
 
 const AssociateFeedbackCard = ({ feedback }: { feedback: AssociateFeedback }) => {
+  // Get initials from name
+  const getInitials = (name: string) => {
+    return name.split(' ').map(n => n[0]).join('').toUpperCase();
+  };
+
   return (
-    <div className="flex items-start gap-4 md:gap-6 rounded-2xl bg-white/90 border border-gray-200 shadow-sm px-5 py-4 md:px-6 md:py-5 md:h-[332px] md:max-w-[593px]">
-      {/* Associate icon placeholder */}
-      <div className="flex-shrink-0 h-14 w-14 md:h-16 md:w-16 rounded-2xl bg-gray-100 flex items-center justify-center text-gray-500">
-        <User size={28} strokeWidth={2} className="md:w-8 md:h-8 w-7 h-7" />
+    <div
+      className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-2xl p-8 shadow-sm hover:shadow-md transition-all duration-300 mx-auto flex flex-col overflow-hidden"
+      style={{
+        width: '100%',
+        maxWidth: '1030px',
+        height: '344px',
+        aspectRatio: '1030 / 344'
+      }}
+    >
+      {/* Large quote mark */}
+      <div className="mb-6 flex-shrink-0">
+        <svg
+          width="48"
+          height="48"
+          viewBox="0 0 24 24"
+          fill="none"
+          className="text-coral-500"
+          style={{ color: 'rgba(251, 85, 53, 0.4)' }}
+        >
+          <path
+            d="M14.017 21v-7.391c0-5.704 3.731-9.57 8.983-10.609l.995 2.151c-2.432.917-3.995 3.638-3.995 5.849h4v10h-9.983zm-14.017 0v-7.391c0-5.704 3.748-9.57 9-10.609l.996 2.151c-2.433.917-3.996 3.638-3.996 5.849h4v10h-10z"
+            fill="currentColor"
+          />
+        </svg>
       </div>
 
-      {/* Text content */}
-      <div className="flex-1 min-w-0 h-full">
-        <div className="flex flex-col md:flex-row md:items-baseline md:justify-between gap-1 mb-2">
-          <div>
-            <p className="text-base md:text-lg font-semibold text-gray-900">
-              {feedback.name}
-            </p>
-            <p className="text-sm text-gray-500">{feedback.role}</p>
-          </div>
+      {/* Testimonial text */}
+      <div className="mb-6 flex-1 min-h-0">
+        <p className="text-gray-700 leading-relaxed italic font-medium" style={{ fontSize: '17px' }}>
+          {feedback.feedback}
+        </p>
+      </div>
 
-          {/* Subtle, optional rating */}
-          {typeof feedback.rating === 'number' && (
-            <div className="flex items-center gap-1 text-xs text-gray-400 md:text-sm md:text-gray-500">
-              <Star size={14} className="text-amber-400 fill-amber-400" />
-              <span className="font-medium">{feedback.rating}/5</span>
-              <span className="hidden md:inline text-gray-400">reflection</span>
-            </div>
-          )}
+      {/* Author info - contained within card */}
+      <div className="flex items-center gap-4 flex-shrink-0 w-full">
+        {/* Avatar with initials */}
+        <div
+          className="w-14 h-14 rounded-full flex items-center justify-center text-white font-bold text-base flex-shrink-0"
+          style={{ backgroundColor: 'rgba(251, 85, 53, 0.4)' }}
+        >
+          {getInitials(feedback.name)}
         </div>
 
-        <p className="text-sm md:text-base leading-relaxed text-gray-700 overflow-y-auto pr-1">
-          “{feedback.feedback}”
-        </p>
+        {/* Name and role - properly contained */}
+        <div className="flex flex-col justify-center min-w-0 flex-1">
+          <p className="text-base font-semibold text-gray-900 leading-tight truncate">
+            {feedback.name}
+          </p>
+          <p className="text-sm text-gray-600 leading-tight truncate">
+            {feedback.role}
+          </p>
+        </div>
       </div>
     </div>
   );
@@ -535,9 +562,6 @@ export const VideoTestimonialCarousel = () => {
 const AssociateFeedbackCarousel = () => {
   const [activeIndex, setActiveIndex] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
-  const [selectedFeedback, setSelectedFeedback] =
-    useState<AssociateFeedback | null>(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
   const carouselRef = useRef<HTMLDivElement>(null);
   const touchStartX = useRef<number | null>(null);
 
@@ -602,107 +626,49 @@ const AssociateFeedbackCarousel = () => {
         {associateFeedbacks.map((feedback, index) => (
           <div
             key={feedback.id}
-            className="min-w-full sm:min-w-[420px] lg:min-w-[620px] flex-shrink-0 snap-center"
+            className="min-w-full flex-shrink-0 snap-center"
           >
             <FadeInUpOnScroll delay={index * 0.1}>
-              <button
-                type="button"
-                className="w-full text-left focus:outline-none"
-                onClick={() => {
-                  setSelectedFeedback(feedback);
-                  setIsModalOpen(true);
-                }}
-              >
-                <AssociateFeedbackCard feedback={feedback} />
-              </button>
+              <AssociateFeedbackCard feedback={feedback} />
             </FadeInUpOnScroll>
           </div>
         ))}
       </div>
 
       {/* Arrows */}
-      <div className="absolute top-1/2 left-0 right-0 flex justify-between items-center transform -translate-y-1/2 pointer-events-none px-2 sm:px-4">
+      <div className="absolute top-1/2 left-0 right-0 flex justify-between items-center transform -translate-y-1/2 pointer-events-none px-2">
         <button
-          className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-white/90 shadow-md flex items-center justify-center text-gray-700 hover:bg-white transition-all pointer-events-auto"
+          className="w-8 h-8 rounded-full bg-white/90 shadow-md flex items-center justify-center text-gray-700 hover:bg-white transition-all pointer-events-auto"
           onClick={handlePrev}
           aria-label="Previous associate reflection"
         >
-          <ChevronLeft size={18} />
+          <ChevronLeft size={16} />
         </button>
         <button
-          className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-white/90 shadow-md flex items-center justify-center text-gray-700 hover:bg-white transition-all pointer-events-auto"
+          className="w-8 h-8 rounded-full bg-white/90 shadow-md flex items-center justify-center text-gray-700 hover:bg-white transition-all pointer-events-auto"
           onClick={handleNext}
           aria-label="Next associate reflection"
         >
-          <ChevronRight size={18} />
+          <ChevronRight size={16} />
         </button>
       </div>
 
       {/* Dots */}
-      <div className="flex justify-center mt-3 gap-2">
+      <div className="flex justify-center mt-6 gap-2">
         {associateFeedbacks.map((item, index) => (
           <button
             key={item.id}
-            className={`w-2 h-2 rounded-full transition-all ${
-              activeIndex === index ? 'bg-dq-coral w-6' : 'bg-gray-300'
+            className={`h-2 rounded-full transition-all ${
+              activeIndex === index
+                ? 'w-6 bg-coral-500'
+                : 'w-2 bg-gray-300 hover:bg-gray-400'
             }`}
+            style={activeIndex === index ? { backgroundColor: '#FB5535' } : {}}
             onClick={() => setActiveIndex(index)}
             aria-label={`Go to associate reflection ${index + 1}`}
           />
         ))}
       </div>
-
-      {/* Expanded associate feedback modal */}
-      {isModalOpen && selectedFeedback && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm transition-all duration-300">
-          <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] shadow-2xl transform transition-all duration-300 animate-fadeIn flex flex-col overflow-hidden">
-            <div className="p-6 border-b border-gray-200 flex items-start gap-4">
-              <div className="flex-shrink-0 h-14 w-14 rounded-2xl bg-gray-100 flex items-center justify-center text-gray-500">
-                <User size={28} strokeWidth={2} />
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-baseline justify-between gap-2">
-                  <div>
-                    <p className="text-lg font-semibold text-gray-900">
-                      {selectedFeedback.name}
-                    </p>
-                    <p className="text-sm text-gray-500">
-                      {selectedFeedback.role}
-                    </p>
-                  </div>
-                  {typeof selectedFeedback.rating === 'number' && (
-                    <div className="flex items-center gap-1 text-xs text-gray-400 md:text-sm md:text-gray-500">
-                      <Star
-                        size={16}
-                        className="text-amber-400 fill-amber-400"
-                      />
-                      <span className="font-medium">
-                        {selectedFeedback.rating}/5
-                      </span>
-                      <span className="hidden md:inline text-gray-400">
-                        reflection
-                      </span>
-                    </div>
-                  )}
-                </div>
-              </div>
-              <button
-                type="button"
-                className="ml-2 text-gray-400 hover:text-gray-600"
-                onClick={() => setIsModalOpen(false)}
-                aria-label="Close associate feedback"
-              >
-                <X size={18} />
-              </button>
-            </div>
-            <div className="p-6 overflow-y-auto">
-              <p className="text-sm md:text-base leading-relaxed text-gray-700">
-                “{selectedFeedback.feedback}”
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 };
@@ -933,8 +899,8 @@ const ProofAndTrust: React.FC = () => {
         </div>
 
         {/* Success Stories */}
-        <div className="mb-16 bg-gradient-to-br from-gray-50 to-white rounded-2xl p-8 md:p-12 overflow-hidden relative">
-          <FadeInUpOnScroll className="text-center mb-10 relative z-10">
+        <div className="mb-16 bg-gradient-to-br from-gray-50 to-white rounded-2xl p-8 overflow-hidden relative">
+          <FadeInUpOnScroll className="text-center mb-8 relative z-10">
             <h2 className="text-3xl font-bold text-gray-900 mb-3 clamp-1">
               What Our Team Says
             </h2>
@@ -945,7 +911,7 @@ const ProofAndTrust: React.FC = () => {
             </div>
           </FadeInUpOnScroll>
 
-          <div className="relative z-10">
+          <div className="relative z-10 max-w-6xl mx-auto">
             <AssociateFeedbackCarousel />
           </div>
         </div>

@@ -6,7 +6,6 @@ import {
   Users,
   Clock,
   BookOpen,
-  Award,
   Heart,
   Rocket,
   Sparkles,

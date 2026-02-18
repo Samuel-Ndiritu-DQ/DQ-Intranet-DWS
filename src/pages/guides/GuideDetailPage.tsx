@@ -13,6 +13,7 @@ import { Footer } from '../../components/Footer'
 import { ChevronRightIcon, HomeIcon, CheckCircle, Share2, Download, AlertTriangle, ExternalLink, Calendar, User, Building2, Heart, MessageCircle, BookmarkIcon, FileText, ChevronDown } from 'lucide-react'
 import { supabaseClient } from '../../lib/supabaseClient'
 import { getGuideImageUrl } from '../../utils/guideImageMap'
+import { safeOpenUrl } from '../../utils/secureUrl'
 import { track } from '../../utils/analytics'
 import { useAuth } from '../../components/Header/context/AuthContext'
 // CODEx: import new preview component
@@ -960,7 +961,7 @@ const TAB_LABELS: Record<GuideTabKey, string> = {
   const handleDownload = (category: 'attachment' | 'template', item: any) => {
     if (!item?.url) return
     track('Guides.Download', { slug: guide?.slug || guide?.id, category, id: item.id || item.url, title: item.title || undefined })
-    window.open(item.url, '_blank', 'noopener,noreferrer')
+    safeOpenUrl(item.url, 'Unable to open download link');
   }
   const handleShare = () => {
     if (navigator.share) {
@@ -979,7 +980,7 @@ const TAB_LABELS: Record<GuideTabKey, string> = {
   const openMainDocument = () => {
     if (!hasDocument) return
     track('Guides.CTA', { category: 'policy_open_clicked', policyId: guide?.slug || guide?.id, title: guide?.title })
-    window.open(documentUrl, '_blank', 'noopener')
+    safeOpenUrl(documentUrl, 'Unable to open document');
   }
   // Print removed per new design
   

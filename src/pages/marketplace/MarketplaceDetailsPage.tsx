@@ -11,6 +11,9 @@ import { ErrorDisplay } from '../../components/SkeletonLoader';
 import { getFallbackItemDetails, getFallbackItems } from '../../utils/fallbackData';
 import { supabaseClient } from '../../lib/supabaseClient';
 import { toast } from 'sonner';
+import { error as secureError } from '../../utils/secureLogger';
+import { safeOpenUrl } from '../../utils/secureUrl';
+import { sanitizeAndValidateHtml } from '../../utils/sanitizeHtml';
 
 // Code block component with copy functionality - extracted to avoid re-creation
 const CodeBlock: React.FC<{ code: string; language?: string; title?: string }> = ({ code, language, title }) => {
@@ -332,7 +335,7 @@ const MarketplaceDetailsPage: React.FC<MarketplaceDetailsPageProps> = ({
       }
       return [];
     } catch (error) {
-      console.error('Error fetching related events:', error);
+      secureError('Error fetching related events:', error);
       return [];
     }
   }, [marketplaceType]);
@@ -347,7 +350,7 @@ const MarketplaceDetailsPage: React.FC<MarketplaceDetailsPageProps> = ({
       );
       return data && data.length > 0 ? data : [];
     } catch (error) {
-      console.error('Error fetching related items:', error);
+      secureError('Error fetching related items:', error);
       return [];
     }
   }, [marketplaceType]);
@@ -397,7 +400,7 @@ const MarketplaceDetailsPage: React.FC<MarketplaceDetailsPageProps> = ({
       try {
         itemData = await fetchMarketplaceItemDetails(marketplaceType, itemId);
       } catch (fetchError) {
-        console.error(`Error fetching ${marketplaceType} item details:`, fetchError);
+        secureError(`Error fetching ${marketplaceType} item details:`, fetchError);
         // We'll handle this below by using fallback data
       }
       
@@ -418,7 +421,7 @@ const MarketplaceDetailsPage: React.FC<MarketplaceDetailsPageProps> = ({
         }, 100);
       }
     } catch (err) {
-      console.error(`Error in marketplace details page:`, err);
+      secureError(`Error in marketplace details page:`, err);
       if (marketplaceType === 'events') {
         setError(`Failed to load event details: ${err instanceof Error ? err.message : 'Unknown error'}`);
       } else {
@@ -443,7 +446,7 @@ const MarketplaceDetailsPage: React.FC<MarketplaceDetailsPageProps> = ({
     }
     // Redirect to meeting link if available
     if (item.meetingLink) {
-      window.open(item.meetingLink, '_blank', 'noopener,noreferrer');
+      safeOpenUrl(item.meetingLink, 'Unable to open meeting link');
     } else {
       toast.error('Meeting link not available for this event');
     }
@@ -457,7 +460,7 @@ const MarketplaceDetailsPage: React.FC<MarketplaceDetailsPageProps> = ({
     } else if (isITSupportService) {
       setIsTechSupportFormOpen(true);
     } else if (isPromptLibrary && item?.sourceUrl) {
-      window.open(item.sourceUrl, '_blank', 'noopener,noreferrer');
+      safeOpenUrl(item.sourceUrl, 'Unable to open source URL');
     } else if (isAITool) {
       setIsTechSupportFormOpen(true);
     }
@@ -475,7 +478,7 @@ const MarketplaceDetailsPage: React.FC<MarketplaceDetailsPageProps> = ({
   const renderBlocks = (blocks: ContentBlock[]) => {
     return (blocks || []).map((block, idx) => {
       if (block.type === 'p') {
-        return <p key={getUniqueKey('block-p', block.text, idx)} className="text-gray-700 text-base leading-relaxed mb-4" dangerouslySetInnerHTML={{ __html: block.text }}></p>;
+        return <p key={getUniqueKey('block-p', block.text, idx)} className="text-gray-700 text-base leading-relaxed mb-4" dangerouslySetInnerHTML={{ __html: sanitizeAndValidateHtml(block.text) }}></p>;
       }
       if (block.type === 'ol') {
         return <ol key={getUniqueKey('block-ol', block.items?.[0], idx)} className="list-decimal pl-6 space-y-3 text-gray-700 mb-4 text-base">
@@ -878,7 +881,7 @@ const MarketplaceDetailsPage: React.FC<MarketplaceDetailsPageProps> = ({
                   } else if (isITSupportService) {
                     setIsTechSupportFormOpen(true);
                   } else if (isPromptLibrary && item?.sourceUrl) {
-                    window.open(item.sourceUrl, '_blank', 'noopener,noreferrer');
+                    safeOpenUrl(item.sourceUrl, 'Unable to open source URL');
                   } else if (isAITool) {
                     setIsTechSupportFormOpen(true);
                   }

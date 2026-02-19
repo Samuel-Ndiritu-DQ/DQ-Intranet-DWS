@@ -7,7 +7,7 @@ const parseBoolEnv = (value: string | undefined, defaultValue: boolean) =>
 
 const normalizeBasePath = (value: string | undefined) => {
   if (!value || value === '/') return '/';
-  const trimmed = value.replace(/^\/+|\/+$/g, '');
+  const trimmed = value.replaceAll(/(?:^\/+)|(?:\/+$)/g, '');
   return `/${trimmed}/`;
 };
 

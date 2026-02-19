@@ -108,14 +108,14 @@ async function processGuidesForSubDomain(guides, subDomainName) {
     const currentSubDomain = guide.sub_domain || '';
     const subDomains = currentSubDomain.split(',').map(s => s.trim()).filter(Boolean);
 
-    if (!subDomains.includes(subDomainName)) {
+    if (subDomains.includes(subDomainName)) {
+      console.log(`   ⏭️  ${guide.title} already has "${subDomainName}" in sub_domain`);
+    } else {
       subDomains.push(subDomainName);
       const newSubDomain = subDomains.join(',');
 
       const success = await updateGuideSubDomain(guide, newSubDomain);
       if (success) updatedCount++;
-    } else {
-      console.log(`   ⏭️  ${guide.title} already has "${subDomainName}" in sub_domain`);
     }
   }
 
@@ -183,5 +183,5 @@ async function updateStrategySubdomains() {
 }
 
 // Run the update
-updateStrategySubdomains();
+await updateStrategySubdomains();
 

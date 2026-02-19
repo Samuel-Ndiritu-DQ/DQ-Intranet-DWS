@@ -3,12 +3,24 @@
  * Provides safe HTML rendering by sanitizing potentially dangerous content
  */
 
-/**
- * HTML Sanitization Utility
- * Provides safe HTML rendering by sanitizing potentially dangerous content
- */
-
 import { securityMonitor } from './securityMonitor';
+
+/**
+ * Safely removes script tags and dangerous content using DOMParser
+ * Avoids ReDoS vulnerability (Sonar S5852) from complex regex backtracking
+ */
+const removeScriptTags = (html: string): string => {
+  // Use DOMParser to safely parse and manipulate HTML
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(html, 'text/html');
+  
+  // Remove all script elements
+  const scripts = doc.querySelectorAll('script');
+  scripts.forEach(script => script.remove());
+  
+  // Return cleaned HTML
+  return doc.body.innerHTML;
+};
 
 // Simple HTML sanitizer for basic formatting
 export const sanitizeHtml = (html: string): string => {
@@ -16,8 +28,9 @@ export const sanitizeHtml = (html: string): string => {
   
   const originalLength = html.length;
   
-  // Remove script tags and their content
-  let sanitized = html.replaceAll(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '');
+  // Remove script tags safely using DOMParser (fixes Sonar S5852 - ReDoS vulnerability)
+  // Previous regex: /<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi was vulnerable to backtracking
+  let sanitized = removeScriptTags(html);
   
   // Remove dangerous attributes
   sanitized = sanitized.replaceAll(/\s*on\w+\s*=\s*["'][^"']*["']/gi, ''); // onclick, onload, etc.
@@ -26,7 +39,7 @@ export const sanitizeHtml = (html: string): string => {
   sanitized = sanitized.replaceAll(/\s*vbscript\s*:/gi, ''); // vbscript: URLs
   
   // Remove dangerous tags
-  const dangerousTags = ['script', 'object', 'embed', 'form', 'input', 'textarea', 'select', 'button', 'iframe', 'frame', 'frameset'];
+  const dangerousTags = ['object', 'embed', 'form', 'input', 'textarea', 'select', 'button', 'iframe', 'frame', 'frameset'];
   dangerousTags.forEach(tag => {
     const regex = new RegExp(String.raw`<\/?${tag}\b[^>]*>`, 'gi');
     sanitized = sanitized.replaceAll(regex, '');

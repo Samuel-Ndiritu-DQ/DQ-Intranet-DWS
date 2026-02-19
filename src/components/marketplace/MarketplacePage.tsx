@@ -2045,8 +2045,8 @@ type DesignSystemTab = 'cids' | 'vds' | 'cds';
             <div className="flex-1">
               <SearchBar
                 searchQuery={isGuides ? (queryParams.get('q') || '') : searchQuery}
-                placeholder={isGuides || isKnowledgeHub || isDesignSystem ? "Search in DQ Knowledge Center" : undefined}
-                ariaLabel={isGuides || isKnowledgeHub || isDesignSystem ? "Search in DQ Knowledge Center" : undefined}
+                placeholder={isDesignSystem ? "Search in Design System" : (isGuides || isKnowledgeHub ? "Search in DQ Knowledge Center" : undefined)}
+                ariaLabel={isDesignSystem ? "Search in Design System" : (isGuides || isKnowledgeHub ? "Search in DQ Knowledge Center" : undefined)}
                 setSearchQuery={(q: string) => {
                   if (isGuides || isDesignSystem) {
                     const next = new URLSearchParams(queryParams.toString());

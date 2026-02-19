@@ -14,7 +14,8 @@ import { securityMonitor } from './securityMonitor';
  */
 const removeScriptTags = (html: string): string => {
   // Check if we're in a browser environment with DOMParser available
-  if (globalThis.window !== undefined && typeof DOMParser !== 'undefined') {
+  // eslint-disable-next-line no-restricted-globals
+  if (typeof window !== 'undefined' && typeof DOMParser !== 'undefined') {
     try {
       // Use DOMParser to safely parse and manipulate HTML (browser only)
       const parser = new DOMParser();
@@ -26,9 +27,8 @@ const removeScriptTags = (html: string): string => {
       
       // Return cleaned HTML
       return doc.body.innerHTML;
-    } catch (error) {
+    } catch {
       // Fall through to regex fallback if DOMParser fails
-      console.warn('DOMParser failed, using fallback:', error);
     }
   }
   

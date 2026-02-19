@@ -64,7 +64,7 @@ const approvedSections = {
       id: 'learning-center',
       title: 'Learning Center',
       description:
-        'Browse glossaries, FAQs, playbooks, and reference resources for everyday work.',
+        'Designed for your continuous growth. Access the upskilling and certification tools you need to deliver excellence.',
       icon: <BookOpen />,
       path: '/marketplace/guides?tab=glossary',
       isActive: true,
@@ -73,7 +73,7 @@ const approvedSections = {
       id: 'ghc',
       title: 'GHC',
       description:
-        'Explore the Golden Honeycomb of Competencies to understand how DQ works.',
+        'Explore the Golden Honeycomb of Competencies (GHC), the system behind how DQ works and delivers value.',
       icon: <GraduationCap />,
       path: '/marketplace/guides/dq-ghc',
       isActive: true,
@@ -113,7 +113,7 @@ const approvedSections = {
       id: 'news-announcements',
       title: 'News & Announcements',
       description:
-        'View official DQ news, platform releases, and important organizational updates.',
+        'Discover what is happening in DQ, including important announcements, and what teams are building.',
       icon: <Newspaper />,
       path: '/marketplace/opportunities?tab=announcements',
       isActive: true,
@@ -121,7 +121,7 @@ const approvedSections = {
     {
       id: 'podcasts',
       title: 'Podcasts',
-      description: 'Listen to the latest DQ podcast series and episodes.',
+      description: 'Tune in to conversations, stories, and expert insights from DQ leaders and associates.',
       icon: <MessageCircle />,
       path: '/marketplace/opportunities?tab=podcasts',
       isActive: true,
@@ -130,7 +130,7 @@ const approvedSections = {
       id: 'blogs',
       title: 'Blogs',
       description:
-        'Read stories, updates, and perspectives from teams and leaders across DQ.',
+        'Dive into thought leadership, personal stories, and expert insights written by colleagues across DQ.',
       icon: <BookIcon />,
       path: '/marketplace/opportunities?tab=insights',
       isActive: true,

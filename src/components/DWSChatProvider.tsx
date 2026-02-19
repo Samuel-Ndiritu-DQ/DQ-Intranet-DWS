@@ -19,16 +19,25 @@ export function useDWSChat() {
 }
 
 interface DWSChatProviderProps {
-  children: React.ReactNode;
+  readonly children: React.ReactNode;
 }
 
 export function DWSChatProvider({ children }: DWSChatProviderProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [initialMessage, setInitialMessage] = useState<string | undefined>();
+  const [showComingSoon, setShowComingSoon] = useState(false);
+
+  // Feature flag - set to true to enable chat, false to show "Coming Soon"
+  const CHAT_ENABLED = false;
 
   const openChat = (message?: string) => {
-    setInitialMessage(message);
-    setIsOpen(true);
+    if (CHAT_ENABLED) {
+      setInitialMessage(message);
+      setIsOpen(true);
+    } else {
+      setShowComingSoon(true);
+      setTimeout(() => setShowComingSoon(false), 3000);
+    }
   };
 
   const closeChat = () => {
@@ -37,11 +46,13 @@ export function DWSChatProvider({ children }: DWSChatProviderProps) {
   };
 
   const sendMessage = (message: string) => {
-    if (!isOpen) {
-      openChat(message);
-    } else {
-      // Dispatch event that the chat widget will listen to
-      window.dispatchEvent(new CustomEvent('dws-chat-send-message', { detail: { message } }));
+    if (CHAT_ENABLED) {
+      if (isOpen) {
+        // Dispatch event that the chat widget will listen to
+        globalThis.dispatchEvent(new CustomEvent('dws-chat-send-message', { detail: { message } }));
+      } else {
+        openChat(message);
+      }
     }
   };
 
@@ -54,29 +65,106 @@ export function DWSChatProvider({ children }: DWSChatProviderProps) {
       }
     };
 
-    window.addEventListener('dq-hero-sent-to-chat', handleHeroMessage as EventListener);
+    globalThis.addEventListener('dq-hero-sent-to-chat', handleHeroMessage as EventListener);
     return () => {
-      window.removeEventListener('dq-hero-sent-to-chat', handleHeroMessage as EventListener);
+      globalThis.removeEventListener('dq-hero-sent-to-chat', handleHeroMessage as EventListener);
     };
   }, []);
 
+  const contextValue = React.useMemo(
+    () => ({ isOpen, openChat, closeChat, sendMessage }),
+    [isOpen]
+  );
+
   return (
-    <DWSChatContext.Provider value={{ isOpen, openChat, closeChat, sendMessage }}>
+    <DWSChatContext.Provider value={contextValue}>
       {children}
-      <DWSChatWidget isOpen={isOpen} onToggle={closeChat} initialMessage={initialMessage} />
+      {CHAT_ENABLED && (
+        <DWSChatWidget isOpen={isOpen} onToggle={closeChat} initialMessage={initialMessage} />
+      )}
       {/* Floating chat button when closed */}
       {!isOpen && (
-        <button
-          onClick={() => openChat()}
-          className="fixed bottom-6 right-6 w-14 h-14 rounded-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white flex items-center justify-center shadow-lg hover:shadow-xl transition-all duration-300 z-[9998] hover:scale-110"
-          aria-label="Open DWS AI Assistant"
-          title="Open DWS AI Assistant"
-        >
-          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
-          </svg>
-        </button>
+        <div className="fixed bottom-6 right-6 z-[9998]">
+          <button
+            onClick={() => openChat()}
+            className={`relative w-16 h-16 rounded-full flex items-center justify-center shadow-2xl transition-all duration-300 ${
+              CHAT_ENABLED 
+                ? 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:scale-110 cursor-pointer' 
+                : 'bg-gradient-to-r from-gray-400 to-gray-500 cursor-not-allowed opacity-60'
+            }`}
+            aria-label={CHAT_ENABLED ? "Open DWS AI Assistant" : "DWS AI Assistant - Coming Soon"}
+            title={CHAT_ENABLED ? "Open DWS AI Assistant" : "Coming Soon"}
+            disabled={!CHAT_ENABLED}
+          >
+            {/* Lock Icon Overlay (when disabled) */}
+            {!CHAT_ENABLED && (
+              <div className="absolute inset-0 flex items-center justify-center">
+                <svg 
+                  className="w-8 h-8 text-white" 
+                  fill="none" 
+                  stroke="currentColor" 
+                  viewBox="0 0 24 24"
+                >
+                  <path 
+                    strokeLinecap="round" 
+                    strokeLinejoin="round" 
+                    strokeWidth={2} 
+                    d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" 
+                  />
+                </svg>
+              </div>
+            )}
+            
+            {/* Chat Icon (when enabled) */}
+            {CHAT_ENABLED && (
+              <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+              </svg>
+            )}
+            
+            {/* Coming Soon Badge */}
+            {!CHAT_ENABLED && (
+              <div className="absolute -top-1 -right-1 bg-gradient-to-r from-yellow-400 to-orange-400 text-gray-900 text-[9px] font-bold px-2.5 py-1 rounded-full shadow-lg whitespace-nowrap flex items-center gap-1 animate-pulse">
+                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                </svg>
+                COMING SOON
+              </div>
+            )}
+          </button>
+          
+          {/* Enhanced Coming Soon Tooltip */}
+          {showComingSoon && !CHAT_ENABLED && (
+            <div className="absolute bottom-20 right-0 bg-gradient-to-r from-gray-900 to-gray-800 text-white px-5 py-3 rounded-xl shadow-2xl animate-fade-in-up whitespace-nowrap border border-gray-700">
+              <div className="flex items-center gap-2 mb-1">
+                <svg className="w-5 h-5 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                </svg>
+                <div className="font-bold text-base">DWS AI Assistant</div>
+              </div>
+              <div className="text-sm text-gray-300 mb-1">This feature is coming soon!</div>
+              <div className="text-xs text-yellow-400 font-semibold">Stay tuned for updates 🚀</div>
+              <div className="absolute bottom-0 right-8 transform translate-y-1/2 rotate-45 w-3 h-3 bg-gray-900 border-r border-b border-gray-700"></div>
+            </div>
+          )}
+        </div>
       )}
+      
+      <style>{`
+        @keyframes fade-in-up {
+          from {
+            opacity: 0;
+            transform: translateY(10px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+        .animate-fade-in-up {
+          animation: fade-in-up 0.3s ease-out forwards;
+        }
+      `}</style>
     </DWSChatContext.Provider>
   );
 }

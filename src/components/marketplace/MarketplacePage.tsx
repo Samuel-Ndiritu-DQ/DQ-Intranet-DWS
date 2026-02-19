@@ -1390,6 +1390,21 @@ type DesignSystemTab = 'cids' | 'vds' | 'cds';
           );
         }
         
+        // Apply search query
+        const searchQueryValue = queryParams.get('q') || '';
+        if (searchQueryValue) {
+          const query = searchQueryValue.toLowerCase();
+          filteredDesignSystemItems = filteredDesignSystemItems.filter(item => {
+            const searchableText = [
+              item.title,
+              item.description,
+              item.category,
+              item.location
+            ].filter(Boolean).join(' ').toLowerCase();
+            return searchableText.includes(query);
+          });
+        }
+        
         setItems(filteredDesignSystemItems);
         setFilteredItems(filteredDesignSystemItems);
         setTotalCount(filteredDesignSystemItems.length);
@@ -2044,7 +2059,7 @@ type DesignSystemTab = 'cids' | 'vds' | 'cds';
           <div className="mb-6 flex items-center gap-3">
             <div className="flex-1">
               <SearchBar
-                searchQuery={isGuides ? (queryParams.get('q') || '') : searchQuery}
+                searchQuery={(isGuides || isDesignSystem) ? (queryParams.get('q') || '') : searchQuery}
                 placeholder={isDesignSystem ? "Search in Design System" : (isGuides || isKnowledgeHub ? "Search in DQ Knowledge Center" : undefined)}
                 ariaLabel={isDesignSystem ? "Search in Design System" : (isGuides || isKnowledgeHub ? "Search in DQ Knowledge Center" : undefined)}
                 setSearchQuery={(q: string) => {

@@ -147,6 +147,81 @@ const fetchGuideFromSupabase = async (key: string): Promise<GuideRecord> => {
   return mapRowToGuideRecord(row)
 }
 
+// Helper to remove code blocks from markdown
+const removeCodeBlocks = (text: string): string => {
+  let result = text
+  let codeBlockStart = result.indexOf('```')
+  while (codeBlockStart >= 0) {
+    const codeBlockEnd = result.indexOf('```', codeBlockStart + 3)
+    if (codeBlockEnd >= 0) {
+      result = result.substring(0, codeBlockStart) + ' ' + result.substring(codeBlockEnd + 3)
+    } else {
+      break
+    }
+    codeBlockStart = result.indexOf('```')
+  }
+  return result
+}
+
+// Helper to remove inline code from markdown
+const removeInlineCode = (text: string): string => {
+  let result = text
+  let inlineCodeStart = result.indexOf('`')
+  while (inlineCodeStart >= 0) {
+    const inlineCodeEnd = result.indexOf('`', inlineCodeStart + 1)
+    if (inlineCodeEnd >= 0 && inlineCodeEnd - inlineCodeStart < 100) {
+      result = result.substring(0, inlineCodeStart) + ' ' + result.substring(inlineCodeEnd + 1)
+    } else {
+      break
+    }
+    inlineCodeStart = result.indexOf('`')
+  }
+  return result
+}
+
+// Helper to remove HTML tags from text
+const removeHtmlTags = (text: string): string => {
+  let result = text
+  let tagStart = result.indexOf('<')
+  while (tagStart >= 0) {
+    const tagEnd = result.indexOf('>', tagStart)
+    if (tagEnd >= 0) {
+      result = result.substring(0, tagStart) + ' ' + result.substring(tagEnd + 1)
+    } else {
+      break
+    }
+    tagStart = result.indexOf('<')
+  }
+  return result
+}
+
+// Helper to collapse multiple spaces
+const collapseSpaces = (text: string): string => {
+  let result = text
+  while (result.includes('  ')) {
+    result = result.replaceAll('  ', ' ')
+  }
+  return result.trim()
+}
+
+// Helper to remove headings from markdown
+const removeHeadings = (text: string): string => {
+  const lines = text.split('\n')
+  const filteredLines = lines.filter(line => {
+    const trimmed = line.trim()
+    return !trimmed.startsWith('#')
+  })
+  return filteredLines.join(' ')
+}
+
+// Helper to truncate text to max length
+const truncateText = (text: string, maxLength: number): string => {
+  if (text.length <= maxLength) return text
+  const slice = text.slice(0, maxLength)
+  const lastSpace = slice.lastIndexOf(' ')
+  return (lastSpace > 200 ? slice.slice(0, lastSpace) : slice) + '…'
+}
+
 // Helper function to format Features: list the 10 DWS platform features
 const makeFeaturesPrecise = (_content: string): string => {
   const standardFeatures = [
@@ -233,7 +308,9 @@ const parseBlueprintSections = (body: string): Record<string, string> => {
   for (const line of lines) {
     if (line.trim().startsWith('## ')) {
       saveBlueprintSection(currentSection, currentContent, sections)
-      const sectionTitle = line.replace(/^##\s+/, '').trim().replaceAll('**', '')
+      let sectionTitle = line.substring(line.indexOf('##') + 2).trim()
+      while (sectionTitle.startsWith(' ')) sectionTitle = sectionTitle.substring(1)
+      sectionTitle = sectionTitle.replaceAll('**', '').trim()
       const normalized = sectionTitle.toLowerCase()
       currentSection = sectionMappings[normalized] || sectionTitle
       currentContent = []
@@ -254,7 +331,9 @@ const processLineInSection = (
   const trimmed = line.trim()
   
   if (trimmed.startsWith('### ')) {
-    const h3Title = trimmed.replace(/^###\s+/, '').replaceAll('**', '').trim()
+    let h3Title = trimmed.substring(3).trim()
+    while (h3Title.startsWith(' ')) h3Title = h3Title.substring(1)
+    h3Title = h3Title.replaceAll('**', '').trim()
     
     if (isSpecialTileSection(h3Title)) {
       if (currentSection && currentSection.content.length > 0) {
@@ -268,7 +347,9 @@ const processLineInSection = (
   
   if (trimmed.startsWith('## ')) {
     saveCurrentSection(currentSection, sections)
-    const title = trimmed.replace(/^##\s+/, '').replaceAll('**', '').trim()
+    let title = trimmed.substring(2).trim()
+    while (title.startsWith(' ')) title = title.substring(1)
+    title = title.replaceAll('**', '').trim()
     return { title, content: [] }
   }
   
@@ -587,7 +668,7 @@ const TAB_LABELS: Record<GuideTabKey, string> = {
       const a = t.closest('a')
       if (!a) return
       const href = a.getAttribute('href') || ''
-      if (href.startsWith('#')) track('Guides.CTA', { category: 'guide_heading_anchor', id: href.replaceAll(/^#/g, ''), slug: guide?.slug || guide?.id })
+      if (href.startsWith('#')) track('Guides.CTA', { category: 'guide_heading_anchor', id: href.substring(1), slug: guide?.slug || guide?.id })
       else track('Guides.CTA', { category: 'guide_body_link', href, slug: guide?.slug || guide?.id })
     }
     el.addEventListener('click', onClick)
@@ -668,7 +749,16 @@ const TAB_LABELS: Record<GuideTabKey, string> = {
   }, [guide?.heroImageUrl, guide?.domain, guide?.guideType, guide?.subDomain, (guide as any)?.sub_domain, guide?.id, guide?.slug, guide?.title])
   const normalizeTag = (value?: string | null) => {
     if (!value) return ''
-    const cleaned = value.toLowerCase().replaceAll(/[_-]+/g, ' ').trim()
+    // Replace underscores and dashes with spaces
+    let cleaned = value.toLowerCase()
+    while (cleaned.includes('_') || cleaned.includes('-')) {
+      cleaned = cleaned.replaceAll('_', ' ').replaceAll('-', ' ')
+    }
+    // Collapse multiple spaces
+    while (cleaned.includes('  ')) {
+      cleaned = cleaned.replaceAll('  ', ' ')
+    }
+    cleaned = cleaned.trim()
     return cleaned.endsWith('s') ? cleaned.slice(0, -1) : cleaned
   }
   const isDuplicateTag = normalizeTag(guide?.domain) !== '' && normalizeTag(guide?.domain) === normalizeTag(guide?.guideType)
@@ -723,8 +813,14 @@ const TAB_LABELS: Record<GuideTabKey, string> = {
           
           if (firstContent) {
             // Only create Overview if there are multiple sections
-            const sectionMatches = body.match(/^## /gm)
-            const sectionCount = sectionMatches ? sectionMatches.length : 0
+            // Count ## at start of lines
+            let sectionCount = 0
+            const lines = body.split('\n')
+            for (const line of lines) {
+              if (line.trim().startsWith('## ') && !line.trim().startsWith('### ')) {
+                sectionCount++
+              }
+            }
             if (sectionCount > 1) {
               sections.push({ id: 'overview', title: 'Overview', content: firstContent })
             }
@@ -757,7 +853,8 @@ const TAB_LABELS: Record<GuideTabKey, string> = {
         }
         
         // Extract title by removing ## and any bold markers
-        let title = line.replaceAll(/^##\s+/g, '').trim()
+        let title = line.substring(2).trim()
+        while (title.startsWith(' ')) title = title.substring(1)
         title = title.replaceAll('**', '').trim()
         
         // Skip Description and Key Highlights (already in Overview if they exist)
@@ -766,7 +863,21 @@ const TAB_LABELS: Record<GuideTabKey, string> = {
         if (hasOverview && (title === 'Description' || title === 'Key Highlights')) {
           currentSection = null
         } else {
-          const sectionId = title.toLowerCase().replaceAll(/\s+/g, '-').replaceAll(/[^a-z0-9-]/g, '')
+          // Create section ID by converting to lowercase, replacing spaces with dashes, removing non-alphanumeric
+          let sectionId = title.toLowerCase()
+          // Replace spaces with dashes
+          while (sectionId.includes(' ')) {
+            sectionId = sectionId.replaceAll(' ', '-')
+          }
+          // Remove non-alphanumeric characters except dashes
+          let cleanId = ''
+          for (const char of sectionId) {
+            const code = char.codePointAt(0) || 0
+            if ((code >= 97 && code <= 122) || (code >= 48 && code <= 57) || char === '-') {
+              cleanId += char
+            }
+          }
+          sectionId = cleanId
           currentSection = {
             id: sectionId,
             title,
@@ -916,7 +1027,10 @@ const TAB_LABELS: Record<GuideTabKey, string> = {
     for (const raw of lines) {
       const t = raw.trim()
       if (t.startsWith('## ')) {
-        const title = t.replaceAll(/^##\s+/g, '').replaceAll('**', '').trim().toLowerCase()
+        // Remove ## and whitespace from start, then remove ** markers
+        let title = t.substring(2).trim()
+        while (title.startsWith(' ')) title = title.substring(1)
+        title = title.replaceAll('**', '').trim().toLowerCase()
         inKH = title === 'key highlights'
         out.push(raw)
         continue
@@ -940,22 +1054,19 @@ const TAB_LABELS: Record<GuideTabKey, string> = {
     if (guide.summary && guide.summary.trim().length > 0) return guide.summary.trim()
     const src = guide.body || ''
     if (!src) return null
-    // Strip basic Markdown/HTML for a clean snippet
-    const withoutMd = src
-      .replaceAll(/```[^`]*```/g, ' ') // code blocks
-      .replaceAll(/`[^`\n]*`/g, ' ') // inline code
-      .replaceAll(/^#+\s[^\n]*$/gm, ' ') // headings
-      .replaceAll(/\*\*|__/g, '') // bold markers
-      .replaceAll(/[*_~]|>\s?/g, ' ') // other markers
-      .replaceAll(/<[^>]+>/g, ' ') // html tags
-      .replaceAll(/\s+/g, ' ') // collapse spaces
-      .trim()
+    
+    // Strip basic Markdown/HTML for a clean snippet using string methods
+    let withoutMd = src
+    withoutMd = removeCodeBlocks(withoutMd)
+    withoutMd = removeInlineCode(withoutMd)
+    withoutMd = removeHeadings(withoutMd)
+    withoutMd = withoutMd.replaceAll('**', '').replaceAll('__', '')
+    withoutMd = withoutMd.replaceAll('*', ' ').replaceAll('_', ' ').replaceAll('~', ' ')
+    withoutMd = removeHtmlTags(withoutMd)
+    withoutMd = collapseSpaces(withoutMd)
+    
     if (!withoutMd) return null
-    const max = 480
-    if (withoutMd.length <= max) return withoutMd
-    const slice = withoutMd.slice(0, max)
-    const lastSpace = slice.lastIndexOf(' ')
-    return (lastSpace > 200 ? slice.slice(0, lastSpace) : slice) + '…'
+    return truncateText(withoutMd, 480)
   }, [guide?.summary, guide?.body])
 
   // CODEx: expand/collapse for full details (markdown body) - MOVED TO TOP

@@ -8,7 +8,6 @@ interface PodcastCardProps {
   description: string;
   date: string;
   duration?: string;
-  backgroundColor: string;
   imageUrl?: string;
   onPlay: () => void;
 }
@@ -20,27 +19,25 @@ export const PodcastCard: React.FC<PodcastCardProps> = ({
   description,
   date,
   duration,
-  backgroundColor,
   imageUrl,
   onPlay,
 }) => {
   return (
     <div className="bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow duration-300 overflow-hidden h-full flex flex-col">
       {/* Podcast Visual Header */}
-      <div
-        className="relative h-48 flex items-center justify-center overflow-hidden"
-        style={{ backgroundColor }}
-      >
-        {/* Background Image with Overlay */}
-        {imageUrl && (
+      <div className="relative h-48 flex items-center justify-center overflow-hidden bg-gray-100">
+        {/* Background Image */}
+        {imageUrl ? (
           <>
             <img
               src={imageUrl}
               alt={title}
-              className="absolute inset-0 w-full h-full object-cover opacity-30"
+              className="absolute inset-0 w-full h-full object-cover"
             />
-            <div className="absolute inset-0 bg-gradient-to-b from-transparent to-black/20" />
+            <div className="absolute inset-0 bg-gradient-to-b from-black/10 to-black/30" />
           </>
+        ) : (
+          <div className="text-gray-300 text-6xl font-bold">♪</div>
         )}
 
         {/* Episode Badge */}
@@ -55,9 +52,6 @@ export const PodcastCard: React.FC<PodcastCardProps> = ({
             {duration}
           </div>
         )}
-
-        {/* Podcast Waveform or Visual Element */}
-        <div className="relative z-10 text-white/40 text-6xl font-bold">♪</div>
       </div>
 
       {/* Content Section */}

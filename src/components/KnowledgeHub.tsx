@@ -282,14 +282,6 @@ const KnowledgeHubContent = () => {
 
   const getPodcastData = () => {
     const source = mediaCenterNews.length > 0 ? mediaCenterNews : newsItems;
-    const podcastColors = [
-      '#0F1D4A', // Navy blue
-      '#10B981', // Green
-      '#F97316', // Orange
-      '#8B5CF6', // Purple
-      '#DC2626', // Red
-      '#1F2937', // Dark gray
-    ];
     
     const getDuration = (readingTime?: string) => {
       if (readingTime === '<5') return '5 min';
@@ -317,7 +309,6 @@ const KnowledgeHubContent = () => {
         source: item.newsSource || item.byline || item.author || "DQ Media Center",
         imageUrl: item.image || undefined,
         episode: `EP ${source.length - index}`,
-        backgroundColor: podcastColors[index % podcastColors.length],
         duration: getDuration(item.readingTime),
       }));
   };
@@ -440,7 +431,6 @@ const KnowledgeHubContent = () => {
                         description={item.excerpt}
                         date={item.date}
                         duration={item.duration}
-                        backgroundColor={item.backgroundColor}
                         imageUrl={item.imageUrl}
                         onPlay={() => navigate(`/marketplace/news/${item.id}`)}
                       />

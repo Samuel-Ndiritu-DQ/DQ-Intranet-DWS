@@ -9,6 +9,7 @@ interface PodcastCardProps {
   date: string;
   duration?: string;
   backgroundColor: string;
+  imageUrl?: string;
   onPlay: () => void;
 }
 
@@ -20,30 +21,43 @@ export const PodcastCard: React.FC<PodcastCardProps> = ({
   date,
   duration,
   backgroundColor,
+  imageUrl,
   onPlay,
 }) => {
   return (
     <div className="bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow duration-300 overflow-hidden h-full flex flex-col">
       {/* Podcast Visual Header */}
       <div
-        className="relative h-48 flex items-center justify-center"
+        className="relative h-48 flex items-center justify-center overflow-hidden"
         style={{ backgroundColor }}
       >
+        {/* Background Image with Overlay */}
+        {imageUrl && (
+          <>
+            <img
+              src={imageUrl}
+              alt={title}
+              className="absolute inset-0 w-full h-full object-cover opacity-30"
+            />
+            <div className="absolute inset-0 bg-gradient-to-b from-transparent to-black/20" />
+          </>
+        )}
+
         {/* Episode Badge */}
-        <div className="absolute top-4 left-4 bg-[#0F1D4A] text-white text-xs font-bold px-3 py-1 rounded-full">
+        <div className="absolute top-4 left-4 bg-[#0F1D4A] text-white text-xs font-bold px-3 py-1 rounded-full z-10">
           {episode}
         </div>
 
         {/* Duration Badge */}
         {duration && (
-          <div className="absolute bottom-4 right-4 bg-black/30 backdrop-blur-sm text-white text-xs font-medium px-2 py-1 rounded-full flex items-center gap-1">
+          <div className="absolute bottom-4 right-4 bg-black/30 backdrop-blur-sm text-white text-xs font-medium px-2 py-1 rounded-full flex items-center gap-1 z-10">
             <Clock size={12} />
             {duration}
           </div>
         )}
 
         {/* Podcast Waveform or Visual Element */}
-        <div className="text-white/20 text-6xl font-bold">♪</div>
+        <div className="relative z-10 text-white/40 text-6xl font-bold">♪</div>
       </div>
 
       {/* Content Section */}

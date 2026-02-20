@@ -441,6 +441,7 @@ const KnowledgeHubContent = () => {
                         date={item.date}
                         duration={item.duration}
                         backgroundColor={item.backgroundColor}
+                        imageUrl={item.imageUrl}
                         onPlay={() => navigate(`/marketplace/news/${item.id}`)}
                       />
                     </div>

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ExternalLink, ArrowRight, ChevronDown, ChevronUp, MessageSquare, Share2, Linkedin, Globe } from 'lucide-react';
+import { ExternalLink, ChevronDown, ChevronUp, MessageSquare, Share2, Linkedin, Globe } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 // Custom YouTube icon component
@@ -112,26 +112,11 @@ export function Footer({
             </h2>
           </div>
 
-          <div className="mb-8 p-5 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-sm">
-            <h3 className="text-white font-semibold text-base mb-2">Perfecting Life Transactions</h3>
-            <p className="text-white/90 text-sm mb-4 leading-relaxed">
+          <div className="mb-8">
+            <h3 className="text-white font-semibold text-lg mb-2">Perfecting Life Transactions</h3>
+            <p className="text-white/90 text-sm leading-relaxed">
               Stay updated with the latest digital transformation insights, solutions, and innovations from DigitalQatalyst.
             </p>
-            <div className="flex gap-2">
-              <input
-                type="email"
-                placeholder="Enter your DQ email"
-                className="flex-1 px-4 py-3 rounded-lg text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-dq-coral/50 focus:border-transparent transition-shadow"
-                aria-label="Email address for newsletter"
-              />
-              <button
-                type="submit"
-                className="px-5 py-3 rounded-lg bg-dq-coral text-white font-semibold hover:bg-dq-coral/90 focus:outline-none focus:ring-2 focus:ring-dq-coral/50 transition-all shrink-0"
-                aria-label="Subscribe to newsletter"
-              >
-                Subscribe
-              </button>
-            </div>
           </div>
 
           <div className="mb-8">
@@ -201,27 +186,11 @@ export function Footer({
                 <br />
                 <span className="text-white/95">Workspace</span>
               </h2>
-              <div className="p-6 rounded-2xl bg-white/5 border border-white/10">
+              <div>
                 <h3 className="text-white font-semibold text-base mb-2">Perfecting Life Transactions</h3>
-                <p className="text-white/90 text-sm mb-4 leading-relaxed">
+                <p className="text-white/90 text-sm leading-relaxed">
                   Stay updated with the latest digital transformation insights, solutions, and innovations from DigitalQatalyst.
                 </p>
-                <div className="flex gap-2">
-                  <input
-                    type="email"
-                    placeholder="Enter your DQ email"
-                    className="flex-1 px-4 py-2.5 rounded-lg text-gray-900 placeholder-gray-500 text-sm focus:outline-none focus:ring-2 focus:ring-dq-coral/50 transition-shadow"
-                    aria-label="Email address for newsletter"
-                  />
-                  <button
-                    type="submit"
-                    className="px-4 py-2.5 rounded-lg bg-dq-coral text-white text-sm font-semibold hover:bg-dq-coral/90 focus:outline-none focus:ring-2 focus:ring-dq-coral/50 transition-all shrink-0 flex items-center gap-1"
-                    aria-label="Subscribe to newsletter"
-                  >
-                    Join
-                    <ArrowRight size={14} />
-                  </button>
-                </div>
               </div>
             </div>
 

@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from "react";
-import { Newspaper, Loader, AlertCircle, Radio } from "lucide-react";
+import { Loader, AlertCircle } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { FadeInUpOnScroll } from "./AnimationUtils";
 import { NewsCard } from "./CardComponents";
-import { fetchAllNews } from '@/services/mediaCenterService';
+import { fetchAllNews, fetchAllJobs } from '@/services/mediaCenterService';
 import type { NewsItem as MediaCenterNewsItem } from '@/data/media/news';
+import type { JobItem } from '@/data/media/jobs';
 
 interface NewsItem {
   id: string;
@@ -88,58 +89,6 @@ const newsItems: NewsItem[] = [
 
 // Event and Resource mock data removed (unused) to satisfy noUnusedLocals.
 
-// Define interface for tab items
-type TabId = "news" | "podcast";
-
-interface TabItem {
-  id: TabId;
-  label: string;
-  icon: React.ReactNode;
-}
-
-interface SegmentedTabsProps {
-  tabs: TabItem[];
-  activeTab: TabId;
-  onTabChange: (id: TabId) => void;
-}
-
-const SegmentedTabs: React.FC<SegmentedTabsProps> = ({
-  tabs,
-  activeTab,
-  onTabChange,
-}) => {
-  return (
-    <div className="w-full flex justify-center mb-6" role="tablist" aria-label="Knowledge Hub tabs">
-      <div className="inline-flex items-center rounded-full bg-white shadow-sm ring-1 ring-black/5 px-1 py-1">
-        {tabs.map((tab) => {
-          const isActive = activeTab === tab.id;
-          return (
-            <button
-              key={tab.id}
-              type="button"
-              role="tab"
-              aria-selected={isActive}
-              aria-controls={`kh-panel-${tab.id}`}
-              id={`kh-tab-${tab.id}`}
-              onClick={() => onTabChange(tab.id)}
-              className={`relative mx-0.5 px-4 sm:px-5 py-2 rounded-full text-sm font-medium transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-[#5B8EFF]/40 inline-flex items-center ${
-                isActive
-                  ? "bg-[#DDE8FF] text-[#030F35] shadow-[inset_0_-2px_0_0_#5B8EFF]"
-                  : "text-[#3b4a66] hover:bg-[#F5F8FF]"
-              }`}
-            >
-              <span className="mr-2" aria-hidden="true">
-                {tab.icon}
-              </span>
-              {tab.label}
-            </button>
-          );
-        })}
-      </div>
-    </div>
-  );
-};
-
 // Loading indicator component
 const LoadingIndicator = () => (
   <div className="flex flex-col items-center justify-center py-12">
@@ -162,113 +111,95 @@ const ErrorMessage = ({ message }) => (
 // KnowledgeHub Content Component
 const KnowledgeHubContent = () => {
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState<TabId>("news");
-  const [isTabChanging, setIsTabChanging] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<{ message: string } | null>(null);
   const [mediaCenterNews, setMediaCenterNews] = useState<MediaCenterNewsItem[]>([]);
+  const [mediaCenterJobs, setMediaCenterJobs] = useState<JobItem[]>([]);
   const [loadFallback, setLoadFallback] = useState(false);
 
-  const tabs: TabItem[] = [
-    {
-      id: "news",
-      label: "News",
-      icon: <Newspaper size={16} className="#030F35-600" />,
-    },
-    {
-      id: "podcast",
-      label: "Podcast",
-      icon: <Radio size={16} className="#030F35-600" />,
-    },
-  ];
-
-  // Handle tab change with animation
-  const handleTabChange = (id: TabId) => {
-    if (activeTab === id) return;
-    setIsTabChanging(true);
-    setTimeout(() => {
-      setActiveTab(id);
-      setIsTabChanging(false);
-    }, 300);
-  };
-
-  // Fetch latest media center items once, reuse for both tabs
+  // Fetch latest media center items once, reuse for display
   useEffect(() => {
     let isMounted = true;
 
-    async function loadMediaCenterNews() {
+    async function loadMediaCenterData() {
       setIsLoading(true);
       setError(null);
       try {
-        const allNews = await fetchAllNews();
+        const [allNews, allJobs] = await Promise.all([
+          fetchAllNews(),
+          fetchAllJobs()
+        ]);
         if (!isMounted) return;
         setMediaCenterNews(allNews ?? []);
-        setLoadFallback(!allNews || allNews.length === 0);
+        setMediaCenterJobs(allJobs ?? []);
+        setLoadFallback((!allNews || allNews.length === 0) && (!allJobs || allJobs.length === 0));
       } catch (err) {
         if (!isMounted) return;
-        console.error("Error loading Media Center news:", err);
+        console.error("Error loading Media Center data:", err);
         setError({
           message: "Unable to load latest media items. Showing fallback content.",
         });
         setMediaCenterNews([]);
+        setMediaCenterJobs([]);
         setLoadFallback(true);
       } finally {
         if (isMounted) setIsLoading(false);
       }
     }
 
-    loadMediaCenterNews();
+    loadMediaCenterData();
     return () => {
       isMounted = false;
     };
   }, []);
 
-  // Data helpers (news + podcasts) with graceful fallback
+  // Data helpers (news + blogs + jobs) with graceful fallback
   const getNewsData = () => {
-    const source = mediaCenterNews.length > 0 ? mediaCenterNews : newsItems;
-    return source
+    // Get news and blogs from media center
+    const newsSource = mediaCenterNews.length > 0 ? mediaCenterNews : newsItems;
+    const newsAndBlogs = newsSource
       .filter(
         (item) =>
           item.type === "Announcement" ||
+          item.type === "Thought Leadership" ||
+          item.format === "Blog" ||
+          item.format === "Article" ||
           item.newsType === "Company News" ||
           item.newsType === "Policy Update" ||
           item.newsType === "Upcoming Events"
       )
-      .slice(0, 6)
       .map((item) => ({
         id: item.id,
         title: item.title,
         excerpt: item.excerpt,
         date: item.date,
-        category: item.department || item.newsType || "News",
-        tags: [item.department || item.newsType || "News"],
+        category: item.department || item.newsType || item.category || "News",
+        tags: [item.department || item.newsType || item.category || "News"],
         source:
           item.newsSource || item.byline || item.author || "DQ Media Center",
         imageUrl: item.image || undefined,
       }));
-  };
 
-  const getPodcastData = () => {
-    const source = mediaCenterNews.length > 0 ? mediaCenterNews : newsItems;
-    return source
-      .filter(
-        (item) =>
-          item.format === "Podcast" ||
-          (item.type === "Thought Leadership" &&
-            item.tags?.some((tag) => tag.toLowerCase().includes("podcast")))
-      )
-      .slice(0, 6)
-      .map((item) => ({
-        id: item.id,
-        title: item.title,
-        excerpt: item.excerpt,
-        date: item.date,
-        category: "Podcast",
-        tags: ["Podcast", "Play ▶"],
-        source:
-          item.newsSource || item.byline || item.author || "DQ Media Center",
-        imageUrl: item.image || undefined,
-      }));
+    // Get jobs from media center
+    const jobsData = mediaCenterJobs.map((job) => ({
+      id: job.id,
+      title: job.title,
+      excerpt: job.summary,
+      date: job.postedOn,
+      category: "Job Posting",
+      tags: [job.department, job.roleType],
+      source: "DQ Careers",
+      imageUrl: job.image || undefined,
+    }));
+
+    // Combine and sort by date (newest first), then take top 6
+    return [...newsAndBlogs, ...jobsData]
+      .sort((a, b) => {
+        const dateA = new Date(a.date).getTime();
+        const dateB = new Date(b.date).getTime();
+        return dateB - dateA;
+      })
+      .slice(0, 6);
   };
 
 
@@ -283,124 +214,66 @@ const KnowledgeHubContent = () => {
             Stay current with DQ updates, insights, and events designed to help you work smarter and grow every day.
           </p>
         </FadeInUpOnScroll>
-        {/* Segmented Tabs */}
-        <SegmentedTabs
-          tabs={tabs}
-          activeTab={activeTab}
-          onTabChange={handleTabChange}
-        />
-        {/* Tab Content with Fade Transition */}
-        <div
-          className={`transition-opacity duration-300 ${
-            isTabChanging ? "opacity-0" : "opacity-100"
-          }`}
-        >
-          {/* Loading State */}
-          {isLoading && <LoadingIndicator />}
+        {/* Loading State */}
+        {isLoading && <LoadingIndicator />}
 
-          {/* Error banner (content still shown below if fallback available) */}
-          {error && !isLoading && <ErrorMessage message={error.message} />}
+        {/* Error banner (content still shown below if fallback available) */}
+        {error && !isLoading && <ErrorMessage message={error.message} />}
 
-          {/* News Tab */}
-          {activeTab === "news" && !isLoading && (
-            <div
-              id="kh-panel-news"
-              role="tabpanel"
-              aria-labelledby="kh-tab-news"
-              aria-live="polite"
-            >
-              {loadFallback && (
-                <div className="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
-                  Showing cached newsroom highlights while live data is unavailable.
-                </div>
-              )}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {getNewsData().length === 0 ? (
-                  <div className="col-span-full text-center text-gray-600">
-                    No news items available right now.
-                  </div>
-                ) : (
-                  getNewsData().map((item, index) => (
-                    <div
-                      key={item.id}
-                      className="animate-fade-in-up"
-                      style={{
-                        animationDelay: `${index * 0.1}s`,
-                      }}
-                    >
-                      <NewsCard
-                        content={{
-                          title: item.title,
-                          description: item.excerpt,
-                          imageUrl: item.imageUrl,
-                          tags: item.tags ?? [item.category],
-                          date: item.date,
-                          source: item.source,
-                        }}
-                        onQuickView={() =>
-                          navigate(`/marketplace/news/${item.id}`)
-                        }
-                        onReadMore={() =>
-                          navigate(`/marketplace/news/${item.id}`)
-                        }
-                      />
-                    </div>
-                  ))
-                )}
+        {/* News Content */}
+        {!isLoading && (
+          <section
+            id="kh-panel-news"
+            aria-label="Latest news and updates"
+            aria-live="polite"
+          >
+            {loadFallback && (
+              <div className="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
+                Showing cached newsroom highlights while live data is unavailable.
               </div>
-            </div>
-          )}
-
-          {/* Podcast Tab */}
-          {activeTab === "podcast" && !isLoading && (
-            <div
-              id="kh-panel-podcast"
-              role="tabpanel"
-              aria-labelledby="kh-tab-podcast"
-              aria-live="polite"
-            >
-              {loadFallback && (
-                <div className="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
-                  Showing cached podcasts while live data is unavailable.
+            )}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {getNewsData().length === 0 ? (
+                <div className="col-span-full text-center text-gray-600">
+                  No news items available right now.
                 </div>
-              )}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {getPodcastData().length === 0 ? (
-                  <div className="col-span-full text-center text-gray-600">
-                    No podcasts published yet. Check back soon.
-                  </div>
-                ) : (
-                  getPodcastData().map((item, index) => (
-                    <div
-                      key={item.id}
-                      className="animate-fade-in-up"
-                      style={{
-                        animationDelay: `${index * 0.1}s`,
+              ) : (
+                getNewsData().map((item, index) => (
+                  <div
+                    key={item.id}
+                    className="animate-fade-in-up"
+                    style={{
+                      animationDelay: `${index * 0.1}s`,
+                    }}
+                  >
+                    <NewsCard
+                      content={{
+                        title: item.title,
+                        description: item.excerpt,
+                        imageUrl: item.imageUrl,
+                        tags: item.tags ?? [item.category],
+                        date: item.date,
+                        source: item.source,
                       }}
-                    >
-                      <NewsCard
-                        content={{
-                          title: item.title,
-                          description: item.excerpt,
-                          imageUrl: item.imageUrl,
-                          tags: item.tags ?? [item.category],
-                          date: item.date,
-                          source: item.source,
-                        }}
-                        onQuickView={() =>
-                          navigate(`/marketplace/news/${item.id}`)
-                        }
-                        onReadMore={() =>
-                          navigate(`/marketplace/news/${item.id}`)
-                        }
-                      />
-                    </div>
-                  ))
-                )}
-              </div>
+                      onQuickView={() => {
+                        const route = item.category === "Job Posting" 
+                          ? `/marketplace/jobs/${item.id}`
+                          : `/marketplace/news/${item.id}`;
+                        navigate(route);
+                      }}
+                      onReadMore={() => {
+                        const route = item.category === "Job Posting" 
+                          ? `/marketplace/jobs/${item.id}`
+                          : `/marketplace/news/${item.id}`;
+                        navigate(route);
+                      }}
+                    />
+                  </div>
+                ))
+              )}
             </div>
-          )}
-        </div>
+          </section>
+        )}
       </div>
       {/* Add keyframes for animations */}
       <style>{`

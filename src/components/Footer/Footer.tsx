@@ -1,6 +1,24 @@
 import React, { useState } from 'react';
-import { ExternalLink, ArrowRight, ChevronDown, ChevronUp } from 'lucide-react';
+import { ExternalLink, ArrowRight, ChevronDown, ChevronUp, MessageSquare, Share2, Linkedin, Globe } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+
+// Custom YouTube icon component
+const YoutubeIcon = ({ size = 16, className = '' }: { size?: number; className?: string }) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className={className}
+  >
+    <path d="M22.54 6.42a2.78 2.78 0 0 0-1.94-2C18.88 4 12 4 12 4s-6.88 0-8.6.46a2.78 2.78 0 0 0-1.94 2A29 29 0 0 0 1 11.75a29 29 0 0 0 .46 5.33A2.78 2.78 0 0 0 3.4 19c1.72.46 8.6.46 8.6.46s6.88 0 8.6-.46a2.78 2.78 0 0 0 1.94-2 29 29 0 0 0 .46-5.25 29 29 0 0 0-.46-5.33z" />
+    <polygon points="9.75 15.02 15.5 11.75 9.75 8.48 9.75 15.02" />
+  </svg>
+);
 interface FooterProps {
   'data-id'?: string;
   isLoggedIn?: boolean;
@@ -33,23 +51,28 @@ export function Footer({
   const externalLinks = [
     {
       label: 'Viva Engage',
-      href: 'https://engage.cloud.microsoft/main/feed'
+      href: 'https://engage.cloud.microsoft/main/feed',
+      icon: MessageSquare
     },
     {
       label: 'SharePoint',
-      href: 'https://arqitek.sharepoint.com/_layouts/15/sharepoint.aspx'
+      href: 'https://arqitek.sharepoint.com/_layouts/15/sharepoint.aspx',
+      icon: Share2
     },
     {
       label: 'LinkedIn',
-      href: 'https://www.linkedin.com/company/digitalqatalyst/posts/?feedView=all'
+      href: 'https://www.linkedin.com/company/digitalqatalyst/posts/?feedView=all',
+      icon: Linkedin
     },
     {
       label: 'YouTube',
-      href: 'https://www.youtube.com/@digitalqatalyst'
+      href: 'https://www.youtube.com/@digitalqatalyst',
+      icon: YoutubeIcon
     },
     {
       label: 'DQ Corporate Website',
-      href: 'https://digitalqatalyst.com/'
+      href: 'https://digitalqatalyst.com/',
+      icon: Globe
     }
   ];
   const forYouLinks = [
@@ -138,19 +161,23 @@ export function Footer({
             </AccordionSection>
             <AccordionSection title="Find Us">
               <ul className="space-y-2 pt-1">
-                {externalLinks.map((item) => (
-                  <li key={item.label}>
-                    <a
-                      href={item.href}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-white/90 hover:text-white transition-colors text-sm flex items-center gap-2 py-2 border-b border-white/5 last:border-0"
-                    >
-                      {item.label}
-                      <ExternalLink size={14} className="opacity-70" />
-                    </a>
-                  </li>
-                ))}
+                {externalLinks.map((item) => {
+                  const Icon = item.icon;
+                  return (
+                    <li key={item.label}>
+                      <a
+                        href={item.href}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-white/90 hover:text-white transition-colors text-sm flex items-center gap-2 py-2 border-b border-white/5 last:border-0"
+                      >
+                        <Icon size={16} className="opacity-70" />
+                        {item.label}
+                        <ExternalLink size={14} className="opacity-70 ml-auto" />
+                      </a>
+                    </li>
+                  );
+                })}
               </ul>
             </AccordionSection>
           </div>
@@ -232,19 +259,23 @@ export function Footer({
                 Find Us
               </h3>
               <ul className="space-y-3">
-                {externalLinks.map((item) => (
-                  <li key={item.label}>
-                    <a
-                      href={item.href}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-white/85 hover:text-white text-sm inline-flex items-center gap-2 transition-colors hover:underline underline-offset-2 group"
-                    >
-                      {item.label}
-                      <ExternalLink size={14} className="opacity-60 group-hover:opacity-100 transition-opacity" />
-                    </a>
-                  </li>
-                ))}
+                {externalLinks.map((item) => {
+                  const Icon = item.icon;
+                  return (
+                    <li key={item.label}>
+                      <a
+                        href={item.href}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-white/85 hover:text-white text-sm inline-flex items-center gap-2 transition-colors hover:underline underline-offset-2 group"
+                      >
+                        <Icon size={16} className="opacity-70 group-hover:opacity-100 transition-opacity" />
+                        {item.label}
+                        <ExternalLink size={14} className="opacity-60 group-hover:opacity-100 transition-opacity" />
+                      </a>
+                    </li>
+                  );
+                })}
               </ul>
             </div>
           </div>

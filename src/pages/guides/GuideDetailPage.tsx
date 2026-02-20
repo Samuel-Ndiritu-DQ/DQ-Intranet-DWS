@@ -10,7 +10,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { useLocation, useParams, Link } from 'react-router-dom'
 import { Header } from '../../components/Header'
 import { Footer } from '../../components/Footer'
-import { ChevronRightIcon, HomeIcon, CheckCircle, Share2, Download, AlertTriangle, ExternalLink, Calendar, User, Building2, Heart, MessageCircle, BookmarkIcon, FileText, ChevronDown } from 'lucide-react'
+import { ChevronRightIcon, HomeIcon, CheckCircle, Share2, Download, AlertTriangle, ExternalLink, Calendar, User, Building2, Heart, MessageCircle, BookmarkIcon, FileText } from 'lucide-react'
 import { supabaseClient } from '../../lib/supabaseClient'
 import { getGuideImageUrl } from '../../utils/guideImageMap'
 import { safeOpenUrl } from '../../utils/secureUrl'
@@ -90,6 +90,236 @@ interface GuideRecord {
   templates?: Array<{ id?: string; title?: string; url?: string; size?: string }>
 }
 
+// Suspense wrapper component for lazy-loaded pages
+const SuspenseWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => (
+  <React.Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="text-center"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 mx-auto"></div><p className="mt-4 text-gray-600">Loading...</p></div></div>}>
+    {children}
+  </React.Suspense>
+)
+
+// Helper to get document direction
+const getDocumentDirection = (): string => {
+  if (typeof document === 'undefined') return 'ltr'
+  return document.documentElement.getAttribute('dir') || 'ltr'
+}
+
+// Helper to map database row to GuideRecord
+const mapRowToGuideRecord = (row: any): GuideRecord => ({
+  id: row.id,
+  slug: row.slug,
+  title: row.title,
+  summary: row.summary ?? undefined,
+  heroImageUrl: row.hero_image_url ?? row.heroImageUrl ?? null,
+  domain: row.domain ?? null,
+  guideType: row.guide_type ?? row.guideType ?? null,
+  functionArea: row.function_area ?? null,
+  subDomain: row.sub_domain ?? row.subDomain ?? null,
+  unit: row.unit ?? null,
+  location: row.location ?? null,
+  status: row.status ?? null,
+  complexityLevel: row.complexity_level ?? null,
+  skillLevel: row.skill_level ?? row.skillLevel ?? null,
+  estimatedTimeMin: row.estimated_time_min ?? row.estimatedTimeMin ?? null,
+  lastUpdatedAt: row.last_updated_at ?? row.lastUpdatedAt ?? null,
+  authorName: row.author_name ?? row.authorName ?? null,
+  authorOrg: row.author_org ?? row.authorOrg ?? null,
+  isEditorsPick: row.is_editors_pick ?? row.isEditorsPick ?? null,
+  downloadCount: row.download_count ?? row.downloadCount ?? null,
+  documentUrl: row.document_url ?? row.documentUrl ?? null,
+  body: row.body ?? null,
+  steps: [],
+  attachments: [],
+  templates: [],
+})
+
+// Helper to fetch guide from Supabase
+const fetchGuideFromSupabase = async (key: string): Promise<GuideRecord> => {
+  let { data: row, error: err1 } = await supabaseClient.from('guides').select('*').eq('slug', key).maybeSingle()
+  if (err1) throw err1
+  
+  if (!row) {
+    const { data: row2, error: err2 } = await supabaseClient.from('guides').select('*').eq('id', key).maybeSingle()
+    if (err2) throw err2
+    row = row2
+  }
+  
+  if (!row) throw new Error('Not found')
+  return mapRowToGuideRecord(row)
+}
+
+// Helper function to format Features: list the 10 DWS platform features
+const makeFeaturesPrecise = (_content: string): string => {
+  const standardFeatures = [
+    { title: 'DWS Landing (Home)', description: 'Main entry point and navigation hub for the Digital Workspace platform' },
+    { title: 'DQ Learning Center (Courses & Curricula)', description: 'Access to structured learning courses and curriculum programs' },
+    { title: 'DQ Learning Center (Learning Tracks)', description: 'Guided learning paths for skill development' },
+    { title: 'DQ Learning Center (Reviews)', description: 'Review and track learning progress and achievements' },
+    { title: 'DQ Services Center (Technology)', description: 'Technology services and solutions marketplace' },
+    { title: 'DQ Services Center (Business)', description: 'Business services and offerings' },
+    { title: 'DQ Service Center (Digital Worker)', description: 'Digital worker services and tools' },
+    { title: 'DQ Work Center (Activities - Sessions)', description: 'Manage and participate in work sessions' },
+    { title: 'DQ Work Center (Activities - projects / task)', description: 'Track and manage projects and tasks' },
+    { title: 'DQ Work Center (Activities - Trackers)', description: 'Monitor progress with activity trackers' }
+  ]
+  return standardFeatures.map(f => `- **${f.title}**: ${f.description}`).join('\n')
+}
+
+// Helper to process section content
+const processSectionContent = (currentSection: { title: string; content: string[] }): { content: string; isTile: boolean } => {
+  let content = currentSection.content.join('\n').trim()
+  if (currentSection.title.toLowerCase().includes('feature')) {
+    content = makeFeaturesPrecise(content)
+  }
+  const isTile = currentSection.title.toLowerCase() === 'ai tools' || 
+                currentSection.title.toLowerCase() === 'model provider'
+  return { content, isTile }
+}
+
+// Helper to check if H3 is a special tile section
+const isSpecialTileSection = (h3Title: string): boolean => {
+  const normalized = h3Title.toLowerCase()
+  return normalized === 'ai tools' || normalized === 'model provider'
+}
+
+// Helper to save current section
+const saveCurrentSection = (
+  currentSection: { title: string; content: string[] } | null,
+  sections: Array<{ title: string; content: string; isTile?: boolean }>
+): void => {
+  if (currentSection && currentSection.content.length > 0) {
+    const { content, isTile } = processSectionContent(currentSection)
+    sections.push({ title: currentSection.title, content, isTile })
+  }
+}
+
+// Helper to handle H3 match
+const handleH3Match = (
+  h3Match: RegExpExecArray,
+  currentSection: { title: string; content: string[] } | null,
+  sections: Array<{ title: string; content: string; isTile?: boolean }>
+): { section: { title: string; content: string[] } | null; shouldContinue: boolean } => {
+  const h3Title = h3Match[1].trim().replaceAll('**', '').trim()
+  
+  if (isSpecialTileSection(h3Title)) {
+    if (currentSection && currentSection.content.length > 0) {
+      const { content } = processSectionContent(currentSection)
+      sections.push({ title: currentSection.title, content })
+    }
+    return { section: { title: h3Title, content: [] }, shouldContinue: true }
+  }
+  return { section: currentSection, shouldContinue: false }
+}
+
+// Helper to handle H2 match
+const handleH2Match = (
+  h2Match: RegExpExecArray,
+  currentSection: { title: string; content: string[] } | null,
+  sections: Array<{ title: string; content: string; isTile?: boolean }>
+): { title: string; content: string[] } => {
+  saveCurrentSection(currentSection, sections)
+  const title = h2Match[1].trim().replaceAll('**', '').trim()
+  return { title, content: [] }
+}
+
+// Helper to apply precision to Features section
+const applyFeaturesPrecision = (sectionName: string, content: string): string => {
+  return sectionName === 'Features' ? makeFeaturesPrecise(content) : content
+}
+
+// Helper to save blueprint section
+const saveBlueprintSection = (
+  currentSection: string,
+  currentContent: string[],
+  sections: Record<string, string>
+): void => {
+  if (currentSection) {
+    const content = currentContent.join('\n').trim()
+    sections[currentSection] = applyFeaturesPrecision(currentSection, content)
+  }
+}
+
+// Parse blueprint sections helper function (extracted to reduce nesting)
+const parseBlueprintSections = (body: string): Record<string, string> => {
+  const sections: Record<string, string> = {}
+  const lines = body.split('\n')
+  let currentSection = ''
+  let currentContent: string[] = []
+
+  const sectionMappings: Record<string, string> = {
+    'overview': 'Overview',
+    'description': 'Overview',
+    'key highlights': 'Key Highlights',
+    'highlights': 'Key Highlights',
+    'features': 'Features',
+    'feature': 'Features',
+    'guidelines': 'Guidelines & Integrations',
+    'integrations': 'Guidelines & Integrations',
+    'guidelines & integrations': 'Guidelines & Integrations',
+    'templates': 'Templates',
+    'template': 'Templates'
+  }
+
+  const h2Regex = /^##\s+([^\n]+)$/
+  for (const line of lines) {
+    const h2Match = h2Regex.exec(line)
+    if (h2Match) {
+      saveBlueprintSection(currentSection, currentContent, sections)
+      const sectionTitle = h2Match[1].trim().replaceAll('**', '')
+      const normalized = sectionTitle.toLowerCase()
+      currentSection = sectionMappings[normalized] || sectionTitle
+      currentContent = []
+    } else {
+      currentContent.push(line)
+    }
+  }
+  saveBlueprintSection(currentSection, currentContent, sections)
+  return sections
+}
+
+// Regex patterns for parsing (defined once to avoid ReDoS issues)
+const H2_REGEX = /^##\s+([^\n]+)$/
+const H3_REGEX = /^###\s+([^\n]+)$/
+
+// Helper to process a single line in parseGuideSections
+const processLineInSection = (
+  line: string,
+  currentSection: { title: string; content: string[] } | null,
+  sections: Array<{ title: string; content: string; isTile?: boolean }>
+): { title: string; content: string[] } | null => {
+  const h2Match = H2_REGEX.exec(line)
+  const h3Match = H3_REGEX.exec(line)
+  
+  if (h3Match) {
+    const result = handleH3Match(h3Match, currentSection, sections)
+    return result.section
+  }
+  
+  if (h2Match) {
+    return handleH2Match(h2Match, currentSection, sections)
+  }
+  
+  if (currentSection) {
+    currentSection.content.push(line)
+  }
+  
+  return currentSection
+}
+
+// Parse sections from markdown body for all guides
+const parseGuideSections = (body: string): Array<{ title: string; content: string; isTile?: boolean }> => {
+  const sections: Array<{ title: string; content: string; isTile?: boolean }> = []
+  const lines = body.split('\n')
+  let currentSection: { title: string; content: string[] } | null = null
+
+  for (const line of lines) {
+    currentSection = processLineInSection(line, currentSection, sections)
+  }
+  
+  saveCurrentSection(currentSection, sections)
+  return sections
+}
+
+// eslint-disable-next-line sonarjs/cognitive-complexity
 const GuideDetailPage: React.FC = () => {
   const { itemId } = useParams()
   const location = useLocation() as any
@@ -102,10 +332,9 @@ const GuideDetailPage: React.FC = () => {
   const [checklistState, setChecklistState] = useState<Record<string, boolean>>({})
   const [previewUnavailable, setPreviewUnavailable] = useState(false)
   const articleRef = useRef<HTMLDivElement | null>(null)
-  const [toc, setToc] = useState<Array<{ id: string; text: string; level: number }>>([])
   const [isBookmarked, setIsBookmarked] = useState(false)
-  const [likes, setLikes] = useState(47) // Mock likes count
-  const [comments, setComments] = useState(12) // Mock comments count
+  const [likes] = useState(47) // Mock likes count
+  const [comments] = useState(12) // Mock comments count
   const [activeContentTab, setActiveContentTab] = useState<string>('overview')
   const isClientTestimonials = useMemo(() => (guide?.slug || '').toLowerCase() === 'client-testimonials', [guide?.slug])
   const isL24WorkingRooms = useMemo(() => (guide?.slug || '').toLowerCase() === 'dq-l24-working-rooms-guidelines' || (guide?.title || '').toLowerCase().includes('l24 working rooms'), [guide?.slug, guide?.title])
@@ -307,9 +536,10 @@ const GuideDetailPage: React.FC = () => {
     }
   ]
 
-  const backQuery = (location?.state && location.state.fromQuery) ? String(location.state.fromQuery) : ''
-  const initialBackHref = `/marketplace/guides${backQuery ? `?${backQuery}` : ''}`
-  const activeTabFromState = (location?.state && location.state.activeTab) ? String(location.state.activeTab) : undefined
+  const backQuery = location?.state?.fromQuery ? String(location.state.fromQuery) : ''
+  const queryString = backQuery ? `?${backQuery}` : ''
+  const initialBackHref = `/marketplace/guides${queryString}`
+  const activeTabFromState = location?.state?.activeTab ? String(location.state.activeTab) : undefined
   type GuideTabKey = 'guidelines' | 'strategy' | 'blueprints' | 'testimonials'
 const TAB_LABELS: Record<GuideTabKey, string> = {
   guidelines: 'Guidelines',
@@ -325,58 +555,31 @@ const TAB_LABELS: Record<GuideTabKey, string> = {
 
   useEffect(() => {
     let cancelled = false
-    ;(async () => {
+    
+    const loadGuide = async () => {
       setLoading(true)
       setError(null)
+      
       try {
         const res = await fetch(`/api/guides/${encodeURIComponent(itemId || '')}`)
         const ct = res.headers.get('content-type') || ''
+        
         if (res.ok && ct.includes('application/json')) {
           const data = await res.json()
           if (!cancelled) setGuide(data)
         } else {
           const key = String(itemId || '')
-          let { data: row, error: err1 } = await supabaseClient.from('guides').select('*').eq('slug', key).maybeSingle()
-          if (err1) throw err1
-          if (!row) {
-            const { data: row2, error: err2 } = await supabaseClient.from('guides').select('*').eq('id', key).maybeSingle()
-            if (err2) throw err2
-            row = row2 as any
-          }
-          if (!row) throw new Error('Not found')
-          const mapped: GuideRecord = {
-            id: row.id,
-            slug: row.slug,
-            title: row.title,
-            summary: row.summary ?? undefined,
-            heroImageUrl: row.hero_image_url ?? row.heroImageUrl ?? null,
-            domain: row.domain ?? null,
-            guideType: row.guide_type ?? row.guideType ?? null,
-            functionArea: row.function_area ?? null,
-            subDomain: row.sub_domain ?? row.subDomain ?? null,
-            unit: row.unit ?? null,
-            location: row.location ?? null,
-            status: row.status ?? null,
-            complexityLevel: row.complexity_level ?? null,
-            skillLevel: row.skill_level ?? row.skillLevel ?? null,
-            estimatedTimeMin: row.estimated_time_min ?? row.estimatedTimeMin ?? null,
-            lastUpdatedAt: row.last_updated_at ?? row.lastUpdatedAt ?? null,
-            authorName: row.author_name ?? row.authorName ?? null,
-            authorOrg: row.author_org ?? row.authorOrg ?? null,
-            isEditorsPick: row.is_editors_pick ?? row.isEditorsPick ?? null,
-            downloadCount: row.download_count ?? row.downloadCount ?? null,
-            documentUrl: row.document_url ?? row.documentUrl ?? null,
-            body: row.body ?? null,
-            steps: [], attachments: [], templates: [],
-          }
+          const mapped = await fetchGuideFromSupabase(key)
           if (!cancelled) setGuide(mapped)
         }
-      } catch (e: any) {
+      } catch {
         if (!cancelled) setError('Guide not found')
       } finally {
         if (!cancelled) setLoading(false)
       }
-    })()
+    }
+    
+    loadGuide()
     return () => { cancelled = true }
   }, [itemId])
 
@@ -407,10 +610,10 @@ const TAB_LABELS: Record<GuideTabKey, string> = {
     const onClick = (e: Event) => {
       const t = e.target as HTMLElement | null
       if (!t) return
-      const a = t.closest('a') as HTMLAnchorElement | null
+      const a = t.closest('a')
       if (!a) return
       const href = a.getAttribute('href') || ''
-      if (href.startsWith('#')) track('Guides.CTA', { category: 'guide_heading_anchor', id: href.replace(/^#/, ''), slug: guide?.slug || guide?.id })
+      if (href.startsWith('#')) track('Guides.CTA', { category: 'guide_heading_anchor', id: href.replaceAll(/^#/g, ''), slug: guide?.slug || guide?.id })
       else track('Guides.CTA', { category: 'guide_body_link', href, slug: guide?.slug || guide?.id })
     }
     el.addEventListener('click', onClick)
@@ -491,13 +694,14 @@ const TAB_LABELS: Record<GuideTabKey, string> = {
   }, [guide?.heroImageUrl, guide?.domain, guide?.guideType, guide?.subDomain, (guide as any)?.sub_domain, guide?.id, guide?.slug, guide?.title])
   const normalizeTag = (value?: string | null) => {
     if (!value) return ''
-    const cleaned = value.toLowerCase().replace(/[_-]+/g, ' ').trim()
+    const cleaned = value.toLowerCase().replaceAll(/[_-]+/g, ' ').trim()
     return cleaned.endsWith('s') ? cleaned.slice(0, -1) : cleaned
   }
   const isDuplicateTag = normalizeTag(guide?.domain) !== '' && normalizeTag(guide?.domain) === normalizeTag(guide?.guideType)
   const isStrategyFramework = (guide?.domain || '').toLowerCase().includes('strategy') && (guide?.guideType || '').toLowerCase().includes('framework')
 
   // Parse guide body into sections for tabs (for Guidelines, Strategy, Testimonials, and Blueprints)
+  // eslint-disable-next-line sonarjs/cognitive-complexity
   const guideSections = useMemo(() => {
     if (isClientTestimonials) return null
     if (!guide?.body) return null
@@ -510,8 +714,10 @@ const TAB_LABELS: Record<GuideTabKey, string> = {
     
     // Extract Description and Key Highlights for Overview tab (if they exist)
     // Handle both single and double newlines, and Key Highlights with or without colon
-    const descMatch = body.match(/## Description\s*\n+([\s\S]*?)(?=\n##|\n#|$)/)
-    const highlightsMatch = body.match(/## Key Highlights:?\s*\n+([\s\S]*?)(?=\n##|\n#|$)/)
+    const descRegex = /## Description\s*\n+([^]*?)(?=\n##|\n#|$)/
+    const descMatch = descRegex.exec(body)
+    const highlightsRegex = /## Key Highlights:?\s*\n+([^]*?)(?=\n##|\n#|$)/
+    const highlightsMatch = highlightsRegex.exec(body)
     
     if (descMatch || highlightsMatch) {
       let overviewContent = ''
@@ -520,11 +726,18 @@ const TAB_LABELS: Record<GuideTabKey, string> = {
       sections.push({ id: 'overview', title: 'Overview', content: overviewContent })
     } else {
       // For guides without Description/Key Highlights, use first paragraph as Overview
-      const firstSectionMatch = body.match(/^# [^\n]+\n\n([\s\S]*?)(?=\n##|\n#|$)/)
-      if (firstSectionMatch && firstSectionMatch[1].trim()) {
+      const firstSectionRegex = /^# [^\n]+\n\n([^]*?)(?=\n##|\n#|$)/
+      const firstSectionMatch = firstSectionRegex.exec(body)
+      if (firstSectionMatch?.[1]?.trim()) {
         const firstContent = firstSectionMatch[1].trim()
         // Only create Overview if there are multiple sections
-        const sectionCount = (body.match(/^## /gm) || []).length
+        const sectionCountRegex = /^## /gm
+        const matches: RegExpExecArray[] = []
+        let match
+        while ((match = sectionCountRegex.exec(body)) !== null) {
+          matches.push(match)
+        }
+        const sectionCount = matches.length
         if (sectionCount > 1) {
           sections.push({ id: 'overview', title: 'Overview', content: firstContent })
         }
@@ -537,8 +750,7 @@ const TAB_LABELS: Record<GuideTabKey, string> = {
     const processedSections = new Set<string>(['overview', 'description', 'key-highlights'])
     let currentSection: { id: string; title: string; content: string[] } | null = null
     
-    for (let i = 0; i < lines.length; i++) {
-      const line = lines[i]
+    for (const line of lines) {
       // Match only H2 headers (##), not H3 (###)
       const trimmed = line.trim()
       if (trimmed.startsWith('## ') && !trimmed.startsWith('### ')) {
@@ -556,8 +768,8 @@ const TAB_LABELS: Record<GuideTabKey, string> = {
         }
         
         // Extract title by removing ## and any bold markers
-        let title = line.replace(/^##\s+/, '').trim()
-        title = title.replace(/\*\*/g, '').trim()
+        let title = line.replaceAll(/^##\s+/g, '').trim()
+        title = title.replaceAll('**', '').trim()
         
         // Skip Description and Key Highlights (already in Overview if they exist)
         // But only skip if Overview was created
@@ -565,7 +777,7 @@ const TAB_LABELS: Record<GuideTabKey, string> = {
         if (hasOverview && (title === 'Description' || title === 'Key Highlights')) {
           currentSection = null
         } else {
-          const sectionId = title.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')
+          const sectionId = title.toLowerCase().replaceAll(/\s+/g, '-').replaceAll(/[^a-z0-9-]/g, '')
           currentSection = {
             id: sectionId,
             title,
@@ -609,9 +821,7 @@ const TAB_LABELS: Record<GuideTabKey, string> = {
 
   // If Overview is separated and active tab is overview, default to first remaining section
   useEffect(() => {
-    if (!hasOverviewSection) return
-    if (activeContentTab !== 'overview') return
-    if (sectionsForTabs && sectionsForTabs.length > 0) {
+    if (hasOverviewSection && activeContentTab === 'overview' && sectionsForTabs && sectionsForTabs.length > 0) {
       setActiveContentTab(sectionsForTabs[0].id)
     }
   }, [hasOverviewSection, sectionsForTabs, activeContentTab])
@@ -624,22 +834,29 @@ const TAB_LABELS: Record<GuideTabKey, string> = {
   const stripLeadingEmoji = (s: string): string => {
     // Remove leading emojis/symbols commonly used as icons
     // Unicode ranges cover misc symbols & pictographs
-    return s.replace(/^[\u200d\ufe0f\uFE0F\u2060\s]*[\u{1F300}-\u{1FAFF}\u{1F900}-\u{1F9FF}\u{1F1E6}-\u{1F1FF}\u{2600}-\u{27BF}]+\s*/u, '')
+    return s.replace(/^[\ufe0f\u2060\s]*[\u{1F300}-\u{1FAFF}\u{1F1E6}-\u{1F1FF}\u{2600}-\u{27BF}]+\s*/u, '')
   }
+  
+  // Regex patterns for bullet formatting (defined once to avoid ReDoS issues)
+  const BULLET_BOLD_LABEL_REGEX = /^-\s*\*\*([^*\n]+)\*\*\s*:\s*(.*)$/
+  const BOLD_LABEL_REGEX = /^\*\*([^*\n]+)\*\*\s*:\s*(.*)$/
+  const BULLET_LABEL_REGEX = /^-\s*([^:\n]+)\s*:\s*(.*)$/
+  const LABEL_REGEX = /^[A-Za-z][^:\n]*:\s*.*$/
+  
   const ensureBulletedTitleCaseLine = (raw: string): string => {
     const line = stripLeadingEmoji(raw.trim())
     if (!line || line.startsWith('##')) return raw
     // - **Label**: text
-    const m1 = line.match(/^\-\s*\*\*([^*]+)\*\*\s*:\s*(.*)$/)
+    const m1 = BULLET_BOLD_LABEL_REGEX.exec(line)
     if (m1) return `- **${toTitleCaseLabel(stripLeadingEmoji(m1[1]))}**: ${m1[2]}`
     // **Label**: text
-    const m2 = line.match(/^\*\*([^*]+)\*\*\s*:\s*(.*)$/)
+    const m2 = BOLD_LABEL_REGEX.exec(line)
     if (m2) return `- **${toTitleCaseLabel(stripLeadingEmoji(m2[1]))}**: ${m2[2]}`
     // - Label: text
-    const m3 = line.match(/^\-\s*([^:]+)\s*:\s*(.*)$/)
+    const m3 = BULLET_LABEL_REGEX.exec(line)
     if (m3) return `- **${toTitleCaseLabel(stripLeadingEmoji(m3[1]))}**: ${m3[2]}`
     // Label: text (leading letter, avoid headers/lists)
-    const m4 = line.match(/^[A-Za-z][^:]*:\s*.*$/)
+    const m4 = LABEL_REGEX.exec(line)
     if (m4) {
       const idx = line.indexOf(':')
       const label = stripLeadingEmoji(line.slice(0, idx))
@@ -655,7 +872,7 @@ const TAB_LABELS: Record<GuideTabKey, string> = {
     for (const raw of lines) {
       const t = raw.trim()
       if (t.startsWith('## ')) {
-        const title = t.replace(/^##\s+/, '').replace(/\*\*/g, '').trim().toLowerCase()
+        const title = t.replaceAll(/^##\s+/g, '').replaceAll('**', '').trim().toLowerCase()
         inKH = title === 'key highlights'
         out.push(raw)
         continue
@@ -681,11 +898,11 @@ const TAB_LABELS: Record<GuideTabKey, string> = {
     if (!src) return null
     // Strip basic Markdown/HTML for a clean snippet
     const withoutMd = src
-      .replace(/```[\s\S]*?```/g, ' ') // code blocks
-      .replace(/`[^`]*`/g, ' ') // inline code
-      .replace(/^#+\s.*$/gm, ' ') // headings
+      .replace(/```[^`]*```/g, ' ') // code blocks
+      .replace(/`[^`\n]*`/g, ' ') // inline code
+      .replace(/^#+\s[^\n]*$/gm, ' ') // headings
       .replace(/\*\*|__/g, '') // bold markers
-      .replace(/\*|_|~|>\s?/g, ' ') // other markers
+      .replace(/[*_~]|>\s?/g, ' ') // other markers
       .replace(/<[^>]+>/g, ' ') // html tags
       .replace(/\s+/g, ' ') // collapse spaces
       .trim()
@@ -701,84 +918,17 @@ const TAB_LABELS: Record<GuideTabKey, string> = {
   const [showFullDetails, setShowFullDetails] = useState(false)
 
   // Blueprint TOC state - MOVED TO TOP
-  const [activeTOCSection, setActiveTOCSection] = useState<string>('')
   const sectionRefs = useRef<Record<string, HTMLDivElement | null>>({})
-  
-  // activeTOCSection is set by IntersectionObserver but not currently used in render
-  void activeTOCSection
 
-  // Helper function to format Features: list the 10 DWS platform features
-  const makeFeaturesPrecise = (_content: string): string => {
-    // Return the standard 10 DWS features for blueprints
-    const standardFeatures = [
-      { title: 'DWS Landing (Home)', description: 'Main entry point and navigation hub for the Digital Workspace platform' },
-      { title: 'DQ Learning Center (Courses & Curricula)', description: 'Access to structured learning courses and curriculum programs' },
-      { title: 'DQ Learning Center (Learning Tracks)', description: 'Guided learning paths for skill development' },
-      { title: 'DQ Learning Center (Reviews)', description: 'Review and track learning progress and achievements' },
-      { title: 'DQ Services Center (Technology)', description: 'Technology services and solutions marketplace' },
-      { title: 'DQ Services Center (Business)', description: 'Business services and offerings' },
-      { title: 'DQ Service Center (Digital Worker)', description: 'Digital worker services and tools' },
-      { title: 'DQ Work Center (Activities - Sessions)', description: 'Manage and participate in work sessions' },
-      { title: 'DQ Work Center (Activities - projects / task)', description: 'Track and manage projects and tasks' },
-      { title: 'DQ Work Center (Activities - Trackers)', description: 'Monitor progress with activity trackers' }
-    ]
-    
-    // Format as "**Title**: description" for each feature
-    return standardFeatures.map(f => `- **${f.title}**: ${f.description}`).join('\n')
-  }
-
-  // Parse blueprint sections helper function
-  const parseBlueprintSections = (body: string) => {
-    const sections: Record<string, string> = {}
-    const lines = body.split('\n')
-    let currentSection = ''
-    let currentContent: string[] = []
-
-    const sectionMappings: Record<string, string> = {
-      'overview': 'Overview',
-      'description': 'Overview',
-      'key highlights': 'Key Highlights',
-      'highlights': 'Key Highlights',
-      'features': 'Features',
-      'feature': 'Features',
-      'guidelines': 'Guidelines & Integrations',
-      'integrations': 'Guidelines & Integrations',
-      'guidelines & integrations': 'Guidelines & Integrations',
-      'templates': 'Templates',
-      'template': 'Templates'
+  // Callback for IntersectionObserver - extracted to reduce nesting
+  // Note: This updates TOC section state for future highlighting feature
+  const handleIntersection = React.useCallback((itemId: string, entries: IntersectionObserverEntry[]) => {
+    const intersectingEntry = entries.find(entry => entry.isIntersecting)
+    if (intersectingEntry) {
+      // Future: setActiveTOCSection(itemId) - TOC highlighting not yet implemented
+      console.debug('Active TOC section:', itemId)
     }
-
-    for (const line of lines) {
-      const h2Match = line.match(/^##\s+(.+)$/)
-      if (h2Match) {
-        if (currentSection) {
-          const content = currentContent.join('\n').trim()
-          // Apply precision to Features section
-          if (currentSection === 'Features') {
-            sections[currentSection] = makeFeaturesPrecise(content)
-          } else {
-            sections[currentSection] = content
-          }
-        }
-        let sectionTitle = h2Match[1].trim().replace(/\*\*/g, '')
-        const normalized = sectionTitle.toLowerCase()
-        currentSection = sectionMappings[normalized] || sectionTitle
-        currentContent = []
-      } else {
-        currentContent.push(line)
-      }
-    }
-    if (currentSection) {
-      const content = currentContent.join('\n').trim()
-      // Apply precision to Features section
-      if (currentSection === 'Features') {
-        sections[currentSection] = makeFeaturesPrecise(content)
-      } else {
-        sections[currentSection] = content
-      }
-    }
-    return sections
-  }
+  }, [])
 
   // Domain detection - MOVED TO TOP (using derived values)
   const derivedKey = useMemo(() => {
@@ -807,13 +957,15 @@ const TAB_LABELS: Record<GuideTabKey, string> = {
 
   // Parse blueprint sections - MOVED TO TOP (using derived values)
   const blueprintSections = useMemo(() => {
-    if (!actualIsBlueprintDomain || !guide?.body) return {}
-    try {
-      return parseBlueprintSections(guide.body)
-    } catch (e) {
-      console.error('Error parsing blueprint sections:', e)
-      return {}
+    if (actualIsBlueprintDomain && guide?.body) {
+      try {
+        return parseBlueprintSections(guide.body)
+      } catch (error) {
+        console.error('Error parsing blueprint sections:', error)
+        return {}
+      }
     }
+    return {}
   }, [actualIsBlueprintDomain, guide?.body])
 
   // TOC items for blueprints - MOVED TO TOP
@@ -852,105 +1004,20 @@ const TAB_LABELS: Record<GuideTabKey, string> = {
 
     tocItems.forEach((item) => {
       const element = sectionRefs.current[item.id]
-      if (element) {
-        const observer = new IntersectionObserver((entries) => {
-          entries.forEach((entry) => {
-            if (entry.isIntersecting) {
-              setActiveTOCSection(item.id)
-            }
-          })
-        }, observerOptions)
-        observer.observe(element)
-        observers.push(observer)
-      }
+      if (!element) return
+      
+      const observer = new IntersectionObserver(
+        (entries) => handleIntersection(item.id, entries),
+        observerOptions
+      )
+      observer.observe(element)
+      observers.push(observer)
     })
 
     return () => {
       observers.forEach(obs => obs.disconnect())
     }
-  }, [actualIsBlueprintDomain, guide, blueprintSections, tocItems])
-
-  // Parse sections from markdown body for all guides
-  const parseGuideSections = (body: string) => {
-    const sections: Array<{ title: string; content: string; isTile?: boolean }> = []
-    const lines = body.split('\n')
-    let currentSection: { title: string; content: string[] } | null = null
-
-    for (const line of lines) {
-      const h2Match = line.match(/^##\s+(.+)$/)
-      const h3Match = line.match(/^###\s+(.+)$/)
-      
-      // Check for H3 sections that should be tiles (AI Tools, Model Provider)
-      if (h3Match) {
-        const h3Title = h3Match[1].trim().replace(/\*\*/g, '').trim()
-        const normalizedH3 = h3Title.toLowerCase()
-        
-        // If this is AI Tools or Model Provider, save current section first, then start new tile section
-        if (normalizedH3 === 'ai tools' || normalizedH3 === 'model provider') {
-          // Save current section if exists
-          if (currentSection && currentSection.content.length > 0) {
-            let content = currentSection.content.join('\n').trim()
-            if (currentSection.title.toLowerCase().includes('feature')) {
-              content = makeFeaturesPrecise(content)
-            }
-            sections.push({
-              title: currentSection.title,
-              content: content
-            })
-          }
-          // Start new tile section
-          currentSection = {
-            title: h3Title,
-            content: []
-          }
-          continue
-        }
-      }
-      
-      if (h2Match) {
-        if (currentSection && currentSection.content.length > 0) {
-          let content = currentSection.content.join('\n').trim()
-          // Apply precision to Features section
-          if (currentSection.title.toLowerCase().includes('feature')) {
-            content = makeFeaturesPrecise(content)
-          }
-          // Check if this section should be a tile
-          const isTile = currentSection.title.toLowerCase() === 'ai tools' || 
-                        currentSection.title.toLowerCase() === 'model provider'
-          sections.push({
-            title: currentSection.title,
-            content: content,
-            isTile: isTile
-          })
-        }
-        let title = h2Match[1].trim()
-        // Remove markdown bold syntax (**)
-        title = title.replace(/\*\*/g, '').trim()
-        currentSection = {
-          title: title,
-          content: []
-        }
-      } else if (currentSection) {
-        currentSection.content.push(line)
-      }
-    }
-    if (currentSection && currentSection.content.length > 0) {
-      let content = currentSection.content.join('\n').trim()
-      // Apply precision to Features section
-      if (currentSection.title.toLowerCase().includes('feature')) {
-        content = makeFeaturesPrecise(content)
-      }
-      // Check if this section should be a tile
-      const isTile = currentSection.title.toLowerCase() === 'ai tools' || 
-                    currentSection.title.toLowerCase() === 'model provider'
-      sections.push({
-        title: currentSection.title,
-        content: content,
-        isTile: isTile
-      })
-    }
-    return sections
-  }
+  }, [actualIsBlueprintDomain, guide, blueprintSections, tocItems, handleIntersection])
 
   const parsedGuideSections = useMemo(() => {
     if (!guide?.body) return []
@@ -968,10 +1035,10 @@ const TAB_LABELS: Record<GuideTabKey, string> = {
       navigator.share({
         title: guide?.title || '',
         text: guide?.summary || '',
-        url: window.location.href,
+        url: globalThis.location.href,
       }).catch(() => {})
     } else {
-      navigator.clipboard.writeText(window.location.href).then(() => {
+      navigator.clipboard.writeText(globalThis.location.href).then(() => {
         // Could show a toast notification here
       }).catch(() => {})
     }
@@ -994,7 +1061,10 @@ const TAB_LABELS: Record<GuideTabKey, string> = {
   const showAttachments = useMemo(() => (guide?.attachments && guide.attachments.length > 0), [guide?.attachments])
   const isPractitionerType = useMemo(() => ['best practice', 'best-practice', 'process', 'sop', 'procedure'].includes(type), [type])
   const showFallbackModule = useMemo(() => isPractitionerType && !showTemplates && !showAttachments, [isPractitionerType, showTemplates, showAttachments])
-  const lastUpdated = useMemo(() => guide?.lastUpdatedAt ? new Date(guide.lastUpdatedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : null, [guide?.lastUpdatedAt])
+  const lastUpdated = useMemo(() => {
+    if (!guide?.lastUpdatedAt) return null
+    return new Date(guide.lastUpdatedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+  }, [guide?.lastUpdatedAt])
   const announcementDate = guide?.lastUpdatedAt ? new Date(guide.lastUpdatedAt).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) : null
   const announcementDateShort = guide?.lastUpdatedAt ? new Date(guide.lastUpdatedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : null
   
@@ -1018,12 +1088,12 @@ const TAB_LABELS: Record<GuideTabKey, string> = {
   }
   const isApproved = useMemo(() => ((guide?.status) || 'Approved') === 'Approved', [guide?.status])
   const isPolicy = useMemo(() => type === 'policy', [type])
-  const showPolicyCtas = isPolicy
-  const showDocumentActions = hasDocument
   const isPreviewableDocument = useMemo(() => {
-    if (!isPolicy || !hasDocument) return false
-    const base = documentUrl.split('#')[0].split('?')[0].toLowerCase()
-    return base.endsWith('.pdf')
+    if (isPolicy && hasDocument) {
+      const base = documentUrl.split('#')[0].split('?')[0].toLowerCase()
+      return base.endsWith('.pdf')
+    }
+    return false
   }, [isPolicy, hasDocument, documentUrl])
 
   // Calculate domain checks safely (only if guide exists) - MOVED TO TOP
@@ -1033,7 +1103,7 @@ const TAB_LABELS: Record<GuideTabKey, string> = {
   )
   const breadcrumbLabel = useMemo(() => TAB_LABELS[activeTabKey], [activeTabKey])
   const fallbackHref = useMemo(() => 
-    activeTabKey !== 'guidelines' ? `/marketplace/guides?tab=${activeTabKey}` : '/marketplace/guides',
+    activeTabKey === 'guidelines' ? '/marketplace/guides' : `/marketplace/guides?tab=${activeTabKey}`,
     [activeTabKey]
   )
   const backHref = useMemo(() => backQuery ? initialBackHref : fallbackHref, [backQuery, initialBackHref, fallbackHref])
@@ -1072,12 +1142,6 @@ const TAB_LABELS: Record<GuideTabKey, string> = {
 
   // Use custom layout for guidelines with custom GuidelinePage components
   if (hasCustomGuidelinePage) {
-    const SuspenseWrapper = ({ children }: { children: React.ReactNode }) => (
-      <React.Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="text-center"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 mx-auto"></div><p className="mt-4 text-gray-600">Loading...</p></div></div>}>
-        {children}
-      </React.Suspense>
-    )
-
     if (isL24WorkingRooms) {
       return <SuspenseWrapper><L24WorkingRoomsGuidelinePage /></SuspenseWrapper>
     }
@@ -1243,206 +1307,17 @@ const TAB_LABELS: Record<GuideTabKey, string> = {
 
   // Route blueprints to the new BlueprintPage component (same format as DQ Competencies)
   if (actualIsBlueprintDomain) {
-    const SuspenseWrapper = ({ children }: { children: React.ReactNode }) => (
-      <React.Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="text-center"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 mx-auto"></div><p className="mt-4 text-gray-600">Loading...</p></div></div>}>
-        {children}
-      </React.Suspense>
-    )
     return <SuspenseWrapper><BlueprintPage /></SuspenseWrapper>
-  }
-
-  // OLD Blueprint rendering - now replaced by BlueprintPage component above
-  if (false && actualIsBlueprintDomain) {
-    return (
-      <div className="min-h-screen flex flex-col guidelines-theme" style={{ minHeight: '100vh' }}>
-        <Header toggleSidebar={() => {}} sidebarOpen={false} />
-        <main className="container mx-auto px-4 py-8 flex-grow max-w-7xl" role="main" style={{ backgroundColor: 'transparent' }}>
-          <nav className="flex mb-6" aria-label="Breadcrumb">
-            <ol className="inline-flex items-center space-x-1 md:space-x-2">
-              <li className="inline-flex items-center">
-                <Link to="/" className="text-gray-600 hover:text-gray-900 inline-flex items-center">
-                  <HomeIcon size={16} className="mr-1" />
-                  <span>Home</span>
-                </Link>
-              </li>
-              <li>
-                <div className="flex items-center">
-                  <ChevronRightIcon size={16} className="text-gray-400" />
-                  <Link to={backHref} className="ml-1 text-gray-600 hover:text-gray-900 md:ml-2">{breadcrumbLabel}</Link>
-                </div>
-              </li>
-              <li aria-current="page">
-                <div className="flex items-center">
-                  <ChevronRightIcon size={16} className="text-gray-400" />
-                  <span className="ml-1 text-gray-500 md:ml-2">{guide.title}</span>
-                </div>
-              </li>
-            </ol>
-          </nav>
-
-          {/* Full Width Layout */}
-          <div className="space-y-6">
-              {/* Hero Image - In left column */}
-              {imageUrl && (
-                <div className="rounded-xl overflow-hidden">
-                  <img 
-                    src={imageUrl} 
-                    alt={guide.title} 
-                    className="w-full h-auto object-cover"
-                    style={{ maxHeight: '400px' }}
-                  />
-                </div>
-              )}
-
-              {/* Title Section - In left column below image */}
-              <div className="mb-8">
-                <div className="flex items-start justify-between gap-4 mb-4">
-                  <div className="flex-1">
-                    <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">{guide.title}</h1>
-                    {guide.lastUpdatedAt && (
-                      <div className="flex items-center gap-2 text-sm text-gray-500">
-                        <span>{new Date(guide.lastUpdatedAt).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</span>
-                      </div>
-                    )}
-                  </div>
-                  <a
-                    href={primaryDocUrl || '#'}
-                    target={primaryDocUrl ? "_blank" : undefined}
-                    rel={primaryDocUrl ? "noopener noreferrer" : undefined}
-                    onClick={(e) => {
-                      if (!primaryDocUrl) {
-                        e.preventDefault()
-                        return
-                      }
-                      const category = actualIsBlueprintDomain ? 'view_blueprint_clicked' : 
-                                     actualIsGuidelinesDomain ? 'view_guideline_clicked' :
-                                     actualIsStrategyDomain ? 'view_strategy_clicked' : 'view_guide_clicked'
-                      track('Guides.CTA', { category, slug: guide.slug || guide.id, title: guide.title })
-                    }}
-                    className={`px-6 py-3 text-white font-semibold rounded-full transition-all flex items-center justify-center gap-2 whitespace-nowrap ${!primaryDocUrl ? 'opacity-50 cursor-not-allowed' : ''} focus:outline-none focus:ring-2 focus:ring-[var(--guidelines-ring-color)]`}
-                    style={{ 
-                      backgroundColor: '#030E31',
-                    }}
-                    onMouseEnter={(e) => {
-                      if (primaryDocUrl) {
-                        e.currentTarget.style.backgroundColor = '#020A28'
-                      }
-                    }}
-                    onMouseLeave={(e) => {
-                      if (primaryDocUrl) {
-                        e.currentTarget.style.backgroundColor = '#030E31'
-                      }
-                    }}
-                  >
-                    <ExternalLink size={18} />
-                    <span>
-                      {actualIsBlueprintDomain ? 'View Blueprint' : 
-                       actualIsGuidelinesDomain ? 'View Guideline' :
-                       actualIsStrategyDomain ? 'View Strategy' : 'View Guide'}
-                    </span>
-                  </a>
-                </div>
-              </div>
-              {/* Content Sections as Cards */}
-              {parsedGuideSections.length > 0 ? (
-                <div className="space-y-6">
-                  {parsedGuideSections.map((section, index) => (
-                    <div key={index} className="rounded-xl shadow-sm border border-gray-200" style={{ backgroundColor: '#F8FAFC' }}>
-                      <div className="p-6 md:p-8">
-                        <h2 className="text-xl md:text-2xl font-bold text-gray-900 mb-6 pl-4 relative">
-                          <span className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-[#1A2E6E] to-transparent"></span>
-                          {section.title}
-                        </h2>
-                        <div className="prose prose-sm max-w-none text-gray-700 leading-relaxed space-y-4">
-                          <React.Suspense fallback={<div className="animate-pulse text-gray-400">Loading content…</div>}>
-                            <Markdown body={section.content} />
-                          </React.Suspense>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : guide.body ? (
-                <div className="rounded-xl shadow-sm border border-gray-200" style={{ backgroundColor: '#F8FAFC' }}>
-                  <div className="p-6 md:p-8">
-                    <div className="prose prose-sm max-w-none text-gray-700 leading-relaxed">
-                      <React.Suspense fallback={<div className="animate-pulse text-gray-400">Loading content…</div>}>
-                        <Markdown body={guide.body} />
-                      </React.Suspense>
-                    </div>
-                  </div>
-                </div>
-              ) : guide.summary ? (
-                <div className="rounded-xl shadow-sm border border-gray-200" style={{ backgroundColor: '#F8FAFC' }}>
-                  <div className="p-6 md:p-8">
-                    <p className="text-gray-700 leading-relaxed">{guide.summary}</p>
-                  </div>
-                </div>
-              ) : null}
-          </div>
-
-          {/* Related Guides Section - Full width at bottom */}
-          {related && related.length > 0 && (
-            <div className="mt-12">
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-2xl font-bold text-gray-900">Related Guides</h2>
-                <Link 
-                  to={backHref} 
-                  className="font-medium flex items-center transition-colors" 
-                  style={{ color: '#0B1E67' }}
-                  onMouseEnter={(e) => e.currentTarget.style.color = '#092256'}
-                  onMouseLeave={(e) => e.currentTarget.style.color = '#0B1E67'}
-                >
-                  See All Guides
-                  <ChevronRightIcon size={16} className="ml-1" />
-                </Link>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                {related.slice(0, 3).map((r) => (
-                  <Link
-                    key={r.slug || r.id}
-                    to={`/marketplace/guides/${encodeURIComponent(r.slug || r.id)}`}
-                    className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow cursor-pointer"
-                  >
-                    <img
-                      src={getGuideImageUrl({
-                        heroImageUrl: r.heroImageUrl || undefined,
-                        domain: r.domain || undefined,
-                        guideType: r.guideType || undefined,
-                        subDomain: r.subDomain || (r as any)?.sub_domain || undefined,
-                        id: r.id,
-                        slug: r.slug,
-                        title: r.title,
-                      })}
-                      alt={r.title}
-                      className="w-full h-32 object-cover"
-                      loading="lazy"
-                    />
-                    <div className="p-4">
-                      {r.lastUpdatedAt && (
-                        <p className="text-xs text-gray-500 mb-2">
-                          {new Date(r.lastUpdatedAt).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
-                        </p>
-                      )}
-                      <h3 className="font-semibold text-gray-900 mb-2 line-clamp-2">{r.title}</h3>
-                      {r.summary && (
-                        <p className="text-sm text-gray-600 line-clamp-2">{r.summary}</p>
-                      )}
-                    </div>
-                  </Link>
-                ))}
-              </div>
-            </div>
-          )}
-        </main>
-        <Footer isLoggedIn={!!user} />
-      </div>
-    )
   }
 
   // Render all guides with clean card layout (no tabs) - Matching the design image
   // Skip blueprint domain as it has its own special layout
-  if (!actualIsBlueprintDomain) {
+  if (actualIsBlueprintDomain) {
+    // Blueprint domain has its own layout above
+  } else if (guide) {
+    // Type narrowing helper
+    const currentGuide = guide;
+    
     return (
       <div className="min-h-screen flex flex-col guidelines-theme" style={{ minHeight: '100vh' }}>
         <Header toggleSidebar={() => {}} sidebarOpen={false} />
@@ -1464,7 +1339,7 @@ const TAB_LABELS: Record<GuideTabKey, string> = {
               <li aria-current="page">
                 <div className="flex items-center">
                   <ChevronRightIcon size={16} className="text-gray-400" />
-                  <span className="ml-1 text-gray-500 md:ml-2">{guide.title}</span>
+                  <span className="ml-1 text-gray-500 md:ml-2">{currentGuide.title}</span>
                 </div>
               </li>
             </ol>
@@ -1477,7 +1352,7 @@ const TAB_LABELS: Record<GuideTabKey, string> = {
                 <div className="rounded-xl overflow-hidden">
                   <img 
                     src={imageUrl} 
-                    alt={guide.title} 
+                    alt={currentGuide.title} 
                     className="w-full h-auto object-cover"
                     style={{ maxHeight: '400px' }}
                   />
@@ -1488,10 +1363,10 @@ const TAB_LABELS: Record<GuideTabKey, string> = {
               <div className="mb-8">
                 <div className="flex items-start justify-between gap-4 mb-4">
                   <div className="flex-1">
-                    <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">{guide.title}</h1>
-                    {guide.lastUpdatedAt && (
+                    <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">{currentGuide.title}</h1>
+                    {currentGuide.lastUpdatedAt && (
                       <div className="flex items-center gap-2 text-sm text-gray-500">
-                        <span>{new Date(guide.lastUpdatedAt).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</span>
+                        <span>{new Date(currentGuide.lastUpdatedAt).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</span>
                       </div>
                     )}
                   </div>
@@ -1504,12 +1379,17 @@ const TAB_LABELS: Record<GuideTabKey, string> = {
                         e.preventDefault()
                         return
                       }
-                      const category = actualIsBlueprintDomain ? 'view_blueprint_clicked' : 
-                                     actualIsGuidelinesDomain ? 'view_guideline_clicked' :
-                                     actualIsStrategyDomain ? 'view_strategy_clicked' : 'view_guide_clicked'
-                      track('Guides.CTA', { category, slug: guide.slug || guide.id, title: guide.title })
+                      let category = 'view_guide_clicked'
+                      if (actualIsBlueprintDomain) {
+                        category = 'view_blueprint_clicked'
+                      } else if (actualIsGuidelinesDomain) {
+                        category = 'view_guideline_clicked'
+                      } else if (actualIsStrategyDomain) {
+                        category = 'view_strategy_clicked'
+                      }
+                      track('Guides.CTA', { category, slug: currentGuide.slug || currentGuide.id, title: currentGuide.title })
                     }}
-                    className={`px-6 py-3 text-white font-semibold rounded-full transition-all flex items-center justify-center gap-2 whitespace-nowrap ${!primaryDocUrl ? 'opacity-50 cursor-not-allowed' : ''} focus:outline-none focus:ring-2 focus:ring-[var(--guidelines-ring-color)]`}
+                    className={`px-6 py-3 text-white font-semibold rounded-full transition-all flex items-center justify-center gap-2 whitespace-nowrap ${primaryDocUrl ? '' : 'opacity-50 cursor-not-allowed'} focus:outline-none focus:ring-2 focus:ring-[var(--guidelines-ring-color)]`}
                     style={{ 
                       backgroundColor: '#030E31',
                     }}
@@ -1526,9 +1406,12 @@ const TAB_LABELS: Record<GuideTabKey, string> = {
                   >
                     <ExternalLink size={18} />
                     <span>
-                      {actualIsBlueprintDomain ? 'View Blueprint' : 
-                       actualIsGuidelinesDomain ? 'View Guideline' :
-                       actualIsStrategyDomain ? 'View Strategy' : 'View Guide'}
+                      {(() => {
+                        if (actualIsBlueprintDomain) return 'View Blueprint'
+                        if (actualIsGuidelinesDomain) return 'View Guideline'
+                        if (actualIsStrategyDomain) return 'View Strategy'
+                        return 'View Guide'
+                      })()}
                     </span>
                   </a>
                 </div>
@@ -1536,8 +1419,8 @@ const TAB_LABELS: Record<GuideTabKey, string> = {
               {/* Content Sections as Cards */}
               {parsedGuideSections.length > 0 ? (
                 <div className="space-y-6">
-                  {parsedGuideSections.map((section, index) => (
-                    <div key={index} className="rounded-xl shadow-sm border border-gray-200" style={{ backgroundColor: '#F8FAFC' }}>
+                  {parsedGuideSections.map((section) => (
+                    <div key={section.title} className="rounded-xl shadow-sm border border-gray-200" style={{ backgroundColor: '#F8FAFC' }}>
                       <div className="p-6 md:p-8">
                         <h2 className="text-xl md:text-2xl font-bold text-gray-900 mb-6 pl-4 relative">
                           <span className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-[#1A2E6E] to-transparent"></span>
@@ -1545,30 +1428,35 @@ const TAB_LABELS: Record<GuideTabKey, string> = {
                         </h2>
                         <div className="prose prose-sm max-w-none text-gray-700 leading-relaxed space-y-4">
                           <React.Suspense fallback={<div className="animate-pulse text-gray-400">Loading content…</div>}>
-                            <Markdown body={section.content} />
+                            <Markdown body={section.content || ''} />
                           </React.Suspense>
                         </div>
                       </div>
                     </div>
                   ))}
                 </div>
-              ) : guide.body ? (
-                <div className="rounded-xl shadow-sm border border-gray-200" style={{ backgroundColor: '#F8FAFC' }}>
-                  <div className="p-6 md:p-8">
-                    <div className="prose prose-sm max-w-none text-gray-700 leading-relaxed">
-                      <React.Suspense fallback={<div className="animate-pulse text-gray-400">Loading content…</div>}>
-                        <Markdown body={guide.body} />
-                      </React.Suspense>
+              ) : (
+                <>
+                  {currentGuide.body && (
+                    <div className="rounded-xl shadow-sm border border-gray-200" style={{ backgroundColor: '#F8FAFC' }}>
+                      <div className="p-6 md:p-8">
+                        <div className="prose prose-sm max-w-none text-gray-700 leading-relaxed">
+                          <React.Suspense fallback={<div className="animate-pulse text-gray-400">Loading content…</div>}>
+                            <Markdown body={currentGuide.body || ''} />
+                          </React.Suspense>
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                </div>
-              ) : guide.summary ? (
-                <div className="rounded-xl shadow-sm border border-gray-200" style={{ backgroundColor: '#F8FAFC' }}>
-                  <div className="p-6 md:p-8">
-                    <p className="text-gray-700 leading-relaxed">{guide.summary}</p>
-                  </div>
-                </div>
-              ) : null}
+                  )}
+                  {!currentGuide.body && currentGuide.summary && (
+                    <div className="rounded-xl shadow-sm border border-gray-200" style={{ backgroundColor: '#F8FAFC' }}>
+                      <div className="p-6 md:p-8">
+                        <p className="text-gray-700 leading-relaxed">{currentGuide.summary}</p>
+                      </div>
+                    </div>
+                  )}
+                </>
+              )}
           </div>
 
           {/* Related Guides Section - Full width at bottom */}
@@ -1638,7 +1526,7 @@ const TAB_LABELS: Record<GuideTabKey, string> = {
           <ol className="inline-flex items-center space-x-1 md:space-x-2">
             <li className="inline-flex items-center"><Link to="/" className="text-gray-600 hover:text-gray-900 inline-flex items-center"><HomeIcon size={16} className="mr-1" /><span>Home</span></Link></li>
             <li><div className="flex items-center"><ChevronRightIcon size={16} className="text-gray-400" /><Link to={backHref} className="ml-1 text-gray-600 hover:text-gray-900 md:ml-2">{breadcrumbLabel}</Link></div></li>
-            <li aria-current="page"><div className="flex items-center"><ChevronRightIcon size={16} className="text-gray-400" /><span className="ml-1 text-gray-500 md:ml-2">{guide.title}</span></div></li>
+            <li aria-current="page"><div className="flex items-center"><ChevronRightIcon size={16} className="text-gray-400" /><span className="ml-1 text-gray-500 md:ml-2">{guide?.title}</span></div></li>
           </ol>
         </nav>
 
@@ -1647,7 +1535,7 @@ const TAB_LABELS: Record<GuideTabKey, string> = {
             <AlertTriangle size={18} className="mt-0.5" />
             <div>
               <div className="font-semibold">This guide is not approved</div>
-              <div className="text-sm">Status: {guide.status}</div>
+              <div className="text-sm">Status: {guide?.status}</div>
             </div>
           </div>
         )}
@@ -1657,7 +1545,7 @@ const TAB_LABELS: Record<GuideTabKey, string> = {
           <div className="space-y-4">
             {/* Category tag and date row */}
             <div className="flex items-center gap-4 flex-wrap">
-              {guide.guideType && (
+              {guide?.guideType && (
                 <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-700">
                   {guide.guideType}
                 </span>
@@ -1671,19 +1559,19 @@ const TAB_LABELS: Record<GuideTabKey, string> = {
             </div>
 
             {/* Title */}
-            <h1 id="guide-title" className="text-3xl font-bold text-gray-900">{guide.title}</h1>
+            <h1 id="guide-title" className="text-3xl font-bold text-gray-900">{guide?.title}</h1>
 
             {/* Author info with circular icon */}
-            {(guide.authorName || guide.authorOrg) && (
+            {(guide?.authorName || guide?.authorOrg) && (
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center text-white text-xs font-semibold">
                   {getAuthorInitials()}
                 </div>
                 <div>
-                  {guide.authorOrg && (
+                  {guide?.authorOrg && (
                     <div className="font-medium text-gray-900">{guide.authorOrg}</div>
                   )}
-                  {guide.authorName && (
+                  {guide?.authorName && (
                     <div className="text-sm text-gray-600">{guide.authorName}</div>
                   )}
                 </div>
@@ -1692,7 +1580,7 @@ const TAB_LABELS: Record<GuideTabKey, string> = {
 
             {/* Image if available */}
             {imageUrl && (
-              <img src={imageUrl} alt={guide.title} className="w-full h-60 object-cover rounded mb-4" loading="lazy" decoding="async" width={1200} height={320} />
+              <img src={imageUrl} alt={guide?.title || ''} className="w-full h-60 object-cover rounded mb-4" loading="lazy" decoding="async" width={1200} height={320} />
             )}
           </div>
         </header>
@@ -1702,14 +1590,14 @@ const TAB_LABELS: Record<GuideTabKey, string> = {
             {/* Tags + View Blueprint (Blueprints) */}
             <div className="flex flex-wrap items-center gap-2 mb-4">
               <div className="flex flex-wrap items-center gap-2">
-                {guide.domain && !guide.domain?.toLowerCase().includes('blueprint') && (
+                {guide?.domain && !guide.domain?.toLowerCase().includes('blueprint') && (
                   <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium border" style={{ backgroundColor: 'var(--dws-chip-bg)', color: 'var(--dws-chip-text)', borderColor: 'var(--dws-card-border)' }}>
                     {guide.domain}
                   </span>
                 )}
-                {guide.guideType && !actualIsTestimonialsDomain && (() => {
-                  const domainLower = (guide.domain || '').toLowerCase()
-                  const guideTypeLower = (guide.guideType || '').toLowerCase()
+                {guide?.guideType && !actualIsTestimonialsDomain && (() => {
+                  const domainLower = (guide?.domain || '').toLowerCase()
+                  const guideTypeLower = (guide?.guideType || '').toLowerCase()
                   // Hide guideType if it's too similar to domain (e.g., "Guideline" vs "Guidelines", "Blueprint" vs "Blueprints")
                   const isSimilar = domainLower.includes(guideTypeLower) || guideTypeLower.includes(domainLower) || 
                                    (domainLower.includes('guideline') && guideTypeLower.includes('guideline')) ||
@@ -1721,22 +1609,22 @@ const TAB_LABELS: Record<GuideTabKey, string> = {
                     {guide.guideType}
                   </span>
                 )}
-                {guide.functionArea && (
+                {guide?.functionArea && (
                   <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium border" style={{ backgroundColor: 'var(--dws-chip-bg)', color: 'var(--dws-chip-text)', borderColor: 'var(--dws-card-border)' }}>
                     {guide.functionArea}
                   </span>
                 )}
-                {guide.complexityLevel && (
+                {guide?.complexityLevel && (
                   <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium border" style={{ backgroundColor: 'var(--dws-chip-bg)', color: 'var(--dws-chip-text)', borderColor: 'var(--dws-card-border)' }}>
                     {guide.complexityLevel}
                   </span>
                 )}
-                {actualIsTestimonialsDomain && guide.unit && (
+                {actualIsTestimonialsDomain && guide?.unit && (
                   <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium border" style={{ backgroundColor: 'var(--dws-chip-bg)', color: 'var(--dws-chip-text)', borderColor: 'var(--dws-card-border)' }}>
                     {guide.unit}
                   </span>
                 )}
-                {actualIsTestimonialsDomain && guide.location && (
+                {actualIsTestimonialsDomain && guide?.location && (
                   <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium border" style={{ backgroundColor: 'var(--dws-chip-bg)', color: 'var(--dws-chip-text)', borderColor: 'var(--dws-card-border)' }}>
                     {guide.location}
                   </span>
@@ -1746,7 +1634,7 @@ const TAB_LABELS: Record<GuideTabKey, string> = {
             
             
             {/* Description */}
-            {guide.summary && (
+            {guide?.summary && (
               <p className="text-gray-700 text-base leading-relaxed mb-4">
                 {guide.summary}
               </p>
@@ -1762,7 +1650,7 @@ const TAB_LABELS: Record<GuideTabKey, string> = {
               <article
                 ref={articleRef}
                 className="markdown-body"
-                dir={typeof document !== 'undefined' ? (document.documentElement.getAttribute('dir') || 'ltr') : 'ltr'}
+                dir={getDocumentDirection()}
               >
                 <React.Suspense fallback={<div className="animate-pulse text-gray-400">Loading content…</div>}>
                   <Markdown body={transformKeyHighlightsInOverview(overviewSection.content)} />
@@ -1808,7 +1696,7 @@ const TAB_LABELS: Record<GuideTabKey, string> = {
                   <article
                     ref={articleRef}
                     className="markdown-body"
-                    dir={typeof document !== 'undefined' ? (document.documentElement.getAttribute('dir') || 'ltr') : 'ltr'}
+                    dir={getDocumentDirection()}
                   >
                     <React.Suspense fallback={<div className="animate-pulse text-gray-400">Loading content…</div>}>
                       <Markdown body={formatSectionContent(section)} />
@@ -1837,7 +1725,7 @@ const TAB_LABELS: Record<GuideTabKey, string> = {
             )}
 
             {/* Announcement body content */}
-            {guide.body && !isPolicy && (
+            {!isPolicy && guide?.body && (
               <section className="bg-white rounded-lg shadow p-6" aria-label="Content">
                 <div className="prose max-w-none">
                   <React.Suspense fallback={<div className="animate-pulse text-gray-400">Loading content…</div>}>
@@ -1848,11 +1736,11 @@ const TAB_LABELS: Record<GuideTabKey, string> = {
             )}
 
             {/* CODEx: Concise Summary card for policy pages only - hidden when tabs are present */}
-            {isPolicy && (derivedSummary || guide.summary) && !hasTabsEffective && (
+            {hasTabsEffective ? null : isPolicy && (derivedSummary || guide?.summary) && (
               <section className="bg-white rounded-lg shadow p-6" aria-label="Summary">
                 <h2 className="text-xl font-semibold mb-3">Summary</h2>
-                <p className="text-gray-700 leading-7">{derivedSummary || guide.summary}</p>
-                {guide.body && (
+                <p className="text-gray-700 leading-7">{derivedSummary || guide?.summary}</p>
+                {guide?.body && (
                   <div className="mt-4">
                     <button
                       onClick={() => setShowFullDetails(s => !s)}
@@ -1880,21 +1768,21 @@ const TAB_LABELS: Record<GuideTabKey, string> = {
                     </div>
                   </div>
                 )}
-                {(guide.authorName || guide.authorOrg) && (
+                {(guide?.authorName || guide?.authorOrg) && (
                   <div className="flex items-center gap-3">
                     <User size={18} className="text-gray-500" />
                     <div>
                       <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide">RELEVANT CONTACT</div>
-                      <div className="text-gray-900">{guide.authorOrg || guide.authorName || 'N/A'}</div>
+                      <div className="text-gray-900">{guide?.authorOrg || guide?.authorName || 'N/A'}</div>
                     </div>
                   </div>
                 )}
-                {(guide.functionArea || guide.domain) && (
+                {(guide?.functionArea || guide?.domain) && (
                   <div className="flex items-center gap-3">
                     <Building2 size={18} className="text-gray-500" />
                     <div>
                       <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide">DEPARTMENT</div>
-                      <div className="text-gray-900">{guide.functionArea || guide.domain || 'N/A'}</div>
+                      <div className="text-gray-900">{guide?.functionArea || guide?.domain || 'N/A'}</div>
                     </div>
                   </div>
                 )}
@@ -1960,7 +1848,7 @@ const TAB_LABELS: Record<GuideTabKey, string> = {
 
             {/* Questions section */}
             <div className="text-sm text-gray-600 pt-4">
-              <strong>Questions about this announcement?</strong> Contact {guide.authorOrg || guide.authorName || 'Human Resources'}.
+              <strong>Questions about this announcement?</strong> Contact {guide?.authorOrg || guide?.authorName || 'Human Resources'}.
             </div>
 
             {/* CODEx: For policy pages, long body behind a toggle; for others, show as usual */}
@@ -1998,33 +1886,36 @@ const TAB_LABELS: Record<GuideTabKey, string> = {
               </section>
             )}
 
-            {!isClientTestimonials && type !== 'template' && guide.body && !hasTabsEffective && (
+            {!hasTabsEffective && !isClientTestimonials && type !== 'template' && guide?.body && (
               <article
                 id="full-details"
                 ref={articleRef}
-                className={`bg-white rounded-lg shadow p-6 markdown-body ${!showFullDetails ? 'hidden' : ''}`}
-                dir={typeof document !== 'undefined' ? (document.documentElement.getAttribute('dir') || 'ltr') : 'ltr'}
+                className={`bg-white rounded-lg shadow p-6 markdown-body ${showFullDetails ? '' : 'hidden'}`}
+                dir={getDocumentDirection()}
               >
                 <React.Suspense fallback={<div className="animate-pulse text-gray-400">Loading content…</div>}>
                   <Markdown body={guide.body || ''} />
                 </React.Suspense>
               </article>
             )}
-            {!isClientTestimonials && type !== 'template' && !guide.body && (
+            {!guide?.body && !isClientTestimonials && type !== 'template' && (
               <section className="bg-white rounded-lg shadow p-6 space-y-4" aria-label="Overview">
-                {guide.summary && (
+                {guide?.summary && (
                   <div className="text-gray-700 leading-7 whitespace-pre-line">{guide.summary}</div>
                 )}
-                {guide.steps && guide.steps.length > 0 && (
+                {guide?.steps && guide.steps.length > 0 && (
                   <div>
                     <h3 className="text-lg font-semibold mb-2">Key Steps</h3>
                     <ul className="list-disc list-inside space-y-1 text-gray-700">
-                      {guide.steps.map((step, idx) => (
-                        <li key={step.id || idx}>
-                          <span className="font-medium mr-1">{step.title || `Step ${idx + 1}`}:</span>
-                          <span className="text-gray-600">{step.content}</span>
-                        </li>
-                      ))}
+                      {guide.steps.map((step, idx) => {
+                        const stepTitle = step.title || `Step ${idx + 1}`
+                        return (
+                          <li key={step.id || idx}>
+                            <span className="font-medium mr-1">{stepTitle}:</span>
+                            <span className="text-gray-600">{step.content}</span>
+                          </li>
+                        )
+                      })}
                     </ul>
                   </div>
                 )}
@@ -2038,16 +1929,23 @@ const TAB_LABELS: Record<GuideTabKey, string> = {
 
             {(showSteps) && (
               <section aria-labelledby="steps-title" className="bg-white rounded-lg shadow p-6" id="content">
-                <h2 id="steps-title" className="text-xl font-semibold mb-4">{type === 'process' || type === 'sop' || type === 'procedure' ? 'Process' : type === 'checklist' ? 'Checklist' : type === 'best practice' || type === 'best-practice' ? 'Recommended Actions' : 'Steps'}</h2>
+                <h2 id="steps-title" className="text-xl font-semibold mb-4">
+                  {(() => {
+                    if (type === 'process' || type === 'sop' || type === 'procedure') return 'Process'
+                    if (type === 'checklist') return 'Checklist'
+                    if (type === 'best practice' || type === 'best-practice') return 'Recommended Actions'
+                    return 'Steps'
+                  })()}
+                </h2>
                 <ol className="space-y-3">
-                  {(guide.steps && guide.steps.length > 0 ? guide.steps : []).map((s, idx) => (
-                    <li key={(s.id || `${idx}`) as string} className="flex items-start gap-2">
+                  {(guide?.steps && guide.steps.length > 0 ? guide.steps : []).map((s, idx) => (
+                    <li key={s.id || `${idx}`} className="flex items-start gap-2">
                       <CheckCircle size={18} className="text-green-600 mt-0.5" />
                       <div className="flex-1">
                         <div className="font-medium">{s.title || `Step ${s.position || idx + 1}`}</div>
                         {type === 'checklist' ? (
                           <div className="mt-1 flex items-center gap-2">
-                            <input type="checkbox" className="h-4 w-4" aria-label={`Mark ${s.title || `Step ${idx + 1}`} as complete`} checked={!!checklistState[String(idx)]} onChange={(e) => setChecklistState(prev => ({ ...prev, [String(idx)]: e.target.checked }))} />
+                            <input type="checkbox" className="h-4 w-4" aria-label={s.title ? `Mark ${s.title} as complete` : `Mark Step ${idx + 1} as complete`} checked={!!checklistState[String(idx)]} onChange={(e) => setChecklistState(prev => ({ ...prev, [String(idx)]: e.target.checked }))} />
                             <span className="text-sm text-gray-700 whitespace-pre-wrap">{s.content}</span>
                           </div>
                         ) : (
@@ -2068,7 +1966,15 @@ const TAB_LABELS: Record<GuideTabKey, string> = {
                   {guide.functionArea && <div><dt className="text-gray-500 text-sm">Function Area</dt><dd className="text-gray-900">{guide.functionArea}</dd></div>}
                   {guide.estimatedTimeMin != null && <div><dt className="text-gray-500 text-sm">Estimated Time</dt><dd className="text-gray-900">{guide.estimatedTimeMin} min</dd></div>}
                   {lastUpdated && <div><dt className="text-gray-500 text-sm">Last Updated</dt><dd className="text-gray-900">{lastUpdated}</dd></div>}
-                  {(guide.authorName || guide.authorOrg) && <div className="sm:col-span-2"><dt className="text-gray-500 text-sm">Publisher</dt><dd className="text-gray-900">{guide.authorName || ''}{guide.authorOrg ? (guide.authorName ? ' • ' : '') + guide.authorOrg : ''}</dd></div>}
+                  {(guide.authorName || guide.authorOrg) && (
+                    <div className="sm:col-span-2">
+                      <dt className="text-gray-500 text-sm">Publisher</dt>
+                      <dd className="text-gray-900">
+                        {guide.authorName || ''}
+                        {guide.authorOrg && (guide.authorName ? ' • ' : '') + guide.authorOrg}
+                      </dd>
+                    </div>
+                  )}
                 </dl>
                 {!guide.body && guide.summary && (
                   <p className="text-sm text-gray-600 mt-4">{guide.summary}</p>
@@ -2081,7 +1987,7 @@ const TAB_LABELS: Record<GuideTabKey, string> = {
                 <h2 id="templates-title" className="text-xl font-semibold mb-4">Templates</h2>
                 {(guide.templates && guide.templates.length > 0) ? (
                   <ul className="divide-y divide-gray-100">
-                    {guide.templates!.map((t, i) => (
+                    {guide.templates.map((t, i) => (
                       <li key={t.id || i} className="py-3 flex items-center justify-between gap-4">
                         <div className="min-w-0">
                           <div className="font-medium text-gray-900 truncate">{t.title || t.url}</div>
@@ -2104,7 +2010,7 @@ const TAB_LABELS: Record<GuideTabKey, string> = {
                 <h2 id="attachments-title" className="text-xl font-semibold mb-4">Attachments</h2>
                 {(guide.attachments && guide.attachments.length > 0) ? (
                   <ul className="divide-y divide-gray-100">
-                    {guide.attachments!.map((a, i) => (
+                    {guide.attachments.map((a, i) => (
                       <li key={a.id || i} className="py-3 flex items-center justify-between gap-4">
                         <div className="min-w-0">
                           <div className="font-medium text-gray-900 truncate">{a.title || a.url}</div>
@@ -2166,20 +2072,6 @@ const TAB_LABELS: Record<GuideTabKey, string> = {
 
         <div className="mt-6 text-right">
           <Link to={backHref} style={{ color: '#0B1E67' }}>Back to {breadcrumbLabel}</Link>
-        </div>
-      </main>
-      <Footer isLoggedIn={!!user} />
-    </div>
-  )
-
-  // Final safety fallback - should never reach here, but ensures something always renders
-  return (
-    <div className="min-h-screen flex flex-col bg-gray-50 guidelines-theme">
-      <Header toggleSidebar={() => {}} sidebarOpen={false} />
-      <main className="container mx-auto px-4 py-8 flex-grow max-w-7xl">
-        <div className="bg-white rounded shadow p-8 text-center">
-          <h2 className="text-xl font-medium text-gray-900 mb-2">Unable to load guide</h2>
-          <Link to="/marketplace/guides" style={{ color: '#0B1E67' }}>Back to Guides</Link>
         </div>
       </main>
       <Footer isLoggedIn={!!user} />

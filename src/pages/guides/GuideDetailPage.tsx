@@ -259,7 +259,7 @@ const parseBlueprintSections = (body: string): Record<string, string> => {
     'template': 'Templates'
   }
 
-  const h2Regex = /^##\s+([^\n]+)$/
+  const h2Regex = /^##\s+([^\n#]+)$/
   for (const line of lines) {
     const h2Match = h2Regex.exec(line)
     if (h2Match) {
@@ -277,8 +277,8 @@ const parseBlueprintSections = (body: string): Record<string, string> => {
 }
 
 // Regex patterns for parsing (defined once to avoid ReDoS issues)
-const H2_REGEX = /^##\s+([^\n]+)$/
-const H3_REGEX = /^###\s+([^\n]+)$/
+const H2_REGEX = /^##\s+([^\n#]+)$/
+const H3_REGEX = /^###\s+([^\n#]+)$/
 
 // Helper to process a single line in parseGuideSections
 const processLineInSection = (
@@ -714,9 +714,9 @@ const TAB_LABELS: Record<GuideTabKey, string> = {
     
     // Extract Description and Key Highlights for Overview tab (if they exist)
     // Handle both single and double newlines, and Key Highlights with or without colon
-    const descRegex = /## Description\s*\n+([^]*?)(?=\n##|\n#|$)/
+    const descRegex = /## Description\s*\n+([^#]*?)(?=\n##|\n#|$)/
     const descMatch = descRegex.exec(body)
-    const highlightsRegex = /## Key Highlights:?\s*\n+([^]*?)(?=\n##|\n#|$)/
+    const highlightsRegex = /## Key Highlights:?\s*\n+([^#]*?)(?=\n##|\n#|$)/
     const highlightsMatch = highlightsRegex.exec(body)
     
     if (descMatch || highlightsMatch) {
@@ -726,7 +726,7 @@ const TAB_LABELS: Record<GuideTabKey, string> = {
       sections.push({ id: 'overview', title: 'Overview', content: overviewContent })
     } else {
       // For guides without Description/Key Highlights, use first paragraph as Overview
-      const firstSectionRegex = /^# [^\n]+\n\n([^]*?)(?=\n##|\n#|$)/
+      const firstSectionRegex = /^# [^\n#]+\n\n([^#]*?)(?=\n##|\n#|$)/
       const firstSectionMatch = firstSectionRegex.exec(body)
       if (firstSectionMatch?.[1]?.trim()) {
         const firstContent = firstSectionMatch[1].trim()
@@ -838,10 +838,10 @@ const TAB_LABELS: Record<GuideTabKey, string> = {
   }
   
   // Regex patterns for bullet formatting (defined once to avoid ReDoS issues)
-  const BULLET_BOLD_LABEL_REGEX = /^-\s*\*\*([^*\n]+)\*\*\s*:\s*(.*)$/
-  const BOLD_LABEL_REGEX = /^\*\*([^*\n]+)\*\*\s*:\s*(.*)$/
-  const BULLET_LABEL_REGEX = /^-\s*([^:\n]+)\s*:\s*(.*)$/
-  const LABEL_REGEX = /^[A-Za-z][^:\n]*:\s*.*$/
+  const BULLET_BOLD_LABEL_REGEX = /^-\s*\*\*([^*\n#]+)\*\*\s*:\s*(.*)$/
+  const BOLD_LABEL_REGEX = /^\*\*([^*\n#]+)\*\*\s*:\s*(.*)$/
+  const BULLET_LABEL_REGEX = /^-\s*([^:\n#]+)\s*:\s*(.*)$/
+  const LABEL_REGEX = /^[A-Za-z][^:\n#]*:\s*[^\n]*$/
   
   const ensureBulletedTitleCaseLine = (raw: string): string => {
     const line = stripLeadingEmoji(raw.trim())

@@ -360,7 +360,7 @@ const CategoryHeader: React.FC<CategoryHeaderProps> = ({
           <span className="font-semibold mr-1">
             <AnimatedCounter value={count} />+
           </span>
-          cards in this hub
+          services available in this category
         </div>
       )}
     </div>
@@ -390,9 +390,9 @@ export const HomePage: React.FC = () => {
   };
 
   const sectionStyles: Record<string, SectionStyle> = {
-    'Learning Center & DQ Knowledge Hub': navySectionStyle,
-    'Media & Communications Hub': navySectionStyle,
-    'Service Requests & Enablement Hub': navySectionStyle,
+    'Learning Center & DQ Knowledge': navySectionStyle,
+    'Media & Communications': navySectionStyle,
+    'Service Requests & Enablement': navySectionStyle,
     'Organization, Roles & People': navySectionStyle,
   };
 
@@ -419,7 +419,7 @@ export const HomePage: React.FC = () => {
             <FadeInUpOnScroll>
               <CategoryHeader
                 icon={<BookOpen size={24} />}
-                title="Learning Center & DQ Knowledge Hub"
+                title="Learning Center & DQ Knowledge"
                 count={homeSections.learningHub.length}
               />
             </FadeInUpOnScroll>
@@ -431,7 +431,7 @@ export const HomePage: React.FC = () => {
                   <FadeInUpOnScroll key={service.id} delay={index * 0.1}>
                     <ServiceCard
                       service={service}
-                      sectionStyle={sectionStyles['Learning Center & DQ Knowledge Hub']}
+                      sectionStyle={sectionStyles['Learning Center & DQ Knowledge']}
                       onClick={() => handleServiceClick(service.path)}
                       isComingSoon={!service.isActive}
                     />
@@ -446,7 +446,7 @@ export const HomePage: React.FC = () => {
             <FadeInUpOnScroll>
               <CategoryHeader
                 icon={<Newspaper size={24} />}
-                title="Media & Communications Hub"
+                title="Media & Communications"
                 count={homeSections.mediaHub.length}
               />
             </FadeInUpOnScroll>
@@ -458,7 +458,7 @@ export const HomePage: React.FC = () => {
                   <FadeInUpOnScroll key={service.id} delay={index * 0.1}>
                     <ServiceCard
                       service={service}
-                      sectionStyle={sectionStyles['Media & Communications Hub']}
+                      sectionStyle={sectionStyles['Media & Communications']}
                       onClick={() => handleServiceClick(service.path)}
                       isComingSoon={!service.isActive}
                     />
@@ -473,7 +473,7 @@ export const HomePage: React.FC = () => {
             <FadeInUpOnScroll>
               <CategoryHeader
                 icon={<Briefcase size={24} />}
-                title="Service Requests & Enablement Hub"
+                title="Service Requests & Enablement"
                 count={homeSections.serviceEnablementHub.length}
               />
             </FadeInUpOnScroll>
@@ -485,7 +485,7 @@ export const HomePage: React.FC = () => {
                   <FadeInUpOnScroll key={service.id} delay={index * 0.1}>
                     <ServiceCard
                       service={service}
-                      sectionStyle={sectionStyles['Service Requests & Enablement Hub']}
+                      sectionStyle={sectionStyles['Service Requests & Enablement']}
                       onClick={() => handleServiceClick(service.path)}
                       isComingSoon={!service.isActive}
                     />

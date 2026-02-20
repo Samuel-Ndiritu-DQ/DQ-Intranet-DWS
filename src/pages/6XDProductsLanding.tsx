@@ -658,8 +658,8 @@ export default function SixXDProductsLanding() {
                           <motion.div
                             key={product.name}
                             className={`flex h-full flex-col rounded-xl border border-border bg-card p-6 ${
-                              isUnlockedClass ? '' : 'opacity-80 border-dashed border-red-200 bg-muted/50'
-                            } ${isUnlockedClass ? '' : 'cursor-not-allowed'}`}
+                              isUnlockedClass ? '' : 'opacity-80'
+                            }`}
                             initial={{ opacity: 0, y: 20 }}
                             whileInView={{ opacity: 1, y: 0 }}
                             transition={{ duration: 0.5, delay: index * 0.1 }}
@@ -678,7 +678,7 @@ export default function SixXDProductsLanding() {
                                     variant="secondary"
                                     className="text-[11px] border border-red-200 bg-red-50 text-red-700"
                                   >
-                                    Coming Soon
+                                    Locked
                                   </Badge>
                                 )}
                               </div>

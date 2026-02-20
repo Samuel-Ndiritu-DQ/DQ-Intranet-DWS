@@ -3,7 +3,7 @@ import { ExternalLink, ChevronDown, ChevronUp, MessageSquare, Share2, Linkedin, 
 import { useNavigate } from 'react-router-dom';
 
 // Custom YouTube icon component
-const YoutubeIcon = ({ size = 16, className = '' }: { size?: number; className?: string }) => (
+const YoutubeIcon = ({ size = 16, className = '' }: Readonly<{ size?: number; className?: string }>) => (
   <svg
     width={size}
     height={size}
@@ -30,7 +30,7 @@ interface AccordionSectionProps {
 function AccordionSection({
   title,
   children
-}: AccordionSectionProps) {
+}: Readonly<AccordionSectionProps>) {
   const [isOpen, setIsOpen] = useState(false);
   return <div className="border-b border-dq-navy/20 last:border-b-0">
       <button onClick={() => setIsOpen(!isOpen)} className="w-full py-4 flex items-center justify-between text-left" aria-expanded={isOpen}>
@@ -43,7 +43,7 @@ function AccordionSection({
 export function Footer({
   'data-id': dataId,
   isLoggedIn = false
-}: FooterProps) {
+}: Readonly<FooterProps>) {
   const navigate = useNavigate();
   const handleFooterLinkClick = (title: string) => {
     navigate(`/workspace-link-coming-soon?title=${encodeURIComponent(title)}`);

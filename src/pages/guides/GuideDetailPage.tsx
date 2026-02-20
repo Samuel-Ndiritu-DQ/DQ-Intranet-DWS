@@ -819,43 +819,70 @@ const TAB_LABELS: Record<GuideTabKey, string> = {
   // These will be recalculated after guide loads - using actualIsBlueprintDomain below
 
   // Formatting helpers: Title-case labels and ensure bullet points for highlight items
-  const toTitleCaseLabel = (s: string): string => (s || '').split(/\s+/).map(w => w ? w.charAt(0).toUpperCase() + w.slice(1) : w).join(' ')
+  const toTitleCaseLabel = (s: string): string => {
+    if (!s) return ''
+    return s.split(' ').filter(Boolean).map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')
+  }
   const stripLeadingEmoji = (s: string): string => {
-    // Remove leading emojis/symbols commonly used as icons
-    // Unicode ranges cover misc symbols & pictographs
-    return s.replace(/^[\ufe0f\u2060\s]*[\u{1F300}-\u{1FAFF}\u{1F1E6}-\u{1F1FF}\u{2600}-\u{27BF}]+\s*/u, '')
+    // Remove leading emojis/symbols - using simple string check instead of regex
+    let result = s
+    // Remove common emoji ranges and whitespace from start
+    while (result.length > 0) {
+      const code = result.codePointAt(0) || 0
+      // Check for whitespace, emoji ranges, or special chars
+      if (code <= 32 || (code >= 0x1F300 && code <= 0x1FAFF) || (code >= 0x2600 && code <= 0x27BF)) {
+        result = result.slice(1)
+      } else {
+        break
+      }
+    }
+    return result
   }
   
-  // Regex patterns for bullet formatting (using simple patterns)
-  const BULLET_BOLD_LABEL_REGEX = /^-\s*\*\*([^*]+?)\*\*\s*:\s*(.*)$/
-  const BOLD_LABEL_REGEX = /^\*\*([^*]+?)\*\*\s*:\s*(.*)$/
-  const BULLET_LABEL_REGEX = /^-\s*([^:]+?)\s*:\s*(.*)$/
-  const LABEL_REGEX = /^[A-Za-z][\w\s]*:\s*.*$/
-  
+  // String-based formatting functions (no regex to avoid Security Hotspot)
   const formatBulletBoldLabel = (line: string): string | null => {
-    const match = BULLET_BOLD_LABEL_REGEX.exec(line)
-    return match ? `- **${toTitleCaseLabel(stripLeadingEmoji(match[1]))}**: ${match[2]}` : null
+    // Format: - **Label**: text
+    if (!line.startsWith('- **')) return null
+    const boldEnd = line.indexOf('**:', 4)
+    if (boldEnd === -1) return null
+    
+    const label = line.substring(4, boldEnd)
+    const text = line.substring(boldEnd + 3).trim()
+    return `- **${toTitleCaseLabel(stripLeadingEmoji(label))}**: ${text}`
   }
   
   const formatBoldLabel = (line: string): string | null => {
-    const match = BOLD_LABEL_REGEX.exec(line)
-    return match ? `- **${toTitleCaseLabel(stripLeadingEmoji(match[1]))}**: ${match[2]}` : null
+    // Format: **Label**: text
+    if (!line.startsWith('**')) return null
+    const boldEnd = line.indexOf('**:', 2)
+    if (boldEnd === -1) return null
+    
+    const label = line.substring(2, boldEnd)
+    const text = line.substring(boldEnd + 3).trim()
+    return `- **${toTitleCaseLabel(stripLeadingEmoji(label))}**: ${text}`
   }
   
   const formatBulletLabel = (line: string): string | null => {
-    const match = BULLET_LABEL_REGEX.exec(line)
-    return match ? `- **${toTitleCaseLabel(stripLeadingEmoji(match[1]))}**: ${match[2]}` : null
+    // Format: - Label: text
+    if (!line.startsWith('- ')) return null
+    const colonIdx = line.indexOf(':', 2)
+    if (colonIdx === -1) return null
+    
+    const label = line.substring(2, colonIdx)
+    const text = line.substring(colonIdx + 1).trim()
+    return `- **${toTitleCaseLabel(stripLeadingEmoji(label))}**: ${text}`
   }
   
   const formatPlainLabel = (line: string): string | null => {
-    const match = LABEL_REGEX.exec(line)
-    if (match) {
-      const idx = line.indexOf(':')
-      const label = stripLeadingEmoji(line.slice(0, idx))
-      const rest = line.slice(idx + 1).trim()
-      return `- **${toTitleCaseLabel(label)}**: ${rest}`
-    }
-    return null
+    // Format: Label: text (starting with letter)
+    const firstCode = line.codePointAt(0) || 0
+    if (!line || !((firstCode >= 65 && firstCode <= 90) || (firstCode >= 97 && firstCode <= 122))) return null
+    const colonIdx = line.indexOf(':')
+    if (colonIdx === -1) return null
+    
+    const label = stripLeadingEmoji(line.slice(0, colonIdx))
+    const rest = line.slice(colonIdx + 1).trim()
+    return `- **${toTitleCaseLabel(label)}**: ${rest}`
   }
   
   const ensureBulletedTitleCaseLine = (raw: string): string => {
@@ -874,7 +901,9 @@ const TAB_LABELS: Record<GuideTabKey, string> = {
       return formatBulletLabel(line) || raw
     }
     
-    if (/^[A-Za-z]/.test(line) && line.includes(':')) {
+    // Check if starts with letter (A-Z or a-z)
+    const firstCode = line.codePointAt(0) || 0
+    if (((firstCode >= 65 && firstCode <= 90) || (firstCode >= 97 && firstCode <= 122)) && line.includes(':')) {
       return formatPlainLabel(line) || raw
     }
     

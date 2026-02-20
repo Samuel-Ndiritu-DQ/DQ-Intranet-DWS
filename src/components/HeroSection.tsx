@@ -26,6 +26,9 @@ const HeroSection: React.FC<HeroSectionProps> = ({ "data-id": dataId }) => {
   const [showSuggestions, setShowSuggestions] = useState(false);
   const navigate = useNavigate();
 
+  // Feature flag for AI Assistant
+  const AI_ASSISTANT_ENABLED = false; // Set to true when ready to launch
+
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const trimmed = prompt.trim();
@@ -119,9 +122,30 @@ const HeroSection: React.FC<HeroSectionProps> = ({ "data-id": dataId }) => {
         <FadeInUpOnScroll delay={1.2} className="w-full max-w-3xl mb-10">
           <div
             className={`bg-white rounded-lg shadow-lg overflow-hidden transition-all duration-300 ${
-              isSearchFocused ? "shadow-xl transform scale-105" : ""
-            }`}
+              isSearchFocused && AI_ASSISTANT_ENABLED ? "shadow-xl transform scale-105" : ""
+            } ${!AI_ASSISTANT_ENABLED ? "relative" : ""}`}
           >
+            {/* Coming Soon Overlay */}
+            {!AI_ASSISTANT_ENABLED && (
+              <div className="absolute inset-0 bg-gradient-to-br from-blue-900/95 via-indigo-900/95 to-purple-900/95 backdrop-blur-sm z-20 flex items-center justify-center rounded-lg">
+                <div className="text-center px-6">
+                  <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-yellow-400/20 border-2 border-yellow-400 mb-4 animate-pulse">
+                    <svg className="w-8 h-8 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                    </svg>
+                  </div>
+                  <h3 className="text-2xl font-bold text-white mb-2">AI Assistant Coming Soon</h3>
+                  <p className="text-white/80 text-sm mb-4">
+                    We're putting the finishing touches on your intelligent workspace companion.
+                  </p>
+                  <div className="inline-flex items-center gap-2 px-4 py-2 bg-yellow-400/20 border border-yellow-400/30 rounded-full">
+                    <span className="w-2 h-2 bg-yellow-400 rounded-full animate-pulse"></span>
+                    <span className="text-yellow-400 text-xs font-semibold">Launching This Month</span>
+                  </div>
+                </div>
+              </div>
+            )}
+            
             <div className="p-2 md:p-3" data-hero-search-connected="dws-chat-widget">
               <form className="flex items-center" onSubmit={handleSubmit}>
                 {/* Input field with AI indicator */}
@@ -145,7 +169,7 @@ const HeroSection: React.FC<HeroSectionProps> = ({ "data-id": dataId }) => {
                     type="text"
                     placeholder={isAuthenticated ? "Hi ".concat(user?.firstName ?? "there", ", what can we help you find today?") : "What can we help you find today?"}
                     className={`w-full py-3 pl-12 pr-4 outline-none text-gray-700 rounded-lg bg-gray-50 transition-all duration-300 ${
-                      isSearchFocused ? 'bg-white ring-2 ring-blue-500' : ''
+                      isSearchFocused && AI_ASSISTANT_ENABLED ? 'bg-white ring-2 ring-blue-500' : ''
                     }`}
                     value={prompt}
                     onChange={(e) => setPrompt(e.target.value)}
@@ -153,6 +177,7 @@ const HeroSection: React.FC<HeroSectionProps> = ({ "data-id": dataId }) => {
                     onBlur={() =>
                       setTimeout(() => setIsSearchFocused(false), 200)
                     }
+                    disabled={!AI_ASSISTANT_ENABLED}
                   />
                   <div className="absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none">
                     <span className="text-xs text-green-600 font-medium flex items-center gap-1">
@@ -165,9 +190,9 @@ const HeroSection: React.FC<HeroSectionProps> = ({ "data-id": dataId }) => {
                 <button
                   type="submit"
                   aria-label="Ask AI Assistant"
-                  disabled={!prompt.trim()}
+                  disabled={!prompt.trim() || !AI_ASSISTANT_ENABLED}
                   className={`ml-2 p-3 rounded-lg flex items-center justify-center transition-all ${
-                    !prompt.trim()
+                    !prompt.trim() || !AI_ASSISTANT_ENABLED
                       ? 'bg-gray-200 cursor-not-allowed text-gray-400'
                       : 'bg-[image:var(--dq-cta-gradient)] hover:brightness-105 text-white shadow-md hover:shadow-lg'
                   }`}
@@ -180,6 +205,7 @@ const HeroSection: React.FC<HeroSectionProps> = ({ "data-id": dataId }) => {
               </form>
             </div>
             {/* AI Assistant prompts with enhanced styling */}
+            {AI_ASSISTANT_ENABLED && (
             <div
               className={`bg-gradient-to-r from-blue-50 to-indigo-50 px-4 py-3 border-t border-blue-100 transition-all duration-500 ease-in-out ${
                 showSuggestions
@@ -225,6 +251,7 @@ const HeroSection: React.FC<HeroSectionProps> = ({ "data-id": dataId }) => {
                 Connected to the chat — your question opens in the assistant (bottom-right)
               </p>
             </div>
+            )}
           </div>
         </FadeInUpOnScroll>
         {/* Call to Action Buttons with animations */}

@@ -112,25 +112,11 @@ const FILTER_OPTIONS = [
   'Class 04 TxM',
 ];
 
-const MAX_UNLOCKED_CLASS = 3;
-const DEFAULT_PRODUCT_LINK = '/marketplace/directory/products';
-
-const isClassUnlocked = (classId: string) => {
-  const classNumber = Number(classId.replace('class-', ''));
-  return classNumber <= MAX_UNLOCKED_CLASS;
-};
-
-const getClassNumberFromFilter = (label: string) => {
-  const match = label.match(/Class\s(\d+)/);
-  return match ? Number(match[1]) : null;
-};
-
 type Product = {
   name: string;
   subtitle: string;
   description: string;
   cta: string;
-  href?: string;
   icon: typeof Briefcase;
 };
 
@@ -160,7 +146,6 @@ const PRODUCT_CLASSES: ProductClass[] = [
         description:
           'Blueprint-based advisory defining digital strategy, architecture, operating models, and sector transformation roadmaps.',
         cta: 'Understand DBP Design',
-        href: 'https://dq-prod-corp-web-git-develop-digitalqatalysts-projects.vercel.app/services/design-4-0',
         icon: Briefcase,
       },
       {
@@ -169,7 +154,6 @@ const PRODUCT_CLASSES: ProductClass[] = [
         description:
           'Blueprint-driven SaaS implementations operationalising Experience 4.0, Agility 4.0, Intelligence 4.0, Workspace 4.0, and Sector 4.0 platforms.',
         cta: 'Understand DBP Deploy',
-        href: 'https://dq-prod-corp-web-git-develop-digitalqatalysts-projects.vercel.app/services/deploy-4-0',
         icon: Layers,
       },
     ],
@@ -589,31 +573,18 @@ export default function SixXDProductsLanding() {
           <div className="flex flex-wrap gap-3">
             {FILTER_OPTIONS.map((option) => {
               const isActive = option === activeFilter;
-              const optionClassNumber = getClassNumberFromFilter(option);
-              const isLockedOption = Boolean(optionClassNumber && optionClassNumber > MAX_UNLOCKED_CLASS);
               return (
                 <Button
                   key={option}
                   variant="ghost"
-                  disabled={isLockedOption}
-                  aria-disabled={isLockedOption}
                   className={`rounded-full border px-4 py-2 text-xs font-semibold transition sm:text-sm ${
                     isActive
                       ? 'border-transparent text-white shadow-md gradient-hero'
                       : 'border-border bg-card text-muted-foreground hover:border-[hsl(var(--primary)/0.3)]'
-                  } ${isLockedOption ? 'cursor-not-allowed opacity-60' : ''}`}
-                  onClick={() => {
-                    if (!isLockedOption) setActiveFilter(option);
-                  }}
+                  }`}
+                  onClick={() => setActiveFilter(option)}
                 >
-                  {isLockedOption ? (
-                    <span className="inline-flex items-center gap-2">
-                      <Lock className="h-3.5 w-3.5" />
-                      {option}
-                    </span>
-                  ) : (
-                    option
-                  )}
+                  {option}
                 </Button>
               );
             })}
@@ -630,7 +601,6 @@ export default function SixXDProductsLanding() {
             >
               {filteredClasses.map((productClass, classIndex) => {
                 const Icon = productClass.icon;
-                const isUnlockedClass = isClassUnlocked(productClass.id);
                 return (
                   <div key={productClass.id} className="space-y-6">
                     {classIndex > 0 && <div className="gradient-divider" />}
@@ -657,61 +627,32 @@ export default function SixXDProductsLanding() {
                         return (
                           <motion.div
                             key={product.name}
-                            className={`flex h-full flex-col rounded-xl border border-border bg-card p-6 ${
-                              isUnlockedClass ? '' : 'opacity-80'
-                            }`}
+                            className="flex h-full flex-col rounded-xl border border-border bg-card p-6"
                             initial={{ opacity: 0, y: 20 }}
                             whileInView={{ opacity: 1, y: 0 }}
                             transition={{ duration: 0.5, delay: index * 0.1 }}
                             viewport={{ once: true, margin: '-50px' }}
                           >
-                            <div className="flex items-center justify-between gap-2">
+                            <div className="flex items-center justify-between">
                               <div className="flex h-10 w-10 items-center justify-center rounded-lg text-white gradient-hero">
                                 <ProductIcon className="h-5 w-5" />
                               </div>
-                              <div className="flex items-center gap-2">
-                                <Badge variant="secondary" className="text-xs">
-                                  {productClass.filter}
-                                </Badge>
-                                {!isUnlockedClass && (
-                                  <Badge
-                                    variant="secondary"
-                                    className="text-[11px] border border-red-200 bg-red-50 text-red-700"
-                                  >
-                                    Locked
-                                  </Badge>
-                                )}
-                              </div>
+                              <Badge variant="secondary" className="text-xs">
+                                {productClass.filter}
+                              </Badge>
                             </div>
                             <h4 className="mt-4 font-display text-base font-semibold">{product.name}</h4>
                             <p className="mt-1 text-xs text-[hsl(var(--primary)/0.7)]">{product.subtitle}</p>
                             <p className="mt-3 flex-1 text-sm text-muted-foreground">{product.description}</p>
                             <Button
-                              variant={isUnlockedClass ? 'default' : 'outline'}
+                              variant="outline"
                               size="sm"
-                              className={`mt-5 w-full ${
-                                isUnlockedClass ? 'gradient-hero text-white hover:opacity-90' : 'cursor-not-allowed opacity-75'
-                              }`}
-                              disabled={!isUnlockedClass}
-                              aria-disabled={!isUnlockedClass}
-                              asChild={isUnlockedClass}
+                              className="mt-5 w-full cursor-not-allowed opacity-75"
+                              disabled
+                              aria-disabled="true"
                             >
-                              {isUnlockedClass ? (
-                                <a
-                                  href={product.href ?? DEFAULT_PRODUCT_LINK}
-                                  target={product.href ? '_blank' : undefined}
-                                  rel={product.href ? 'noreferrer' : undefined}
-                                  className="inline-flex w-full items-center justify-center gap-2"
-                                >
-                                  {product.cta}
-                                  <ArrowRight className="h-4 w-4" />
-                                </a>
-                              ) : (
-                                <span className="inline-flex w-full items-center justify-center gap-2">
-                                  <Lock className="h-4 w-4" />
-                                  {product.cta}
-                                </span>
-                              )}
+                              <Lock className="mr-2 h-4 w-4" />
+                              {product.cta}
                             </Button>
                           </motion.div>
                         );

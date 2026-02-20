@@ -1,6 +1,7 @@
 import React from 'react';
 import { resolveServiceImage } from '../../utils/serviceCardImages';
 import { useNavigate } from 'react-router-dom';
+import { toTitleCase } from '../../utils/textUtils';
 export interface ServiceCardProps {
   item: {
     id: string;
@@ -88,14 +89,15 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({
     item.featuredImageUrl ||
     resolveServiceImage(item.id, item.title) ||
     '/images/services/DTMP.jpg';
+  const displayTitle = toTitleCase(item.title);
   
   return <div className="flex flex-col h-[400px] bg-white rounded-lg shadow-md border border-gray-200 overflow-hidden hover:shadow-lg transition-shadow duration-200" onClick={onQuickView}>
       {/* Featured Image */}
       <div className="relative h-48 bg-gray-200 overflow-hidden">
         <img 
           src={imageSrc}
-          alt={item.title}
-          className="w-full h-full object-cover"
+          alt={displayTitle}
+          className="w-full h-full object-cover object-top"
           onError={(e) => {
             // Fallback to a gradient if image fails to load
             const target = e.target as HTMLImageElement;

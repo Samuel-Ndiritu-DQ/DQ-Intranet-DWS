@@ -127,7 +127,7 @@ export function Glossary6xDPage() {
 
   return (
     <div className="min-h-screen flex flex-col bg-white guidelines-theme">
-      <Header toggleSidebar={() => {}} sidebarOpen={false} />
+      <Header toggleSidebar={() => undefined} sidebarOpen={false} />
       <main className="container mx-auto px-4 py-8 flex-grow max-w-7xl">
         {/* Breadcrumbs */}
         <nav className="flex mb-6" aria-label="Breadcrumb">

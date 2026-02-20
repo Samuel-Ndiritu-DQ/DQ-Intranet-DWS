@@ -1,22 +1,8 @@
-import React, { useEffect, useState, useRef, Component } from "react";
-import {
-  Calendar,
-  BookOpen,
-  Newspaper,
-  ArrowRight,
-  ChevronLeft,
-  ChevronRight,
-  Tag,
-  FileText,
-  Download,
-  ExternalLink,
-  Calculator,
-  Loader,
-  AlertCircle,
-} from "lucide-react";
+import React, { useEffect, useState } from "react";
+import { Newspaper, Loader, AlertCircle, Radio } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { FadeInUpOnScroll, StaggeredFadeIn, useInView } from "./AnimationUtils";
-import { EventCard, NewsCard, ResourceCard } from "./CardComponents";
+import { FadeInUpOnScroll } from "./AnimationUtils";
+import { NewsCard } from "./CardComponents";
 import { fetchAllNews } from '@/services/mediaCenterService';
 import type { NewsItem as MediaCenterNewsItem } from '@/data/media/news';
 
@@ -28,34 +14,6 @@ interface NewsItem {
   category: string;
   imageUrl: string;
   source?: string;
-}
-
-interface Event {
-  id: string;
-  title: string;
-  date: string;
-  location: string;
-  type: string;
-  imageUrl?: string;
-  organizer?: string;
-}
-
-interface Resource {
-  id: string;
-  title: string;
-  type: string;
-  description: string;
-  icon: React.ReactNode;
-  downloadUrl?: string;
-  fileSize?: string;
-  downloadCount?: number;
-  lastUpdated?: string;
-  isExternal?: boolean;
-  tags?: string[];
-}
-
-interface KnowledgeHubProps {
-  graphqlEndpoint?: string;
 }
 
 // Mock data for fallback - keep the existing data
@@ -128,152 +86,10 @@ const newsItems: NewsItem[] = [
   },
 ];
 
-const events: Event[] = [
-  {
-    id: "1",
-    title: "DQ Strategy & Mission Forum 2025",
-    date: "October 18–19, 2025",
-    location: "OPAL Tower, Business Bay, Dubai",
-    type: "Forum",
-    organizer: "Digital Qatalyst",
-    imageUrl:
-      "https://images.unsplash.com/photo-1475721027785-f74eccf877e2?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1470&q=80",
-  },
-  {
-    id: "2",
-    title: "Agile Delivery Circle – Sprint Planning Masterclass",
-    date: "October 25, 2025",
-    location: "OPAL Tower, Business Bay, Dubai",
-    type: "Workshop",
-    organizer: "DQ Agile office",
-    imageUrl:
-      "https://images.unsplash.com/photo-1591115765373-5207764f72e4?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1470&q=80",
-  },
-  {
-    id: "3",
-    title: "Leadership & Emotional Intelligence Session",
-    date: "November 4, 2025",
-    location: "OPAL Tower, Business Bay, Dubai",
-    type: "Workshop",
-    organizer: "DQ Culture & Community",
-    imageUrl:
-      "https://images.unsplash.com/photo-1540317580384-e5d43867caa6?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1470&q=80",
-  },
-  {
-    id: "4",
-    title: "Data Fluency Week – Power BI Hands-on",
-    date: "November 11–15, 2025",
-    location: "OPAL Tower, Business Bay, Dubai",
-    type: "Bootcamp",
-    organizer: "DQ Analytics Office",
-    imageUrl:
-      "https://images.unsplash.com/photo-1559223607-a43f990c095d?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1470&q=80",
-  },
-  {
-    id: "5",
-    title: "Product Growth & Value Streams Meetup",
-    date: "November 21, 2025",
-    location: "OPAL Tower, Business Bay, Dubai",
-    type: "Meetup",
-    organizer: "DQ Deploy Team",
-    imageUrl:
-      "https://images.unsplash.com/photo-1556761175-b413da4baf72?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1374&q=80",
-  },
-  {
-    id: "6",
-    title: "DQ End-of-Year Learning Showcase",
-    date: "December 10, 2025",
-    location: "OPAL Tower, Business Bay, Dubai",
-    type: "Showcase",
-    organizer: "DQ Academy",
-    imageUrl:
-      "https://images.unsplash.com/photo-1531482615713-2afd69097998?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1470&q=80",
-  },
-];
-
-const resources: Resource[] = [
-  {
-    id: "1",
-    title: "DQ Handbook – Working the Catalyst Way",
-    type: "Guide",
-    description:
-      "Your essential guide to Digital Qatalyst — principles, culture, and collaboration practices that power every team.",
-    icon: <FileText size={24} className="text-blue-600" />,
-    downloadUrl: "#",
-    fileSize: "2.5 MB",
-    downloadCount: 1847,
-    lastUpdated: "January 2024",
-    tags: ["Culture", "Guide"],
-  },
-  {
-    id: "2",
-    title: "Agile Playbook – SEDU Framework",
-    type: "Template",
-    description:
-      "Standard agile templates and sprint planning boards aligned to the SEDU delivery model for teams across DQ.",
-    icon: <BookOpen size={24} className="text-blue-600" />,
-    downloadUrl: "#",
-    fileSize: "4.1 MB",
-    downloadCount: 3254,
-    lastUpdated: "December 2023",
-    tags: ["Agile", "Delivery"],
-  },
-  {
-    id: "3",
-    title: "Power BI Dashboard Starter Pack",
-    type: "Toolkit",
-    description:
-      "Get prebuilt dashboard templates and data model examples for reporting within DQ projects.",
-    icon: <FileText size={24} className="text-blue-600" />,
-    downloadUrl: "#",
-    fileSize: "1.8 MB",
-    downloadCount: 5632,
-    lastUpdated: "February 2024",
-    tags: ["Analytics", "Power BI"],
-  },
-  {
-    id: "4",
-    title: "LLAD Template – Repository Setup",
-    type: "Template",
-    description:
-      "A ready-to-use Logical Layered Architecture Document (LLAD) format for Ardoq and Abacus repository configurations.",
-    icon: <BookOpen size={24} className="text-blue-600" />,
-    downloadUrl: "#",
-    fileSize: "3.2 MB",
-    downloadCount: 2187,
-    lastUpdated: "January 2024",
-    tags: ["Architechture", "Template"],
-  },
-  {
-    id: "5",
-    title: "DQ Governance & Compliance Guide",
-    type: "Guide",
-    description:
-      "Comprehensive overview of DQ governance workflows, approvals, and compliance practices for associates.",
-    icon: <BookOpen size={24} className="text-blue-600" />,
-    downloadUrl: "#",
-    fileSize: "4.5 MB",
-    downloadCount: 8967,
-    lastUpdated: "December 2023",
-    tags: ["Governace", "Comliance"],
-  },
-  {
-    id: "6",
-    title: "Collaboration Toolkit – Viva & Teams",
-    type: "Tool",
-    description:
-      "Quick-access resources for setting up Viva Engage posts, Teams collaboration boards, and L&D channels.",
-    icon: <Calculator size={24} className="text-blue-600" />,
-    downloadUrl: "#",
-    fileSize: "External",
-    downloadCount: 12456,
-    lastUpdated: "February 2024",
-    tags: ["Collaboration", "L&D"],
-  },
-];
+// Event and Resource mock data removed (unused) to satisfy noUnusedLocals.
 
 // Define interface for tab items
-type TabId = "news" | "events" | "resources";
+type TabId = "news" | "podcast";
 
 interface TabItem {
   id: TabId;
@@ -293,20 +109,24 @@ const SegmentedTabs: React.FC<SegmentedTabsProps> = ({
   onTabChange,
 }) => {
   return (
-    <div className="w-full flex justify-center mb-6">
+    <div className="w-full flex justify-center mb-6" role="tablist" aria-label="Knowledge Hub tabs">
       <div className="inline-flex items-center rounded-full bg-white shadow-sm ring-1 ring-black/5 px-1 py-1">
         {tabs.map((tab) => {
           const isActive = activeTab === tab.id;
           return (
             <button
               key={tab.id}
+              type="button"
+              role="tab"
+              aria-selected={isActive}
+              aria-controls={`kh-panel-${tab.id}`}
+              id={`kh-tab-${tab.id}`}
               onClick={() => onTabChange(tab.id)}
               className={`relative mx-0.5 px-4 sm:px-5 py-2 rounded-full text-sm font-medium transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-[#5B8EFF]/40 inline-flex items-center ${
                 isActive
                   ? "bg-[#DDE8FF] text-[#030F35] shadow-[inset_0_-2px_0_0_#5B8EFF]"
                   : "text-[#3b4a66] hover:bg-[#F5F8FF]"
               }`}
-              aria-pressed={isActive}
             >
               <span className="mr-2" aria-hidden="true">
                 {tab.icon}
@@ -340,13 +160,14 @@ const ErrorMessage = ({ message }) => (
 );
 
 // KnowledgeHub Content Component
-const KnowledgeHubContent = ({ graphqlEndpoint }) => {
+const KnowledgeHubContent = () => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<TabId>("news");
   const [isTabChanging, setIsTabChanging] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<{ message: string } | null>(null);
   const [mediaCenterNews, setMediaCenterNews] = useState<MediaCenterNewsItem[]>([]);
+  const [loadFallback, setLoadFallback] = useState(false);
 
   const tabs: TabItem[] = [
     {
@@ -355,14 +176,9 @@ const KnowledgeHubContent = ({ graphqlEndpoint }) => {
       icon: <Newspaper size={16} className="#030F35-600" />,
     },
     {
-      id: "events",
-      label: "Events",
-      icon: <Calendar size={16} className="#030F35-600" />,
-    },
-    {
-      id: "resources",
-      label: "Resources",
-      icon: <BookOpen size={16} className="#030F35-600" />,
+      id: "podcast",
+      label: "Podcast",
+      icon: <Radio size={16} className="#030F35-600" />,
     },
   ];
 
@@ -376,134 +192,85 @@ const KnowledgeHubContent = ({ graphqlEndpoint }) => {
     }, 300);
   };
 
-  // Fetch latest news from Media Center
+  // Fetch latest media center items once, reuse for both tabs
   useEffect(() => {
+    let isMounted = true;
+
     async function loadMediaCenterNews() {
-      if (activeTab !== "news") return;
-      
       setIsLoading(true);
       setError(null);
-      
       try {
         const allNews = await fetchAllNews();
-        
-        // Filter to only announcements and limit to 6
-        const announcements = allNews
-          .filter(item => 
-            item.type === 'Announcement' || 
-            item.newsType === 'Company News' ||
-            item.newsType === 'Policy Update' ||
-            item.newsType === 'Upcoming Events'
-          )
-          .slice(0, 6);
-        
-        setMediaCenterNews(announcements);
+        if (!isMounted) return;
+        setMediaCenterNews(allNews ?? []);
+        setLoadFallback(!allNews || allNews.length === 0);
       } catch (err) {
-        console.error('Error loading Media Center news:', err);
-        setError({ 
-          message: 'Unable to load latest news. Showing cached content.' 
+        if (!isMounted) return;
+        console.error("Error loading Media Center news:", err);
+        setError({
+          message: "Unable to load latest media items. Showing fallback content.",
         });
-        // Fallback to mock data on error
         setMediaCenterNews([]);
+        setLoadFallback(true);
       } finally {
-        setIsLoading(false);
+        if (isMounted) setIsLoading(false);
       }
     }
 
     loadMediaCenterNews();
-  }, [activeTab]);
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
-  // Get data based on active tab - updated to use Media Center news
+  // Data helpers (news + podcasts) with graceful fallback
   const getNewsData = () => {
-    // If we have Media Center news, use it; otherwise fallback to mock data
-    if (mediaCenterNews.length > 0) {
-      return mediaCenterNews.map(item => ({
+    const source = mediaCenterNews.length > 0 ? mediaCenterNews : newsItems;
+    return source
+      .filter(
+        (item) =>
+          item.type === "Announcement" ||
+          item.newsType === "Company News" ||
+          item.newsType === "Policy Update" ||
+          item.newsType === "Upcoming Events"
+      )
+      .slice(0, 6)
+      .map((item) => ({
         id: item.id,
         title: item.title,
         excerpt: item.excerpt,
         date: item.date,
-        category: item.department || item.newsType || 'News',
-        source: item.newsSource || item.byline || item.author || 'DQ Media Center',
+        category: item.department || item.newsType || "News",
+        tags: [item.department || item.newsType || "News"],
+        source:
+          item.newsSource || item.byline || item.author || "DQ Media Center",
         imageUrl: item.image || undefined,
       }));
-    }
-    // Fallback to mock data
-    return newsItems;
-  };
-  const getEventsData = () => events;
-  const getResourcesData = () => resources;
-
-  // Helper function to get the appropriate icon for a resource type
-  const getResourceIconByType = (type) => {
-    switch (type?.toLowerCase()) {
-      case "guide":
-        return <BookOpen size={24} className="#030F35-600" />;
-      case "templates":
-        return <FileText size={24} className="#030F35-600" />;
-      case "tool":
-        return <Calculator size={24} className="#030F35-600" />;
-      default:
-        return <FileText size={24} className="#030F35-600" />;
-    }
   };
 
-  // Add this function to handle event registration
-  const handleEventRegister = (event: Event) => {
-    // Here you can implement what happens when someone registers for an event
-    // For example, open a registration modal, navigate to a registration page, etc.
-    console.log("Registering for event:", event.title);
-
-    // Example: Open a registration URL if available
-    // if (event.registrationUrl) {
-    //   window.open(event.registrationUrl, '_blank');
-    // }
-
-    // Or show a confirmation message
-    alert(`Registration for "${event.title}" will be available soon!`);
+  const getPodcastData = () => {
+    const source = mediaCenterNews.length > 0 ? mediaCenterNews : newsItems;
+    return source
+      .filter(
+        (item) =>
+          item.format === "Podcast" ||
+          (item.type === "Thought Leadership" &&
+            item.tags?.some((tag) => tag.toLowerCase().includes("podcast")))
+      )
+      .slice(0, 6)
+      .map((item) => ({
+        id: item.id,
+        title: item.title,
+        excerpt: item.excerpt,
+        date: item.date,
+        category: "Podcast",
+        tags: ["Podcast", "Play ▶"],
+        source:
+          item.newsSource || item.byline || item.author || "DQ Media Center",
+        imageUrl: item.image || undefined,
+      }));
   };
 
-  // Add function to handle resource downloads
-  const handleResourceDownload = (resource: Resource) => {
-    console.log("Downloading resource:", resource.title);
-
-    if (resource.isExternal) {
-      // For external resources, open in new tab
-      if (resource.downloadUrl) {
-        window.open(resource.downloadUrl, "_blank");
-      }
-    } else {
-      // For internal resources, trigger download
-      if (resource.downloadUrl) {
-        // Create a temporary link element to trigger download
-        const link = document.createElement("a");
-        link.href = resource.downloadUrl;
-        link.download = `${resource.title}.${
-          resource.fileSize?.includes("PDF") ? "pdf" : "zip"
-        }`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-      } else {
-        // Fallback for demo purposes
-        alert(`Download for "${resource.title}" will begin shortly!`);
-      }
-    }
-  };
-
-  // Add function to handle resource access
-  const handleResourceAccess = (resource: Resource) => {
-    console.log("Accessing resource:", resource.title);
-
-    if (resource.isExternal) {
-      // For external resources, open in new tab
-      if (resource.downloadUrl) {
-        window.open(resource.downloadUrl, "_blank");
-      }
-    } else {
-      // For internal resources, navigate to detail page
-      navigate(`/resources/${resource.id}`);
-    }
-  };
 
   return (
     <div className="bg-gray-50 py-16">
@@ -531,94 +298,107 @@ const KnowledgeHubContent = ({ graphqlEndpoint }) => {
         >
           {/* Loading State */}
           {isLoading && <LoadingIndicator />}
-          {/* Error State */}
+
+          {/* Error banner (content still shown below if fallback available) */}
           {error && !isLoading && <ErrorMessage message={error.message} />}
+
           {/* News Tab */}
-          {activeTab === "news" && !isLoading && !error && (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {getNewsData().map((item, index) => (
-                <div
-                  key={item.id}
-                  className="animate-fade-in-up"
-                  style={{
-                    animationDelay: `${index * 0.1}s`,
-                  }}
-                >
-                  <NewsCard
-                    content={{
-                      title: item.title,
-                      description: item.excerpt,
-                      imageUrl: item.imageUrl,
-                      tags: [item.category],
-                      date: item.date,
-                      source: item.source,
-                    }}
-                    onQuickView={() => navigate(`/marketplace/news/${item.id}`)}
-                    onReadMore={() => navigate(`/marketplace/news/${item.id}`)}
-                  />
+          {activeTab === "news" && !isLoading && (
+            <div
+              id="kh-panel-news"
+              role="tabpanel"
+              aria-labelledby="kh-tab-news"
+              aria-live="polite"
+            >
+              {loadFallback && (
+                <div className="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
+                  Showing cached newsroom highlights while live data is unavailable.
                 </div>
-              ))}
+              )}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {getNewsData().length === 0 ? (
+                  <div className="col-span-full text-center text-gray-600">
+                    No news items available right now.
+                  </div>
+                ) : (
+                  getNewsData().map((item, index) => (
+                    <div
+                      key={item.id}
+                      className="animate-fade-in-up"
+                      style={{
+                        animationDelay: `${index * 0.1}s`,
+                      }}
+                    >
+                      <NewsCard
+                        content={{
+                          title: item.title,
+                          description: item.excerpt,
+                          imageUrl: item.imageUrl,
+                          tags: item.tags ?? [item.category],
+                          date: item.date,
+                          source: item.source,
+                        }}
+                        onQuickView={() =>
+                          navigate(`/marketplace/news/${item.id}`)
+                        }
+                        onReadMore={() =>
+                          navigate(`/marketplace/news/${item.id}`)
+                        }
+                      />
+                    </div>
+                  ))
+                )}
+              </div>
             </div>
           )}
-          {/* Events Tab */}
-          {activeTab === "events" && !isLoading && !error && (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {getEventsData().map((event, index) => (
-                <div
-                  key={event.id}
-                  className="animate-fade-in-up"
-                  style={{
-                    animationDelay: `${index * 0.1}s`,
-                  }}
-                >
-                  <EventCard
-                    content={{
-                      title: event.title,
-                      description: `${event.type} at ${event.location}`,
-                      dateTime: event.date,
-                      location: event.location,
-                      imageUrl: event.imageUrl,
-                      tags: [event.type],
-                      organizer: event.organizer,
-                    }}
-                    isUpcoming={index === 0}
-                    onQuickView={() => navigate(`/events/${event.id}`)}
-                    onRegister={() => handleEventRegister(event)}
-                  />
+
+          {/* Podcast Tab */}
+          {activeTab === "podcast" && !isLoading && (
+            <div
+              id="kh-panel-podcast"
+              role="tabpanel"
+              aria-labelledby="kh-tab-podcast"
+              aria-live="polite"
+            >
+              {loadFallback && (
+                <div className="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
+                  Showing cached podcasts while live data is unavailable.
                 </div>
-              ))}
-            </div>
-          )}
-          {/* Resources Tab */}
-          {activeTab === "resources" && !isLoading && !error && (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {getResourcesData().map((resource, index) => (
-                <div
-                  key={resource.id}
-                  className="animate-zoom-in"
-                  style={{
-                    animationDelay: `${index * 0.1}s`,
-                  }}
-                >
-                  <ResourceCard
-                    content={{
-                      title: resource.title,
-                      description: resource.description,
-                      type: resource.type,
-                      icon: resource.icon,
-                      tags: resource.tags,
-                      downloadUrl: resource.downloadUrl,
-                      fileSize: resource.fileSize,
-                      downloadCount: resource.downloadCount,
-                      lastUpdated: resource.lastUpdated,
-                      isExternal: resource.isExternal,
-                    }}
-                    onQuickView={() => navigate(`/resources/${resource.id}`)}
-                    onAccessResource={() => handleResourceAccess(resource)}
-                    onDownload={() => handleResourceDownload(resource)}
-                  />
-                </div>
-              ))}
+              )}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {getPodcastData().length === 0 ? (
+                  <div className="col-span-full text-center text-gray-600">
+                    No podcasts published yet. Check back soon.
+                  </div>
+                ) : (
+                  getPodcastData().map((item, index) => (
+                    <div
+                      key={item.id}
+                      className="animate-fade-in-up"
+                      style={{
+                        animationDelay: `${index * 0.1}s`,
+                      }}
+                    >
+                      <NewsCard
+                        content={{
+                          title: item.title,
+                          description: item.excerpt,
+                          imageUrl: item.imageUrl,
+                          tags: item.tags ?? [item.category],
+                          date: item.date,
+                          source: item.source,
+                        }}
+                        onQuickView={() =>
+                          navigate(`/marketplace/news/${item.id}`)
+                        }
+                        onReadMore={() =>
+                          navigate(`/marketplace/news/${item.id}`)
+                        }
+                      />
+                    </div>
+                  ))
+                )}
+              </div>
             </div>
           )}
         </div>
@@ -702,9 +482,9 @@ const KnowledgeHubContent = ({ graphqlEndpoint }) => {
 };
 
 // Main KnowledgeHub component
-const KnowledgeHub: React.FC<KnowledgeHubProps> = ({ graphqlEndpoint }) => {
+const KnowledgeHub: React.FC = () => {
   // Always render without Apollo since we don't have the dependency
-  return <KnowledgeHubContent graphqlEndpoint={null} />;
+  return <KnowledgeHubContent />;
 };
 
 export default KnowledgeHub;

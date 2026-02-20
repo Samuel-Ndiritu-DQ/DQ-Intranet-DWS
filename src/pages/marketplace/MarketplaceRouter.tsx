@@ -4,7 +4,7 @@ import AssetLibraryPage from '../assetLibrary';
 import { MarketplacePage } from '../../components/marketplace/MarketplacePage';
 import MarketplaceDetailsPage from './MarketplaceDetailsPage';
 import ActivitiesPage from './ActivitiesPage';
-import { DollarSign, Briefcase, Calendar, BookOpen } from 'lucide-react';
+import { DollarSign, Briefcase, Calendar, BookOpen, Users } from 'lucide-react';
 import { getMarketplaceConfig } from '../../utils/marketplaceConfig';
 import NewsPage from './NewsPage';
 import NewsDetailPage from './NewsDetailPage';
@@ -16,12 +16,22 @@ const GrowthAreasPage = React.lazy(() => import('../GrowthAreasPage'));
 const GuideDetailPage = React.lazy(() => import('../guides/GuideDetailPage'));
 const GuideDetailsPage = React.lazy(() => import('../guides/GuideDetailsPage'));
 const GlossaryPage = React.lazy(() => import('../guides/GlossaryPage'));
-const GlossaryTermDetailPage = React.lazy(() => import('../guides/GlossaryTermDetailPage'));
-const SixXDPerspectiveDetailPage = React.lazy(() => import('../guides/SixXDPerspectiveDetailPage'));
 const FAQsPage = React.lazy(() => import('../guides/FAQsPage'));
 const TestimonialsDetailPage = React.lazy(() => import('../guides/TestimonialsDetailPage'));
 const AssociateTestimonialsDetailPage = React.lazy(() => import('../guides/AssociateTestimonialsDetailPage'));
 const ProductDetailPage = React.lazy(() => import('../products/ProductDetailPage'));
+const PulsePage = React.lazy(() => import('../pulse/PulsePage').then(m => ({ default: m.PulsePage })));
+const PulseDetailPage = React.lazy(() => import('../pulse/PulseDetailPage').then(m => ({ default: m.PulseDetailPage })));
+// Promo cards for events marketplace
+const eventsPromoCards = [{
+  id: 'finance-promo',
+  title: 'Explore funding options',
+  description: 'Find financial opportunities and resources to grow your business.',
+  icon: <DollarSign size={24} className="text-white" />,
+  path: '/marketplace/financial',
+  gradientFrom: 'from-blue-600',
+  gradientTo: 'to-indigo-700'
+}];
 // Promo cards for courses marketplace
 const coursePromoCards = [{
   id: 'finance-promo',
@@ -104,15 +114,17 @@ export const MarketplaceRouter: React.FC = () => {
   const nonFinancialConfig = getMarketplaceConfig('non-financial');
   const knowledgeHubConfig = getMarketplaceConfig('knowledge-hub');
   const guidesConfig = getMarketplaceConfig('guides');
-  const designSystemConfig = getMarketplaceConfig('design-system');
+  const eventsConfig = getMarketplaceConfig('events');
   // State for bookmarked items and comparison
   const [bookmarkedItems, setBookmarkedItems] = useState<Record<string, string[]>>({
     courses: [],
     financial: [],
     'non-financial': [],
-    'knowledge-hub': []
+    'knowledge-hub': [],
+    guides: [],
+    events: []
   });
-  
+
   // Toggle bookmark for an item
   const handleToggleBookmark = (marketplaceType: string, itemId: string) => {
     setBookmarkedItems(prev => {
@@ -124,7 +136,6 @@ export const MarketplaceRouter: React.FC = () => {
       };
     });
   };
-  
   return <Routes>
       {/* Courses Marketplace */}
       <Route path="/courses" element={<MarketplacePage marketplaceType="courses" title={coursesConfig.title} description={coursesConfig.description} promoCards={coursePromoCards} />} />

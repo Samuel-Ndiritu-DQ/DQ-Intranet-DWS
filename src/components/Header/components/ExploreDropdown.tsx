@@ -9,7 +9,6 @@ import {
   SparklesIcon,
   LucideProps,
   BookOpen,
-  Layers,
 } from 'lucide-react';
 
 interface Marketplace {
@@ -29,7 +28,6 @@ const marketplaces: Marketplace[] = [
     description: 'Explore LMS courses, onboarding tracks, and learning resources across GHC, 6xD, DWS, and DXP.',
     icon: GraduationCapIcon,
     href: '/lms',
-    isComingSoon: true,
   },
   {
     id: 'services-center',
@@ -56,7 +54,7 @@ const marketplaces: Marketplace[] = [
   },
   {
     id: 'news-center',
-    name: 'DQ Media Center',
+    name: 'News Center',
     description: 'View DQ updates, corporate news, blogs, job openings, and essential announcements.',
     icon: NewspaperIcon,
     href: '/marketplace/opportunities?tab=announcements',
@@ -66,8 +64,7 @@ const marketplaces: Marketplace[] = [
     name: 'DQ Work Communities',
     description: 'Discussion rooms, pulse updates, and events.',
     icon: SparklesIcon,
-    href: '/dq-work-communities',
-    isComingSoon: true,
+    href: '/communities',
   },
   {
     id: 'knowledge-center',
@@ -75,13 +72,6 @@ const marketplaces: Marketplace[] = [
     description: 'Strategy guides, blueprints, libraries, and testimonials.',
     icon: BookOpen,
     href: '/marketplace/guides',
-  },
-  {
-    id: 'design-system',
-    name: 'Design System Marketplace',
-    description: 'Explore design system components, patterns, and resources (CI.DS, V.DS, CDS).',
-    icon: Layers,
-    href: '/marketplace/design-system',
   },
 ];
 
@@ -170,9 +160,8 @@ export function ExploreDropdown({ isCompact = false }: ExploreDropdownProps) {
     <div className="relative" ref={dropdownRef}>
       <button
         ref={buttonRef}
-        className={`flex items-center text-white hover:text-dq-coral transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-white/20 rounded-md px-2 py-1 ${
-          isCompact ? 'text-sm' : ''
-        }`}
+        className={`flex items-center text-white hover:text-dq-coral transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-white/20 rounded-md px-2 py-1 ${isCompact ? 'text-sm' : ''
+          }`}
         onClick={() => setIsOpen(!isOpen)}
         onKeyDown={handleKeyDown}
         aria-expanded={isOpen}
@@ -202,11 +191,9 @@ export function ExploreDropdown({ isCompact = false }: ExploreDropdownProps) {
                   key={marketplace.id}
                   ref={(el) => (itemRefs.current[index] = el)}
                   href={marketplace.href}
-                  className={`flex items-start px-4 py-3 text-left hover:bg-dq-coral/10 focus:bg-dq-coral/10 focus:outline-none transition-colors duration-150 ${
-                    focusedIndex === index ? 'bg-dq-coral/10' : ''
-                  } ${isActive ? 'border-l-4 border-dq-coral bg-dq-coral/5' : ''} ${
-                    isComingSoon ? 'cursor-not-allowed opacity-60' : ''
-                  }`}
+                  className={`flex items-start px-4 py-3 text-left hover:bg-dq-coral/10 focus:bg-dq-coral/10 focus:outline-none transition-colors duration-150 ${focusedIndex === index ? 'bg-dq-coral/10' : ''
+                    } ${isActive ? 'border-l-4 border-dq-coral bg-dq-coral/5' : ''} ${isComingSoon ? 'cursor-not-allowed opacity-60' : ''
+                    }`}
                   role="menuitem"
                   tabIndex={-1}
                   aria-current={isActive ? 'page' : undefined}

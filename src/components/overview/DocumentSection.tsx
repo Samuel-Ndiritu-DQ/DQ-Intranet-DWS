@@ -1,13 +1,34 @@
 import React, { useState, useRef } from 'react';
-import { FileIcon, FileTextIcon, ImageIcon, FileSpreadsheetIcon, DownloadIcon, TrashIcon, UploadIcon, XIcon, CheckIcon, AlertCircleIcon } from 'lucide-react';
-export function DocumentSection({
-    title,
-    documents
-}) {
-    const [docs, setDocs] = useState(documents);
-    const [isDragging, setIsDragging] = useState(false);
-    const [uploadingFiles, setUploadingFiles] = useState<any>([]);
-    const fileInputRef = useRef(null);
+import { FileIcon, FileTextIcon, ImageIcon, FileSpreadsheetIcon, DownloadIcon, TrashIcon, UploadIcon, CheckIcon, AlertCircleIcon } from 'lucide-react';
+
+interface DocumentItem {
+  id: string;
+  name: string;
+  type: string;
+  size: string;
+  uploadDate: string;
+  status: string;
+}
+
+interface DocumentSectionProps {
+  title: string;
+  documents: DocumentItem[];
+}
+
+interface UploadingFile {
+  id: string;
+  name: string;
+  type: string;
+  size: string;
+  progress: number;
+  status: 'uploading' | 'complete';
+}
+
+export function DocumentSection({ title, documents }: DocumentSectionProps) {
+  const [docs, setDocs] = useState<DocumentItem[]>(documents);
+  const [isDragging, setIsDragging] = useState(false);
+  const [uploadingFiles, setUploadingFiles] = useState<UploadingFile[]>([]);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
     // Get icon based on file type
     const getFileIcon = type => {
         switch (type) {
@@ -24,7 +45,7 @@ export function DocumentSection({
         }
     };
     // Get color based on status
-    const getStatusColor = status => {
+    const getStatusColor = (status: DocumentItem['status']) => {
         switch (status) {
             case 'Approved':
                 return 'bg-green-100 text-green-800';
@@ -37,27 +58,27 @@ export function DocumentSection({
         }
     };
     // Handle file input change
-    const handleFileChange = e => {
-        const files = Array.from(e.target.files);
+    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const files = Array.from(e.target.files ?? []);
         handleFiles(files);
     };
     // Handle drag and drop
-    const handleDragOver = e => {
+    const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
         e.preventDefault();
         setIsDragging(true);
     };
     const handleDragLeave = () => {
         setIsDragging(false);
     };
-    const handleDrop = e => {
+    const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
         e.preventDefault();
         setIsDragging(false);
         const files = Array.from(e.dataTransfer.files);
         handleFiles(files);
     };
     // Process files
-    const handleFiles = files => {
-        const newUploadingFiles = files.map(file => ({
+    const handleFiles = (files: File[]) => {
+        const newUploadingFiles: UploadingFile[] = files.map(file => ({
             id: Date.now() + Math.random().toString(36).substr(2, 9),
             name: file.name,
             type: getFileType(file.name),
@@ -72,7 +93,7 @@ export function DocumentSection({
         });
     };
     // Simulate file upload
-    const simulateUpload = fileId => {
+    const simulateUpload = (fileId: string) => {
         let progress = 0;
         const interval = setInterval(() => {
             progress += Math.floor(Math.random() * 10) + 5;
@@ -80,15 +101,19 @@ export function DocumentSection({
                 clearInterval(interval);
                 progress = 100;
                 // Add to documents after "upload" completes
-                setUploadingFiles((prev: any) => prev.map(file => file.id === fileId ? {
+                setUploadingFiles(prev => prev.map(file => file.id === fileId ? {
                     ...file,
                     progress,
                     status: 'complete'
                 } : file));
                 setTimeout(() => {
-                    const uploadedFile: any = uploadingFiles.find((file: any) => file.id === fileId);
-                    if (uploadedFile) {
-                        const newDoc = {
+                    setUploadingFiles(prev => {
+                        const uploadedFile = prev.find(file => file.id === fileId);
+                        if (!uploadedFile) {
+                            return prev;
+                        }
+
+                        const newDoc: DocumentItem = {
                             id: fileId,
                             name: uploadedFile.name,
                             type: uploadedFile.type,
@@ -96,13 +121,14 @@ export function DocumentSection({
                             uploadDate: new Date().toLocaleDateString(),
                             status: 'Pending'
                         };
-                        setDocs([...docs, newDoc]);
-                        // Remove from uploading files
-                        setUploadingFiles(prev => prev.filter((file: any) => file.id !== fileId));
-                    }
+
+                        setDocs(currentDocs => [...currentDocs, newDoc]);
+
+                        return prev.filter(file => file.id !== fileId);
+                    });
                 }, 1000);
             } else {
-                setUploadingFiles((prev: any) => prev.map(file => file.id === fileId ? {
+                setUploadingFiles(prev => prev.map(file => file.id === fileId ? {
                     ...file,
                     progress
                 } : file));
@@ -110,7 +136,7 @@ export function DocumentSection({
         }, 300);
     };
     // Get file type from extension
-    const getFileType = filename => {
+    const getFileType = (filename: string): UploadingFile['type'] => {
         const ext = filename.split('.').pop().toLowerCase();
         if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext)) return 'image';
         if (['pdf'].includes(ext)) return 'pdf';
@@ -120,14 +146,14 @@ export function DocumentSection({
         return 'file';
     };
     // Format file size
-    const formatFileSize = bytes => {
+    const formatFileSize = (bytes: number): string => {
         if (bytes < 1024) return bytes + ' B';
         if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
         return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
     };
     // Handle document deletion
-    const handleDeleteDocument = id => {
-        setDocs(docs.filter(doc => doc.id !== id));
+    const handleDeleteDocument = (id: string) => {
+        setDocs(currentDocs => currentDocs.filter(doc => doc.id !== id));
     };
     return <div className="border border-gray-200 rounded-lg overflow-hidden">
         <div className="bg-gray-50 border-b border-gray-200 px-4 py-3">
@@ -135,8 +161,7 @@ export function DocumentSection({
         </div>
         {/* Upload area */}
         <div className={`p-4 sm:p-6 border-b border-gray-200 ${isDragging ? 'bg-blue-50' : 'bg-white'}`} onDragOver={handleDragOver} onDragLeave={handleDragLeave} onDrop={handleDrop}>
-            {/**@ts-ignore */}
-            <div className={`border-2 border-dashed rounded-lg p-4 sm:p-6 flex flex-col items-center justify-center cursor-pointer min-h-[120px] ${isDragging ? 'border-blue-400 bg-blue-50' : 'border-gray-300 hover:border-blue-400'}`} onClick={() => fileInputRef.current.click()}>
+            <div className={`border-2 border-dashed rounded-lg p-4 sm:p-6 flex flex-col items-center justify-center cursor-pointer min-h-[120px] ${isDragging ? 'border-blue-400 bg-blue-50' : 'border-gray-300 hover:border-blue-400'}`} onClick={() => fileInputRef.current?.click()}>
                 <UploadIcon size={24} className={isDragging ? 'text-blue-500' : 'text-gray-400'} />
                 <p className="mt-2 text-sm text-gray-600 text-center">
                     <span className="font-medium text-blue-600">Click to upload</span>{' '}
@@ -154,7 +179,7 @@ export function DocumentSection({
                 Uploading {uploadingFiles.length} file(s)
             </h4>
             <div className="space-y-3">
-                {uploadingFiles.map((file: any) => <div key={file.id} className="bg-white p-3 rounded border border-gray-200">
+                {uploadingFiles.map(file => <div key={file.id} className="bg-white p-3 rounded border border-gray-200">
                     <div className="flex items-center">
                         {getFileIcon(file.type)}
                         <span className="ml-2 text-sm text-gray-700 truncate flex-1">

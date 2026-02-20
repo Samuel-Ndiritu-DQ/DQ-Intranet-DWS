@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { BasePost, PollOption } from '../types';
-import { supabase } from '@/communities/integrations/supabase/client';
+import { supabase } from "@/lib/supabaseClient";
 import { BarChart3, Clock } from 'lucide-react';
 import { Badge } from '@/communities/components/ui/badge';
+import { PostCardMedia } from './PostCardMedia';
 interface PostCardPollProps {
   post: BasePost;
 }
@@ -27,8 +28,31 @@ export const PostCardPoll: React.FC<PostCardPollProps> = ({
   };
   const totalVotes = pollOptions.reduce((sum, opt) => sum + opt.vote_count, 0);
   const remainingOptions = pollOptions.length > 2 ? pollOptions.length - 2 : 0;
+  
+  // Check if post has media in content
+  const hasMedia = post.content && (
+    post.content.includes('<div class="media-content">') || 
+    post.content.includes('<img') ||
+    post.content.match(/<img[^>]+src/i)
+  );
+  
+  // Extract text content (without media HTML)
+  const textContent = post.content 
+    ? post.content.replace(/<div[^>]*class\s*=\s*["']media-content["'][^>]*>.*?<\/div>/is, '').trim()
+    : '';
+  
   return <div className="space-y-3">
-      <p className="text-sm text-gray-600 line-clamp-2">{post.content}</p>
+      {/* Display media if present */}
+      {hasMedia && (
+        <div className="mb-3">
+          <PostCardMedia post={post} />
+        </div>
+      )}
+      
+      {/* Display text content if present and not empty */}
+      {textContent && (
+        <p className="text-sm text-gray-600 line-clamp-2">{textContent.replace(/<[^>]*>/g, '')}</p>
+      )}
       
       {loading ? <div className="space-y-2">
           <div className="h-10 bg-gray-100 rounded-md animate-pulse" />

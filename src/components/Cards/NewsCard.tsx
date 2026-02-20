@@ -1,6 +1,8 @@
 import React from 'react';
 import { UnifiedCard, CardContent, CardVariantConfig } from './UnifiedCard';
-import { Calendar, ExternalLink } from 'lucide-react';
+import { ExternalLink } from 'lucide-react';
+import { toTitleCase } from '../../utils/textUtils';
+
 export interface NewsItem {
   id: string;
   title: string;
@@ -11,25 +13,32 @@ export interface NewsItem {
   imageUrl?: string;
   sourceLogoUrl?: string;
 }
+
 export interface NewsCardProps {
   item: NewsItem;
   onReadMore: () => void;
   onQuickView?: () => void;
+  pill?: CardContent['pill'];
   'data-id'?: string;
 }
+
 export const NewsCard: React.FC<NewsCardProps> = ({
   item,
   onReadMore,
   onQuickView,
+  pill,
   'data-id': dataId
 }) => {
+
   const handleReadMore = (e: React.MouseEvent) => {
     e.stopPropagation();
     onReadMore();
   };
 
+  const displayTitle = toTitleCase(item.title);
+
   const content: CardContent = {
-    title: item.title,
+    title: displayTitle,
     subtitle: item.source,
     description: item.excerpt,
     media: {
@@ -45,6 +54,7 @@ export const NewsCard: React.FC<NewsCardProps> = ({
     metadata: {
       date: item.date
     },
+    pill,
     primaryCTA: {
       text: 'Details',
       onClick: handleReadMore

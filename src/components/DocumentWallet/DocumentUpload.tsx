@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
     UploadIcon,
     XIcon,
@@ -6,14 +6,45 @@ import {
     CheckIcon,
     CalendarIcon,
 } from 'lucide-react';
-import { createDocument } from '../../services/DataverseService';
-export function DocumentUpload({ onClose, onUpload, categories }: { onClose: () => void, onUpload: (document: any) => void, categories: string[]; }) {
+import { uploadDocument } from '../../services/employeeOnboardingService';
+import { useMsal } from "@azure/msal-react";
+
+interface DocumentUploadProps {
+    onClose: () => void;
+    onUpload: (document: any) => void;
+    categories: string[];
+    preSelectedDocType?: string;
+}
+
+// Map document type names to their category values
+const DOC_TYPE_TO_CATEGORY: Record<string, string> = {
+    'national_id': 'National ID',
+    'National ID': 'National ID',
+    'degree_certificate': 'Degree Certificate',
+    'Degree Certificate': 'Degree Certificate',
+    'employment_contract': 'Employment Contract',
+    'Employment Contract': 'Employment Contract',
+};
+
+export function DocumentUpload({ onClose, onUpload, categories, preSelectedDocType }: DocumentUploadProps) {
+    const { accounts } = useMsal();
+    const account = accounts[0];
+    const employeeId = account?.localAccountId || account?.username || "";
+
+    // Determine initial category based on preSelectedDocType
+    const getInitialCategory = () => {
+        if (preSelectedDocType && DOC_TYPE_TO_CATEGORY[preSelectedDocType]) {
+            return DOC_TYPE_TO_CATEGORY[preSelectedDocType];
+        }
+        return categories[0] || '';
+    };
+
     const [isDragging, setIsDragging] = useState(false);
     const [file, setFile] = useState<any>(null);
     const [uploadProgress, setUploadProgress] = useState(0);
     const [formData, setFormData] = useState({
-        name: '',
-        category: categories[0] || '',
+        name: preSelectedDocType ? (DOC_TYPE_TO_CATEGORY[preSelectedDocType] || '') : '',
+        category: getInitialCategory(),
         description: '',
         expiryDate: '',
         tags: '',
@@ -22,6 +53,7 @@ export function DocumentUpload({ onClose, onUpload, categories }: { onClose: () 
     const [errors, setErrors] = useState<any>({});
     const [isUploading, setIsUploading] = useState(false);
     const fileInputRef = useRef(null);
+
     // Handle drag events
     const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
         e.preventDefault();
@@ -79,70 +111,66 @@ export function DocumentUpload({ onClose, onUpload, categories }: { onClose: () 
         if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
         return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
     };
-    // Upload file to API and save metadata to Dataverse
-    const uploadToAzure = async () => {
+
+    const CATEGORIES = [
+        { label: 'National ID', value: 'id' },
+        { label: 'Degree Certificate', value: 'certificate' },
+        { label: 'Employment Contract', value: 'contract' },
+        { label: 'Professional Credential', value: 'credential' },
+        { label: 'Reference Letter', value: 'letter' },
+        { label: 'Other', value: 'other' }
+    ];
+
+    // Upload file to Supabase
+    const uploadToSupabase = async () => {
+        if (!employeeId) return;
         try {
             setIsUploading(true);
-            // Simulate progress updates
-            const progressInterval = setInterval(() => {
-                setUploadProgress((prev) => {
-                    if (prev >= 95) {
-                        clearInterval(progressInterval);
-                        return 95;
-                    }
-                    return prev + 5;
-                });
-            }, 200);
-            // Prepare multipart form data and call serverless API
-            const form = new FormData();
-            form.append('file', file);
-            const response = await fetch('/api/storage/upload/upload', {
-                method: 'POST',
-                body: form,
-            });
-            if (!response.ok) {
-                throw new Error('Upload failed');
+            setUploadProgress(10);
+
+            // Map the selection to the correct category type
+            const selectedCategory = (formData.category as any) || CATEGORIES[0].value;
+
+            const result = await uploadDocument(
+                employeeId,
+                formData.name,
+                file,
+                selectedCategory
+            );
+
+            if (!result.success) {
+                throw new Error(result.error || 'Upload failed');
             }
-            const result = await response.json();
-            const fileUrl = (result?.urls && result.urls[0]) || result?.url;
-            // Create document metadata in Dataverse
-            const newDocument = {
-                name: formData.name,
-                category: formData.category,
-                description: formData.description,
-                expiryDate: formData.expiryDate || null,
-                tags: formData.tags
-                    .split(',')
-                    .map((tag) => tag.trim())
-                    .filter((tag) => tag),
-                isConfidential: formData.isConfidential,
-                fileType: getFileType(file.name),
-                fileSize: formatFileSize(file.size),
-                uploadDate: new Date().toISOString().split('T')[0],
-                uploadedBy: 'John Smith',
-                status: 'Active',
-                fileUrl: fileUrl,
-                versionNumber: 1,
-            };
-            // Save metadata to Dataverse
-            await createDocument(newDocument as any);
-            // Complete the progress
-            clearInterval(progressInterval);
+
             setUploadProgress(100);
-            // Wait a moment to show the 100% completion state
+
+            const newDocument = {
+                id: Math.random().toString(36).substr(2, 9),
+                employee_id: employeeId,
+                name: formData.name,
+                category: CATEGORIES.find(c => c.value === selectedCategory)?.label || 'Other',
+                file_name: file.name,
+                file_type: getFileType(file.name),
+                file_size: file.size,
+                status: 'Uploaded',
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString(),
+            };
+
             setTimeout(() => {
                 setIsUploading(false);
                 onUpload(newDocument);
             }, 500);
-        } catch (error) {
+        } catch (error: any) {
             console.error('Error uploading document:', error);
             setIsUploading(false);
             setErrors({
                 ...errors,
-                submit: 'Failed to upload document. Please try again.',
+                submit: error.message || 'Failed to upload document. Please try again.',
             });
         }
     };
+
     // Validate form
     const validateForm = () => {
         const newErrors: any = {};
@@ -152,11 +180,12 @@ export function DocumentUpload({ onClose, onUpload, categories }: { onClose: () 
         setErrors(newErrors);
         return Object.keys(newErrors).length === 0;
     };
+
     // Handle form submission
     const handleSubmit = async (e: any) => {
         e.preventDefault();
         if (validateForm()) {
-            await uploadToAzure();
+            await uploadToSupabase();
         }
     };
     return (
@@ -279,9 +308,9 @@ export function DocumentUpload({ onClose, onUpload, categories }: { onClose: () 
                                 onChange={handleInputChange}
                                 className={`w-full px-3 py-2 border ${errors.category ? 'border-red-500' : 'border-gray-300'} rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500`}
                             >
-                                {categories.map((category) => (
-                                    <option key={category} value={category}>
-                                        {category}
+                                {CATEGORIES.map((cat) => (
+                                    <option key={cat.value} value={cat.value}>
+                                        {cat.label}
                                     </option>
                                 ))}
                             </select>

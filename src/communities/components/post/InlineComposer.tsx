@@ -5,19 +5,24 @@ import { Button } from '@/communities/components/ui/button';
 import { Input } from '@/communities/components/ui/input';
 import { Label } from '@/communities/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/communities/components/ui/select';
-import { supabase } from '@/communities/integrations/supabase/client';
+import { supabase } from "@/lib/supabaseClient";
+import { safeFetch } from '@/communities/utils/safeFetch';
 import { toast } from 'sonner';
-import { Send, Maximize2, Image, BarChart3, Calendar, Clock } from 'lucide-react';
+import { Send, Maximize2, Image, BarChart3, Clock } from 'lucide-react';
 import { Tabs, TabsList, TabsTrigger } from '@/communities/components/ui/tabs';
 import { RichTextEditor } from './RichTextEditor';
 import { InlineMediaUpload } from './InlineMediaUpload';
 import { PollOptionsInput } from './PollOptionsInput';
 import { LinkPreview } from './LinkPreview';
+import { SignInModal } from '@/communities/components/auth/SignInModal';
+import { useCommunityMembership } from '@/communities/hooks/useCommunityMembership';
+import { getCurrentUserId } from '@/communities/utils/userUtils';
 interface InlineComposerProps {
   communityId?: string;
+  isMember?: boolean;
   onPostCreated?: () => void;
 }
-type PostType = 'text' | 'media' | 'poll' | 'event';
+type PostType = 'text' | 'media' | 'poll';
 interface Community {
   id: string;
   name: string;
@@ -30,12 +35,18 @@ interface UploadedFile {
 }
 export const InlineComposer: React.FC<InlineComposerProps> = ({
   communityId,
+  isMember: isMemberProp,
   onPostCreated
 }) => {
   const {
-    user
+    user,
+    isAuthenticated
   } = useAuth();
   const navigate = useNavigate();
+  const { isMember: isMemberFromHook, loading: membershipLoading } = useCommunityMembership(communityId);
+  // Use prop if provided, otherwise fall back to hook
+  const isMember = isMemberProp !== undefined ? isMemberProp : isMemberFromHook;
+  
   const [postType, setPostType] = useState<PostType>('text');
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
@@ -51,19 +62,16 @@ export const InlineComposer: React.FC<InlineComposerProps> = ({
   const [pollQuestion, setPollQuestion] = useState('');
   const [pollOptions, setPollOptions] = useState(['', '']);
 
-  // Event post state
-  const [eventDate, setEventDate] = useState('');
-  const [eventTime, setEventTime] = useState('');
-  const [eventLocation, setEventLocation] = useState('');
 
   // Link preview state
   const [detectedLink, setDetectedLink] = useState<string | null>(null);
   const [showLinkPreview, setShowLinkPreview] = useState(true);
   useEffect(() => {
-    if (!communityId && user) {
+    if (!communityId) {
+      // Fetch communities for authenticated users
       fetchCommunities();
     }
-  }, [communityId, user]);
+  }, [communityId]);
 
   // Autosave draft
   useEffect(() => {
@@ -77,16 +85,13 @@ export const InlineComposer: React.FC<InlineComposerProps> = ({
           contentHtml,
           pollQuestion,
           pollOptions,
-          eventDate,
-          eventTime,
-          eventLocation,
           timestamp: Date.now()
         };
         localStorage.setItem(draftKey, JSON.stringify(draft));
       }
     }, 2000);
     return () => clearTimeout(timer);
-  }, [title, content, contentHtml, pollQuestion, pollOptions, eventDate, eventTime, eventLocation, postType, communityId]);
+  }, [title, content, contentHtml, pollQuestion, pollOptions, postType, communityId]);
 
   // Load draft on mount
   useEffect(() => {
@@ -102,9 +107,6 @@ export const InlineComposer: React.FC<InlineComposerProps> = ({
           setContentHtml(draft.contentHtml || '');
           setPollQuestion(draft.pollQuestion || '');
           setPollOptions(draft.pollOptions || ['', '']);
-          setEventDate(draft.eventDate || '');
-          setEventTime(draft.eventTime || '');
-          setEventLocation(draft.eventLocation || '');
         }
       } catch (e) {
         console.error('Failed to load draft:', e);
@@ -125,25 +127,68 @@ export const InlineComposer: React.FC<InlineComposerProps> = ({
     }
   }, [content, postType]);
   const fetchCommunities = async () => {
-    if (!user) return;
-    const {
-      data,
-      error
-    } = await supabase.from('memberships').select('community_id, communities(id, name)').eq('user_id', user.id);
-    if (!error && data) {
-      const communityList = data.map((m: any) => m.communities).filter(Boolean);
-      setCommunities(communityList);
+    if (!isAuthenticated || !user) {
+      setCommunities([]);
+      return;
     }
+    
+    // Get authenticated user ID
+    const userId = getCurrentUserId(user);
+    if (!userId) {
+      setCommunities([]);
+      return;
+    }
+    
+    // Check memberships table only (optimized - single table query)
+    const query = supabase
+      .from('memberships')
+      .select('community_id, communities(id, name)')
+      .eq('user_id', userId);
+    const [data] = await safeFetch(query);
+    
+    // Use memberships data directly
+    const allMemberships = data || [];
+    const communityMap = new Map();
+    allMemberships.forEach((m: any) => {
+      if (m.communities) {
+        communityMap.set(m.communities.id, m.communities);
+      }
+    });
+    setCommunities(Array.from(communityMap.values()));
   };
   const handleQuickSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    e.stopPropagation();
+    
+    // User should be authenticated via Azure AD at app level
     if (!user) {
-      toast.error('Please sign in to create a post');
+      toast.error('Please wait for authentication to complete');
       return;
     }
-    const targetCommunityId = communityId || selectedCommunityId;
-    if (!targetCommunityId) {
-      toast.error('Please select a community');
+      
+      const targetCommunityId = communityId || selectedCommunityId;
+      if (!targetCommunityId) {
+        toast.error('Please select a community');
+        return;
+      }
+      
+      // Get user ID from Azure AD authentication
+      const userId = user.id;
+      
+      if (!userId) {
+        toast.error('Unable to identify user. Please refresh the page.');
+        return;
+      }
+
+    // Check if user is a member of the community
+    if (!isMember) {
+      toast.error('You must join the community before creating posts', {
+        duration: 5000
+      });
+      // Navigate to community page to join (using React Router instead of window.location)
+      setTimeout(() => {
+        navigate(`/community/${targetCommunityId}`);
+      }, 2000);
       return;
     }
 
@@ -152,16 +197,14 @@ export const InlineComposer: React.FC<InlineComposerProps> = ({
       toast.error('Title is required');
       return;
     }
-    if (postType === 'text' && !content.trim()) {
-      toast.error('Content is required');
-      return;
-    }
+    // Content is optional for text posts - will default to title if empty
     if (postType === 'media' && !mediaFile) {
       toast.error('Please upload a file');
       return;
     }
     if (postType === 'poll') {
-      if (!pollQuestion.trim()) {
+      // For polls, title is the poll question
+      if (!title.trim() && !pollQuestion.trim()) {
         toast.error('Poll question is required');
         return;
       }
@@ -171,90 +214,68 @@ export const InlineComposer: React.FC<InlineComposerProps> = ({
         return;
       }
     }
-    if (postType === 'event') {
-      if (!eventDate) {
-        toast.error('Event date is required');
-        return;
-      }
-      const eventDateTime = new Date(eventDate);
-      if (eventDateTime < new Date()) {
-        toast.error('Event date cannot be in the past');
-        return;
-      }
-    }
     setSubmitting(true);
     try {
-      // Parse hashtags and mentions
-      const hashtagRegex = /#(\w+)/g;
-      const tags = [...(content.match(hashtagRegex) || [])].map(tag => tag.slice(1));
-
-      // Prepare post data
-      const postData: any = {
-        title: title.trim(),
-        community_id: targetCommunityId,
-        created_by: user.id,
-        post_type: postType,
-        status: 'active',
-        tags: tags.length > 0 ? tags : null
-      };
-
-      // Type-specific data
-      if (postType === 'text') {
-        postData.content = content.trim();
-        postData.content_html = contentHtml;
-      } else if (postType === 'poll') {
-        postData.content = title.trim(); // Use title for poll question
-      } else if (postType === 'event') {
-        const eventDateTime = eventTime ? `${eventDate}T${eventTime}` : eventDate;
-        postData.event_date = eventDateTime;
-        postData.event_location = eventLocation.trim() || null;
+      // Prepare simplified post data for posts_v2
+      // For text posts, use content if available, otherwise use title
+      // For media posts, include media HTML in content
+      let postContent = postType === 'text' 
+        ? (content.trim() || title.trim()) 
+        : title.trim();
+      
+      // If media post, add media HTML to content immediately
+      if (postType === 'media' && mediaFile) {
+        const mediaHtml = `<div class="media-content"><img src="${mediaFile.url}" alt="${mediaFile.caption || 'Media'}" style="max-width: 100%; height: auto; border-radius: 8px; margin-top: 12px;" />${mediaFile.caption ? `<p class="text-sm text-gray-600 mt-2">${mediaFile.caption}</p>` : ''}</div>`;
+        postContent = postContent ? `${postContent}\n${mediaHtml}` : mediaHtml;
       }
+      
+      const postDataV2 = {
+        community_id: targetCommunityId,
+        user_id: userId,
+        title: title.trim(),
+        content: postContent
+      };
+      
       const {
         data: post,
         error: postError
-      } = await supabase.from('posts').insert(postData).select().single();
-      if (postError) throw postError;
-
-      // Create related records
-      if (postType === 'media' && mediaFile) {
-        await supabase.from('media_files').insert({
-          post_id: post.id,
-          user_id: user.id,
-          file_url: mediaFile.url,
-          file_type: mediaFile.type,
-          caption: mediaFile.caption || null,
-          display_order: 0
+      } = await supabase.from('posts_v2').insert(postDataV2).select().single();
+      
+      if (postError) {
+        console.error('❌ Post insert error:', postError);
+        console.error('❌ Error details:', {
+          message: postError.message,
+          details: postError.details,
+          hint: postError.hint,
+          code: postError.code
         });
+        throw postError;
       }
-      if (postType === 'poll') {
-        const validOptions = pollOptions.filter(opt => opt.trim());
-        const endsAt = new Date();
-        endsAt.setDate(endsAt.getDate() + 7); // 7 days default
+      
+      console.log('✅ Post created successfully:', post);
 
-        const {
-          error: pollError
-        } = await supabase.from('poll_options').insert(validOptions.map((option, index) => ({
-          post_id: post.id,
-          option_text: option.trim(),
-          vote_count: 0
-        })));
-        if (pollError) {
-          console.error('Poll options error:', pollError);
-          throw new Error('Failed to create poll options');
-        }
+      // Media is already included in content above, so no need to save separately
+      // Note: media_files table has foreign key to posts(id), not posts_v2(id), so we store in content instead
+      if (postType === 'media' && mediaFile) {
+        console.log('✅ Media included in post content');
       }
 
       // Clear form
-      toast.success('Posted!');
       clearForm();
 
       // Clear draft
       const draftKey = `inline-draft-${communityId || 'global'}-${postType}`;
       localStorage.removeItem(draftKey);
+      
+      // Show success and trigger refresh
+      toast.success('Post created successfully!');
       onPostCreated?.();
     } catch (error: any) {
       console.error('Error creating post:', error);
-      toast.error('Failed to create post');
+      const errorMessage = error.message || error.details || 'Unknown error occurred';
+      toast.error(`Failed to create post: ${errorMessage}`, {
+        duration: 5000
+      });
     } finally {
       setSubmitting(false);
     }
@@ -265,9 +286,6 @@ export const InlineComposer: React.FC<InlineComposerProps> = ({
     setContentHtml('');
     setPollQuestion('');
     setPollOptions(['', '']);
-    setEventDate('');
-    setEventTime('');
-    setEventLocation('');
     setMediaFile(null);
     setDetectedLink(null);
     if (!communityId) setSelectedCommunityId('');
@@ -282,9 +300,6 @@ export const InlineComposer: React.FC<InlineComposerProps> = ({
       communityId: targetCommunityId,
       pollQuestion,
       pollOptions,
-      eventDate,
-      eventTime,
-      eventLocation,
       timestamp: Date.now()
     };
     localStorage.setItem('post-draft', JSON.stringify(draft));
@@ -305,30 +320,30 @@ export const InlineComposer: React.FC<InlineComposerProps> = ({
       setPollQuestion('');
       setPollOptions(['', '']);
     }
-    if (newType !== 'event') {
-      setEventDate('');
-      setEventTime('');
-      setEventLocation('');
-    }
   };
   const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLFormElement>) => {
     if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
       e.preventDefault();
       handleQuickSubmit(e as any);
     }
-  }, [handleQuickSubmit]);
+  }, [isAuthenticated, user, isMember, communityId, selectedCommunityId, title, content, postType]);
   const isFormValid = () => {
     const targetCommunityId = communityId || selectedCommunityId;
-    if (!targetCommunityId || !title.trim()) return false;
+    // Require community and title for all post types
+    if (!targetCommunityId || !title.trim()) {
+      return false;
+    }
     switch (postType) {
       case 'text':
-        return content.trim().length > 0;
+        // Allow text posts with just a title (content is optional for quick posts)
+        // Content will default to title if empty during submission
+        return true;
       case 'media':
         return mediaFile !== null;
       case 'poll':
-        return pollQuestion.trim().length > 0 && pollOptions.filter(opt => opt.trim()).length >= 2;
-      case 'event':
-        return eventDate !== '';
+        const pollQuestionValid = title.trim().length > 0 || pollQuestion.trim().length > 0;
+        const pollOptionsValid = pollOptions.filter(opt => opt.trim()).length >= 2;
+        return pollQuestionValid && pollOptionsValid;
       default:
         return false;
     }
@@ -339,27 +354,56 @@ export const InlineComposer: React.FC<InlineComposerProps> = ({
         return 'Post Media';
       case 'poll':
         return 'Post Poll';
-      case 'event':
-        return 'Post Event';
       default:
         return 'Post';
     }
   };
-  if (!user) {
-    return null;
+  // User should be authenticated via Azure AD at app level
+  // Show loading state if user is not yet available
+  if (!user && loading) {
+    return (
+      <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 text-center">
+        <p className="text-sm text-gray-600">Loading...</p>
+      </div>
+    );
   }
-  return <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6">
+  
+  // If user is not available after loading, show message (shouldn't happen due to ProtectedRoute)
+  if (!user) {
+    return (
+      <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 text-center">
+        <h3 className="text-lg font-semibold text-gray-900 mb-2">Authentication Required</h3>
+        <p className="text-sm text-gray-600 mb-4">Please sign in to create posts in communities</p>
+        <Button onClick={() => signIn()}>
+          Sign In with Microsoft
+        </Button>
+      </div>
+    );
+  }
+  
+  return (
+    <>
+      <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6">
       <div className="flex items-center gap-3 mb-4">
-        <div className="h-10 w-10 rounded-full bg-[#3b82f6] flex items-center justify-center text-white font-semibold">
-          {user.email?.charAt(0).toUpperCase() || 'U'}
+        <div className="h-10 w-10 rounded-full bg-dq-navy flex items-center justify-center text-white font-semibold">
+          {user?.email?.charAt(0).toUpperCase() || user?.username?.charAt(0).toUpperCase() || 'U'}
         </div>
         <h3 className="text-lg font-semibold text-gray-900">Create a Post</h3>
       </div>
 
-      <form onSubmit={handleQuickSubmit} onKeyDown={handleKeyDown} className="space-y-4">
+      <form 
+        onSubmit={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          handleQuickSubmit(e);
+        }} 
+        onKeyDown={handleKeyDown} 
+        className="space-y-4"
+        noValidate
+      >
         {/* Post Type Selector */}
         <Tabs value={postType} onValueChange={value => handleTypeChange(value as PostType)}>
-          <TabsList className="grid grid-cols-4 w-full">
+          <TabsList className="grid grid-cols-3 w-full">
             <TabsTrigger value="text" className="flex items-center gap-1.5">
               <span className="text-sm">Text</span>
             </TabsTrigger>
@@ -370,10 +414,6 @@ export const InlineComposer: React.FC<InlineComposerProps> = ({
             <TabsTrigger value="poll" className="flex items-center gap-1.5">
               <BarChart3 className="h-3.5 w-3.5" />
               <span className="text-sm">Poll</span>
-            </TabsTrigger>
-            <TabsTrigger value="event" className="flex items-center gap-1.5">
-              <Calendar className="h-3.5 w-3.5" />
-              <span className="text-sm">Event</span>
             </TabsTrigger>
           </TabsList>
         </Tabs>
@@ -398,9 +438,9 @@ export const InlineComposer: React.FC<InlineComposerProps> = ({
         {/* Title Input - All Types */}
         <div>
           <Label htmlFor="title" className="text-sm font-medium text-gray-700 mb-1 block">
-            {postType === 'poll' ? 'Poll Question' : postType === 'event' ? 'Event Title' : 'Title'} <span className="text-red-500">*</span>
+            {postType === 'poll' ? 'Poll Question' : 'Title'} <span className="text-red-500">*</span>
           </Label>
-          <Input id="title" placeholder={postType === 'poll' ? 'Ask a question...' : postType === 'event' ? 'Event name...' : 'Post title...'} value={title} onChange={e => setTitle(e.target.value)} maxLength={150} className="text-base" />
+          <Input id="title" placeholder={postType === 'poll' ? 'Ask a question...' : 'Post title...'} value={title} onChange={e => setTitle(e.target.value)} maxLength={150} className="text-base" />
         </div>
 
         {/* TYPE-SPECIFIC FIELDS */}
@@ -427,7 +467,7 @@ export const InlineComposer: React.FC<InlineComposerProps> = ({
               <Label className="text-sm font-medium text-gray-700 mb-1 block">
                 Upload File <span className="text-red-500">*</span>
               </Label>
-              <InlineMediaUpload file={mediaFile} onFileChange={setMediaFile} userId={user.id} />
+              <InlineMediaUpload file={mediaFile} onFileChange={setMediaFile} userId={getCurrentUserId(user)} />
               <p className="text-xs text-gray-500 mt-1">
                 Use full editor for multiple uploads
               </p>
@@ -448,43 +488,19 @@ export const InlineComposer: React.FC<InlineComposerProps> = ({
             </div>
           </>}
 
-        {/* EVENT POST */}
-        {postType === 'event' && <>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <Label htmlFor="event-date" className="text-sm font-medium text-gray-700 mb-1 block">
-                  Date <span className="text-red-500">*</span>
-                </Label>
-                <Input id="event-date" type="date" value={eventDate} onChange={e => setEventDate(e.target.value)} min={new Date().toISOString().split('T')[0]} />
-              </div>
-              <div>
-                <Label htmlFor="event-time" className="text-sm font-medium text-gray-700 mb-1 block">
-                  Time
-                </Label>
-                <Input id="event-time" type="time" value={eventTime} onChange={e => setEventTime(e.target.value)} />
-              </div>
-            </div>
-
-            <div>
-              <Label htmlFor="event-location" className="text-sm font-medium text-gray-700 mb-1 block">
-                Location
-              </Label>
-              <Input id="event-location" placeholder="Where will it happen?" value={eventLocation} onChange={e => setEventLocation(e.target.value)} maxLength={200} />
-            </div>
-
-            <p className="text-xs text-gray-500">
-              Use full editor for description, banner image, and RSVP options
-            </p>
-          </>}
 
         {/* Action Buttons */}
         <div className="flex items-center justify-between pt-2 border-t border-gray-100">
-          <Button type="button" variant="ghost" size="sm" onClick={handleOpenFullEditor} className="text-blue-600 hover:text-blue-700 hover:bg-blue-50">
+          <Button type="button" variant="ghost" size="sm" onClick={handleOpenFullEditor} className="text-dq-navy hover:text-[#13285A] hover:bg-dq-navy/10">
             <Maximize2 className="h-4 w-4 mr-1.5" />
             Advanced options
           </Button>
 
-          <Button type="submit" disabled={submitting || !isFormValid()} className="bg-blue-600 hover:bg-blue-700 text-white disabled:opacity-50">
+          <Button 
+            type="submit" 
+            disabled={submitting || !isFormValid()} 
+            className="bg-dq-navy hover:bg-[#13285A] text-white disabled:opacity-50 disabled:cursor-not-allowed"
+          >
             {submitting ? 'Posting...' : <>
                 <Send className="h-4 w-4 mr-1.5" />
                 {getPostButtonLabel()}
@@ -492,5 +508,7 @@ export const InlineComposer: React.FC<InlineComposerProps> = ({
           </Button>
         </div>
       </form>
-    </div>;
+    </div>
+    </>
+  );
 };

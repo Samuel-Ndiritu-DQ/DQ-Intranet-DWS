@@ -75,7 +75,7 @@ export function ProfileDropdown({
   }
   return <div className="relative">
     <button className="flex items-center" onClick={toggleDropdown} aria-label="User menu">
-      <div className="relative w-10 h-10 rounded-full bg-white text-purple-700 flex items-center justify-center font-bold">
+      <div className="relative w-10 h-10 rounded-full bg-dq-navy text-white flex items-center justify-center font-bold">
         {user.picture ? <img src={user.picture} alt={user.name} className="w-full h-full rounded-full object-cover" /> : getInitials()}
         {unreadNotifications > 0 && <span className="absolute top-0 right-0 w-3 h-3 bg-red-500 rounded-full border-2 border-white"></span>}
       </div>

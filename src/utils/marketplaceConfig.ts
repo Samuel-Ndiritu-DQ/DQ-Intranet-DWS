@@ -2,7 +2,7 @@ import * as React from 'react';
 import { ReactNode } from 'react';
 import { DollarSign, Calendar, Clock, Users, MapPin, CheckCircle, BarChart, Award, FileText, Info, BookOpen, ClipboardList, Building, FileType, Bookmark, TrendingUp, Compass, Layers } from 'lucide-react';
 import { mockCourses, providers, mockOnboardingFlowsData } from './mockData';
-import { mockFinancialServices, mockNonFinancialServices, mockKnowledgeHubItems, mockKnowledgeHubFilterOptions } from './mockMarketplaceData';
+import { mockFinancialServices, mockNonFinancialServices, mockKnowledgeHubItems, mockKnowledgeHubFilterOptions, mockEvents, mockEventsFilterOptions } from './mockMarketplaceData';
 // Define a Tab type for consistency across marketplace pages
 export interface MarketplaceTab {
   id: string;
@@ -148,7 +148,12 @@ export const mockCoursesData = {
   },
   providers: providers
 };
-
+// Mock data for events
+export const mockEventsData = {
+  items: mockEvents,
+  filterOptions: mockEventsFilterOptions,
+  providers: providers
+};
 // Mock data for Knowledge Hub
 export const mockKnowledgeHubData = {
   items: mockKnowledgeHubItems,
@@ -889,6 +894,225 @@ export const marketplaceConfig: Record<string, MarketplaceConfig> = {
     // Mock data for fallback and schema reference
     mockData: mockNonFinancialServicesData
   },
+  events: {
+    id: 'events',
+    title: 'DQ Work Communities',
+    description: 'Find and join communities to connect with other associates within the organization.',
+    route: '/marketplace/events',
+    primaryCTA: 'View Event',
+    secondaryCTA: 'View Details',
+    itemName: 'Event',
+    itemNamePlural: 'Events',
+    attributes: [{
+      key: 'date',
+      label: 'Date',
+      icon: React.createElement(Calendar, { size: 18, className: "mr-2" })
+    }, {
+      key: 'time',
+      label: 'Time',
+      icon: React.createElement(Clock, { size: 18, className: "mr-2" })
+    }, {
+      key: 'location',
+      label: 'Location',
+      icon: React.createElement(MapPin, { size: 18, className: "mr-2" })
+    }],
+    detailSections: ['description', 'details', 'provider', 'related'],
+    tabs: [{
+      id: 'about',
+      label: 'About This Event',
+      icon: Info,
+      iconBgColor: 'bg-blue-50',
+      iconColor: 'text-blue-600'
+    }, {
+      id: 'application_process',
+      label: 'Registration Process',
+      icon: ClipboardList,
+      iconBgColor: 'bg-orange-50',
+      iconColor: 'text-orange-600'
+    }, {
+      id: 'required_documents',
+      label: 'What to Bring',
+      icon: FileText,
+      iconBgColor: 'bg-amber-50',
+      iconColor: 'text-amber-600'
+    }, {
+      id: 'provider',
+      label: 'About Organizer',
+      icon: Building,
+      iconBgColor: 'bg-blue-50',
+      iconColor: 'text-blue-600'
+    }],
+    summarySticky: true,
+    filterCategories: [{
+      id: 'time-range',
+      title: 'Time Range',
+      options: [{
+        id: 'today',
+        name: 'Today'
+      }, {
+        id: 'this-week',
+        name: 'This Week'
+      }, {
+        id: 'next-30-days',
+        name: 'Next 30 Days'
+      }, {
+        id: 'custom-date-range',
+        name: 'Custom Date Range'
+      }]
+    }, {
+      id: 'event-type',
+      title: 'Event Type',
+      options: [{
+        id: 'webinar',
+        name: 'Webinar'
+      }, {
+        id: 'workshop',
+        name: 'Workshop'
+      }, {
+        id: 'seminar',
+        name: 'Seminar'
+      }, {
+        id: 'panel',
+        name: 'Panel'
+      }, {
+        id: 'conference',
+        name: 'Conference'
+      }, {
+        id: 'networking',
+        name: 'Networking'
+      }, {
+        id: 'competition',
+        name: 'Competition'
+      }, {
+        id: 'pitch-day',
+        name: 'Pitch Day'
+      }]
+    }, {
+      id: 'delivery-mode',
+      title: 'Delivery Mode',
+      options: [{
+        id: 'onsite',
+        name: 'Onsite'
+      }, {
+        id: 'online',
+        name: 'Online'
+      }, {
+        id: 'hybrid',
+        name: 'Hybrid'
+      }]
+    }, {
+      id: 'duration-band',
+      title: 'Duration Band',
+      options: [{
+        id: 'short',
+        name: 'Short (≤ 1 hr)'
+      }, {
+        id: 'medium',
+        name: 'Medium (1 – 3 hrs)'
+      }, {
+        id: 'long',
+        name: 'Long (> 3 hrs)'
+      }, {
+        id: 'multi-day',
+        name: 'Multi-Day'
+      }]
+    }, {
+      id: 'department',
+      title: 'Department',
+      options: [{
+        id: 'hra-people',
+        name: 'HRA (People)'
+      }, {
+        id: 'finance',
+        name: 'Finance'
+      }, {
+        id: 'deals',
+        name: 'Deals'
+      }, {
+        id: 'stories',
+        name: 'Stories'
+      }, {
+        id: 'intelligence',
+        name: 'Intelligence'
+      }, {
+        id: 'solutions',
+        name: 'Solutions'
+      }, {
+        id: 'secdevops',
+        name: 'SecDevOps'
+      }, {
+        id: 'products',
+        name: 'Products'
+      }, {
+        id: 'delivery-deploys',
+        name: 'Delivery — Deploys'
+      }, {
+        id: 'delivery-designs',
+        name: 'Delivery — Designs'
+      }, {
+        id: 'dco-operations',
+        name: 'DCO Operations'
+      }, {
+        id: 'dbp-platform',
+        name: 'DBP Platform'
+      }, {
+        id: 'dbp-delivery',
+        name: 'DBP Delivery'
+      }]
+    }, {
+      id: 'location',
+      title: 'Location',
+      options: [{
+        id: 'dubai',
+        name: 'Dubai'
+      }, {
+        id: 'nairobi',
+        name: 'Nairobi'
+      }, {
+        id: 'riyadh',
+        name: 'Riyadh'
+      }, {
+        id: 'remote',
+        name: 'Remote'
+      }]
+    }],
+    // Data mapping functions
+    mapListResponse: data => {
+      return data.map((item: any) => ({
+        ...item,
+        // Transform any fields if needed
+        tags: item.tags || [item.category, item.eventType].filter(Boolean)
+      }));
+    },
+    mapDetailResponse: data => {
+      return {
+        ...data,
+        // Transform any fields if needed
+        highlights: data.highlights || data.details || []
+      };
+    },
+    mapFilterResponse: data => {
+      return [{
+        id: 'category',
+        title: 'Categories',
+        options: data.categories || []
+      }, {
+        id: 'location',
+        title: 'Location',
+        options: data.locations || []
+      }, {
+        id: 'price',
+        title: 'Price',
+        options: data.prices || []
+      }, {
+        id: 'session',
+        title: 'Session',
+        options: data.sessions || []
+      }];
+    },
+    // Mock data for fallback and schema reference
+    mockData: mockEventsData
+  },
   'knowledge-hub': knowledgeHubBaseConfig,
   // Compatibility alias for new Guides marketplace
   guides: {
@@ -1133,23 +1357,23 @@ export const getTabSpecificFilters = (tabId?: string): FilterCategoryConfig[] =>
   if (tabId === 'technology') {
     return [...baseFilters, ...technologySpecificFilters];
   }
-  
+
   if (tabId === 'business') {
     return [...baseFilters, ...businessSpecificFilters];
   }
-  
+
   if (tabId === 'digital_worker') {
     return [...baseFilters, ...digitalWorkerSpecificFilters];
   }
-  
+
   if (tabId === 'prompt_library') {
     return [...baseFilters, ...promptLibrarySpecificFilters];
   }
-  
+
   if (tabId === 'ai_tools') {
     return [...baseFilters, ...aiToolsSpecificFilters];
   }
-  
+
   return baseFilters;
 };
 

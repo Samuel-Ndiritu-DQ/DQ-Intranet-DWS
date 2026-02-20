@@ -1,8 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/communities/contexts/AuthProvider';
-import { supabase } from '@/communities/integrations/supabase/client';
-import { safeFetch } from '@/communities/utils/safeFetch';
+import { joinCommunity, leaveCommunity } from '@/communities/services/membershipService';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/communities/components/ui/card';
 import { Button } from '@/communities/components/ui/button';
 import { Badge } from '@/communities/components/ui/badge';
@@ -31,56 +30,29 @@ export function CommunityCard({
   const [loading, setLoading] = useState(false);
   const handleJoinLeave = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (!user) {
-      toast.error('Please sign in to join communities');
-      return;
-    }
     setLoading(true);
-    if (isJoined) {
-      // Leave community
-      const query = supabase.from('memberships').delete().match({
-        user_id: user.id,
-        community_id: community.id
-      });
-      const [, error] = await safeFetch(query);
-      if (error) {
-        toast.error('Failed to leave community');
+    
+    try {
+      if (isJoined) {
+        // Leave community (optimized - single table operation)
+        await leaveCommunity(community.id, user, {
+          onSuccess: () => {
+            onJoinLeave();
+          },
+        });
       } else {
-        toast.success('Left community');
-        onJoinLeave();
+        // Join community (optimized - single table operation)
+        await joinCommunity(community.id, user, {
+          onSuccess: () => {
+            onJoinLeave();
+          },
+        });
       }
-    } else {
-      // Join community
-      const query = supabase.from('memberships').insert({
-        user_id: user.id,
-        community_id: community.id
-      });
-      const [, error] = await safeFetch(query);
-      if (error) {
-        toast.error('Failed to join community');
-      } else {
-        toast.success('Joined community!');
-        onJoinLeave();
-      }
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
   const JoinButton = () => {
-    if (!user) {
-      return <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button size="sm" variant="outline" disabled className="gap-2">
-                <UserPlus className="h-4 w-4" />
-                Join
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>Login to join communities</p>
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>;
-    }
     if (isJoined) {
       return <Button size="sm" variant="outline" onClick={handleJoinLeave} disabled={loading} className="gap-2 border-primary/50 text-primary hover:bg-primary/10">
           {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
@@ -98,7 +70,7 @@ export function CommunityCard({
           <CardTitle className="text-lg leading-tight">
             {community.name}
           </CardTitle>
-          {isJoined && user && <Badge className="bg-gradient-to-r from-primary to-accent text-xs">
+          {isJoined && <Badge className="bg-gradient-to-r from-primary to-accent text-xs">
               Member
             </Badge>}
         </div>

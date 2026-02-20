@@ -10,18 +10,18 @@ export interface EventCardProps {
 export const EventCard: React.FC<EventCardProps> = ({ event, onClick }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const formatDate = (date: Date) => {
-    return new Date(date).toLocaleDateString('en-US', { 
-      month: 'short', 
-      day: 'numeric', 
-      year: 'numeric' 
+    return new Date(date).toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric'
     });
   };
 
   const formatTime = (date: Date) => {
-    return new Date(date).toLocaleTimeString('en-US', { 
-      hour: 'numeric', 
+    return new Date(date).toLocaleTimeString('en-US', {
+      hour: 'numeric',
       minute: '2-digit',
-      hour12: true 
+      hour12: true
     });
   };
 
@@ -49,8 +49,8 @@ export const EventCard: React.FC<EventCardProps> = ({ event, onClick }) => {
   };
 
   return (
-    <div 
-      className="bg-white rounded-lg shadow p-4 hover:shadow-md transition-shadow cursor-pointer h-full flex flex-col" 
+    <div
+      className="bg-white rounded-lg shadow p-4 hover:shadow-md transition-shadow cursor-pointer h-full flex flex-col"
       onClick={handleCardClick}
     >
       <h3 className="font-semibold text-gray-900 mb-1 line-clamp-2 min-h-[40px]" title={event.title}>
@@ -59,7 +59,7 @@ export const EventCard: React.FC<EventCardProps> = ({ event, onClick }) => {
       <p className="text-sm text-gray-600 line-clamp-2 min-h-[40px] mb-3">
         {event.description}
       </p>
-      
+
       <div className="flex flex-wrap gap-1 mb-3">
         {event.category && (
           <span className={`px-2 py-0.5 text-xs rounded-full flex items-center ${getCategoryStyles(event.category)}`}>
@@ -87,19 +87,19 @@ export const EventCard: React.FC<EventCardProps> = ({ event, onClick }) => {
       </div>
 
       <div className="mt-auto pt-3 border-t border-gray-100">
-        <button 
+        <button
           onClick={(e) => {
             e.stopPropagation();
             setIsModalOpen(true);
           }}
-          className="w-full inline-flex items-center justify-center rounded-full bg-[#030f35] text-white text-sm font-semibold px-4 py-2 transition-all hover:bg-[#05154d] focus:outline-none focus:ring-2 focus:ring-[#1e2a78]"
+          className="w-full px-4 py-2 text-sm font-bold text-white bg-gradient-to-r from-[#030F35] via-[#1A2E6E] to-[#030F35] hover:from-[#13285A] hover:via-[#1A2E6E] hover:to-[#13285A] rounded-md transition-all shadow-md focus:outline-none focus:ring-2 focus:ring-[#030F35]/20"
         >
           View Details
         </button>
       </div>
 
       {/* Event Details Modal */}
-      <EventDetailsModal 
+      <EventDetailsModal
         event={event}
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}

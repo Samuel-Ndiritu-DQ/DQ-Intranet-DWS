@@ -148,7 +148,7 @@ function VisionMissionPage() {
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
-      <Header toggleSidebar={() => {}} sidebarOpen={false} />
+      <Header toggleSidebar={() => undefined} sidebarOpen={false} />
       
       {/* Hero Section */}
       <VisionMissionHeroSection lastUpdatedAt={currentGuide?.lastUpdatedAt} />

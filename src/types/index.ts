@@ -2,7 +2,9 @@ export type ServiceRequestStatus =
   | "draft"
   | "under-review"
   | "approved"
-  | "rejected";
+  | "rejected"
+  | "resolved"
+  | "pending";
 export interface ServiceRequest {
   id: string;
   serviceName: string;

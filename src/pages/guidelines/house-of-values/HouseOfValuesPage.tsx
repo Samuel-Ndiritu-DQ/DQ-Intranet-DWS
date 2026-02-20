@@ -146,7 +146,7 @@ function HouseOfValuesPage() {
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
-      <Header toggleSidebar={() => {}} sidebarOpen={false} />
+      <Header toggleSidebar={() => undefined} sidebarOpen={false} />
       
       {/* Main Content */}
       <main className="flex-1">

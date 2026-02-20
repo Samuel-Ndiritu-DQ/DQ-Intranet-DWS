@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/communities/contexts/AuthProvider';
-import { supabase } from '@/communities/integrations/supabase/client';
+import { supabase } from "@/lib/supabaseClient";
 import { safeFetch } from '@/communities/utils/safeFetch';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/communities/components/ui/dialog';
 import { Button } from '@/communities/components/ui/button';
@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/communities/components/ui/tabs';
 import { RichTextEditor } from './RichTextEditor';
 import { TagAutocomplete } from './TagAutocomplete';
+import { SignInModal } from '@/communities/components/auth/SignInModal';
 import { Loader2, X, Plus, FileText, Image as ImageIcon, BarChart3, Calendar, MapPin, Link as LinkIcon, Tag as TagIcon } from 'lucide-react';
 import { toast } from 'sonner';
 interface Community {
@@ -31,7 +32,8 @@ export function PostComposer({
   communityId: initialCommunityId
 }: PostComposerProps) {
   const {
-    user
+    user,
+    isAuthenticated
   } = useAuth();
   const [communities, setCommunities] = useState<Community[]>([]);
   const [loading, setLoading] = useState(false);
@@ -65,13 +67,16 @@ export function PostComposer({
   const titleCharCount = title.length;
   const contentCharCount = content.length;
   useEffect(() => {
-    if (open && user) {
-      fetchUserCommunities();
-      if (initialCommunityId) {
-        setCommunityId(initialCommunityId);
+    if (open) {
+      // User should be authenticated via Azure AD at app level
+      if (user) {
+        fetchUserCommunities();
+        if (initialCommunityId) {
+          setCommunityId(initialCommunityId);
+        }
       }
     }
-  }, [open, user, initialCommunityId]);
+  }, [open, user, isAuthenticated, initialCommunityId]);
 
   // Reset form when closed
   useEffect(() => {
@@ -196,7 +201,12 @@ export function PostComposer({
   };
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!user || !validateForm()) return;
+    // User should be authenticated via Azure AD at app level
+    if (!user) {
+      toast.error('Please wait for authentication to complete');
+      return;
+    }
+    if (!validateForm()) return;
     setSubmitting(true);
     try {
       // Prepare metadata based on post type
@@ -216,17 +226,32 @@ export function PostComposer({
         if (rsvpLimit) metadata.rsvp_limit = parseInt(rsvpLimit);
       }
 
-      // Insert the post
-      const query = supabase.from('posts').insert({
-        title,
-        content,
-        content_html: contentHtml,
-        post_type: postType,
-        metadata,
-        tags,
+      // Get user ID from Azure AD authentication
+      if (!user?.id) {
+        console.error('❌ User not authenticated');
+        toast.error('Unable to verify authentication. Please sign in again.');
+        setSubmitting(false);
+        return;
+      }
+      
+      const userId = user.id;
+      
+      // Insert the post into posts_v2 (simplified schema)
+      // Note: posts_v2 only has: id, community_id, user_id, title, content, created_at, updated_at
+      // Additional metadata (post_type, tags, etc.) can be stored in content or handled separately
+      let postContent = contentHtml || content; // Use HTML if available, otherwise plain text
+      
+      // If media post, add media HTML to content immediately
+      if (postType === 'media' && mediaUrl) {
+        const mediaHtml = `<div class="media-content"><img src="${mediaUrl.trim()}" alt="${caption || 'Media'}" style="max-width: 100%; height: auto; border-radius: 8px; margin-top: 12px;" />${caption ? `<p class="text-sm text-gray-600 mt-2">${caption}</p>` : ''}</div>`;
+        postContent = postContent ? `${postContent}\n${mediaHtml}` : mediaHtml;
+      }
+      
+      const query = supabase.from('posts_v2').insert({
+        title: title.trim(),
+        content: postContent.trim(),
         community_id: communityId,
-        created_by: user.id,
-        status: 'active'
+        user_id: userId // Must match auth.uid() for RLS
       }).select().single();
       const [postData, postError] = await safeFetch(query);
       if (postError || !postData) {
@@ -262,6 +287,13 @@ export function PostComposer({
           });
         }
       }
+
+      // Media is already included in content above, so no need to save separately
+      // Note: media_files table has foreign key to posts(id), not posts_v2(id), so we store in content instead
+      if (postType === 'media' && mediaUrl) {
+        console.log('✅ Media included in post content');
+      }
+
       toast.success('Post created successfully!');
       resetForm();
       onPostCreated();
@@ -273,14 +305,56 @@ export function PostComposer({
     setSubmitting(false);
   };
   const isFormValid = title.trim() && content.trim() && communityId && !submitting;
-  return <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-3xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="text-2xl font-bold">Create New Post</DialogTitle>
-          <DialogDescription>
-            Share your thoughts, media, polls, or events with your community
-          </DialogDescription>
-        </DialogHeader>
+  
+  // User should be authenticated via Azure AD at app level
+  // If user is not available, show loading state
+  if (!user && loading) {
+    return (
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Loading...</DialogTitle>
+            <DialogDescription>
+              Please wait while we verify your authentication.
+            </DialogDescription>
+          </DialogContent>
+        </Dialog>
+      );
+  }
+  
+  if (!user) {
+    return (
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-2xl font-bold">Authentication Required</DialogTitle>
+            <DialogDescription>
+              You need to be signed in to create posts. Redirecting to sign in...
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex justify-end gap-3 pt-4">
+            <Button onClick={() => {
+              signIn();
+              onOpenChange(false);
+            }}>
+              Sign In with Microsoft
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
+  }
+  
+  return (
+    <>
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="sm:max-w-3xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-2xl font-bold">Create New Post</DialogTitle>
+            <DialogDescription>
+              Share your thoughts, media, polls, or events with your community
+            </DialogDescription>
+          </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Post Type Tabs */}
@@ -442,5 +516,7 @@ export function PostComposer({
           </div>
         </form>
       </DialogContent>
-    </Dialog>;
+    </Dialog>
+    </>
+  );
 }

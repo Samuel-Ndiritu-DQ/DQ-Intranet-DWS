@@ -19,10 +19,10 @@ const MarkdownRenderer: React.FC<{ body: string }> = ({ body }) => {
             const classValue = node.properties.class
             if (classValue) {
               // Convert to string
-              const classStr = Array.isArray(classValue) 
-                ? classValue.join(' ') 
+              const classStr = Array.isArray(classValue)
+                ? classValue.join(' ')
                 : String(classValue)
-              
+
               // ALWAYS set className from class (this is critical for react-markdown)
               node.properties.className = classStr
               // Also keep class for compatibility
@@ -40,12 +40,14 @@ const MarkdownRenderer: React.FC<{ body: string }> = ({ body }) => {
       walk(tree)
     }
   }, [])
-  
+
   // Rehype plugin: remove leading icon nodes (img/svg/span with img) from list items
   const rehypeStripListIcons = React.useMemo(() => {
     const stripText = (s: string) => {
       return (s || '')
+        // eslint-disable-next-line no-misleading-character-class
         .replace(/^(?:[\u25A0-\u25FF]\uFE0F?\s*)+/, '') // geometric arrows
+        // eslint-disable-next-line no-misleading-character-class
         .replace(/^[\u200d\ufe0f\uFE0F\u2060\s]*[\u{1F300}-\u{1FAFF}\u{1F900}-\u{1F9FF}\u{1F1E6}-\u{1F1FF}\u{2600}-\u{27BF}]+\s*/u, '') // emoji
     }
     const containsImage = (node: any): boolean => {
@@ -95,8 +97,10 @@ const MarkdownRenderer: React.FC<{ body: string }> = ({ body }) => {
       const prefix = m ? m[1] : ''
       if (prefix) line = line.slice(prefix.length)
       // Remove leading geometric-shape arrows/bullets (includes ▶, ►, ▸ and many others)
+      // eslint-disable-next-line no-misleading-character-class
       line = line.replace(/^(?:[\u25A0-\u25FF]\uFE0F?\s*)+/, '')
       // Remove leading emoji pictographs
+      // eslint-disable-next-line no-misleading-character-class
       line = line.replace(/^[\u200d\ufe0f\uFE0F\u2060\s]*[\u{1F300}-\u{1FAFF}\u{1F900}-\u{1F9FF}\u{1F1E6}-\u{1F1FF}\u{2600}-\u{27BF}]+\s*/u, '')
       // Replace leading markdown/HTML image icons with their alt text (to keep names)
       line = line
@@ -235,33 +239,32 @@ const MarkdownRenderer: React.FC<{ body: string }> = ({ body }) => {
                 if (typeof childChildren === 'string') {
                   return childChildren.trim().length > 0
                 }
-                return true
+                return false
+              })
+
+              // Don't render if no meaningful content
+              if (filteredChildren.length === 0) {
+                return null
               }
-              return true
-            })
-            
-            // Don't render if no meaningful content
-            if (filteredChildren.length === 0) {
-              return null
+
+              return (
+                <div
+                  className="bg-white rounded-lg border border-gray-200 shadow-sm p-6 mb-4"
+                  {...restProps}
+                >
+                  {filteredChildren}
+                </div>
+              )
             }
-            
-            return (
-              <div
-                className="bg-white rounded-lg border border-gray-200 shadow-sm p-6 mb-4"
-                {...restProps}
-              >
-                {filteredChildren}
-              </div>
-            )
+
+            // Default div rendering - preserve className
+            return <div className={combinedClass || className || classProp} {...restProps}>{children}</div>
           }
-          
-          // Default div rendering - preserve className
-          return <div className={combinedClass || className || classProp} {...restProps}>{children}</div>
-        }
-      }}
-    >
-      {processedBody}
-    </ReactMarkdown>
+        }}
+      >
+        {processedBody}
+      </ReactMarkdown>
+    </div>
   )
 }
 

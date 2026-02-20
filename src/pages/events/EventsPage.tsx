@@ -11,8 +11,8 @@ import EventsFilters, {
 import EventsGrid from "../../components/events/EventsGrid";
 import { supabaseClient } from "../../lib/supabaseClient";
 
-// Interface for Supabase event data from upcoming_events view
-interface SupabaseEvent {
+// Interface for Supabase event data from upcoming_events view (if it exists)
+interface UpcomingEventView {
   id: string;
   title: string;
   description: string | null;
@@ -36,6 +36,50 @@ interface SupabaseEvent {
   created_at: string;
   updated_at: string;
 }
+
+// Interface for Supabase events_v2 table (actual database schema)
+interface EventsTableRow {
+  id: string;
+  title: string;
+  description: string | null;
+  start_time: string; // TIMESTAMPTZ format
+  end_time: string; // TIMESTAMPTZ format
+  category: string;
+  location: string;
+  image_url: string | null;
+  meeting_link: string | null;
+  is_virtual: boolean;
+  is_all_day: boolean;
+  max_attendees: number | null;
+  registration_required: boolean;
+  registration_deadline: string | null;
+  organizer_id: string | null;
+  organizer_name: string | null;
+  organizer_email: string | null;
+  status: string;
+  is_featured: boolean;
+  tags: string[] | null;
+  created_at: string;
+  updated_at: string;
+}
+
+// Interface for events stored in posts table
+interface PostEventRow {
+  id: string;
+  title: string;
+  content: string | null;
+  description?: string | null;
+  event_date: string | null; // TIMESTAMPTZ format
+  event_location: string | null;
+  post_type: string;
+  community_id: string | null;
+  created_by: string | null;
+  created_at: string;
+  tags?: string[] | null;
+}
+
+// Union type for all event sources
+type SupabaseEvent = UpcomingEventView | EventsTableRow | PostEventRow;
 
 // Interface for transformed event data (compatible with EventCard)
 interface TransformedEvent {
@@ -67,16 +111,64 @@ export const EventsPage: React.FC = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [loading, setLoading] = useState(true);
 
+  // Check if event is from upcoming_events view (has start_time property)
+  const isUpcomingEventView = (event: SupabaseEvent): event is UpcomingEventView => {
+    return 'start_time' in event && 'end_time' in event;
+  };
+
+  // Check if event is from posts table (has post_type property)
+  const isPostEvent = (event: SupabaseEvent): event is PostEventRow => {
+    return 'post_type' in event && event.post_type === 'event';
+  };
+
   // Transform Supabase event to display format
   const transformEvent = (event: SupabaseEvent): TransformedEvent => {
+    let startDate: Date;
+    let endDate: Date;
+    let category: string;
+    let location: string;
+    let description: string;
+
+    if (isUpcomingEventView(event)) {
+      // Event from upcoming_events view
+      startDate = new Date(event.start_time);
+      endDate = new Date(event.end_time);
+      category = event.category || "General";
+      location = event.location || "TBA";
+      description = event.description || "";
+    } else if (isPostEvent(event)) {
+      // Event from posts table
+      if (event.event_date) {
+        startDate = new Date(event.event_date);
+      } else {
+        // Fallback to created_at if no event_date
+        startDate = new Date(event.created_at);
+      }
+      // Default end time to 1 hour after start
+      endDate = new Date(startDate.getTime() + 60 * 60 * 1000);
+      category = event.community_id ? "Community" : "General";
+      location = event.event_location || "TBA";
+      description = event.content || event.description || "";
+    } else {
+      // Event from events_v2 table (matches UpcomingEventView structure)
+      const evt = event as EventsTableRow;
+      startDate = new Date(evt.start_time);
+      endDate = new Date(evt.end_time);
+      category = evt.category || "General";
+      location = evt.location || "TBA";
+      description = evt.description || "";
+      imageUrl = evt.image_url;
+      tags = evt.tags || [];
+    }
+
     return {
       id: event.id,
       title: event.title,
-      description: event.description || "",
-      start: new Date(event.start_time),
-      end: new Date(event.end_time),
-      category: event.category,
-      location: event.location,
+      description,
+      start: startDate,
+      end: endDate,
+      category,
+      location,
     };
   };
 
@@ -86,22 +178,59 @@ export const EventsPage: React.FC = () => {
       setLoading(true);
 
       try {
-        // Fetch events from Supabase upcoming_events view
-        const { data, error } = await supabaseClient
-          .from("upcoming_events")
+        let data: SupabaseEvent[] | null = null;
+        let error: any = null;
+
+        // Fetch from events_v2 table (primary source)
+        const now = new Date().toISOString();
+        const tableQuery = await supabaseClient
+          .from("events_v2")
           .select("*")
+          .eq("status", "published") // Only get published events
+          .gte("start_time", now) // Only get future events
           .order("start_time", { ascending: true });
 
-        if (error) {
-          console.error("Error fetching events:", error);
+        if (!tableQuery.error && tableQuery.data) {
+          data = tableQuery.data;
+        } else {
+          error = tableQuery.error || new Error("events_v2 table query failed");
+        }
+
+        // Handle errors gracefully
+        if (error && (!data || data.length === 0)) {
+          // Check if it's a permission error
+          if (error?.code === '42501') {
+            console.warn("Permission denied: Events may require authentication or proper RLS policies.");
+          } else {
+            console.error("Error fetching events:", error);
+          }
+          // Set empty state - user will see "No events found" message
           setItems([]);
           setFilteredItems([]);
+          setFacets({
+            category: [],
+            month: [],
+            location: [],
+          });
+          setLoading(false);
+          return;
+        }
+
+        if (!data || data.length === 0) {
+          console.log("No events found in Supabase");
+          setItems([]);
+          setFilteredItems([]);
+          setFacets({
+            category: [],
+            month: [],
+            location: [],
+          });
           setLoading(false);
           return;
         }
 
         // Transform Supabase data to match EventCard interface
-        const eventsData = (data || []).map(transformEvent);
+        const eventsData = data.map(transformEvent);
 
         // Apply filters based on query params
         let filtered = [...eventsData];
@@ -273,21 +402,34 @@ export const EventsPage: React.FC = () => {
       />
       <div className="container mx-auto px-4 py-8 flex-grow">
         {/* Breadcrumbs */}
-        <nav className="flex mb-4" aria-label="Breadcrumb">
+        <nav className="flex mb-4 min-h-[24px]" aria-label="Breadcrumb">
           <ol className="inline-flex items-center space-x-1 md:space-x-2">
             <li className="inline-flex items-center">
               <Link
                 to="/"
-                className="text-gray-600 hover:text-gray-900 inline-flex items-center"
+                className="text-gray-600 hover:text-gray-900 inline-flex items-center text-sm md:text-base transition-colors"
+                aria-label="Navigate to Home"
               >
-                <HomeIcon size={16} className="mr-1" />
+                <HomeIcon size={16} className="mr-1" aria-hidden="true" />
                 <span>Home</span>
               </Link>
             </li>
-            <li aria-current="page">
+            <li>
               <div className="flex items-center">
-                <ChevronRightIcon size={16} className="text-gray-400" />
-                <span className="ml-1 text-gray-500 md:ml-2">Events</span>
+                <ChevronRightIcon size={16} className="text-gray-400 mx-1 flex-shrink-0" aria-hidden="true" />
+                <Link
+                  to="/communities"
+                  className="text-gray-600 hover:text-gray-900 text-sm md:text-base font-medium transition-colors"
+                  aria-label="Navigate to DQ Work Communities"
+                >
+                  DQ Work Communities
+                </Link>
+              </div>
+            </li>
+            <li aria-current="page">
+              <div className="flex items-center min-w-[80px]">
+                <ChevronRightIcon size={16} className="text-gray-400 mx-1 flex-shrink-0" aria-hidden="true" />
+                <span className="text-gray-500 text-sm md:text-base font-medium whitespace-nowrap">Events</span>
               </div>
             </li>
           </ol>

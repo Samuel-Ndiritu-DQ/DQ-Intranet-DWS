@@ -179,7 +179,7 @@ const LeadApplySection = () => {
         </FadeInUpOnScroll>
         <FadeInUpOnScroll delay={0.2}>
           <p className="text-lg text-gray-200 mb-12 max-w-3xl mx-auto">
-            Work smarter in the DQ Digital Workspace — lead, co-work, and grow together.
+            Everything you need to get started, work smarter, and unlock real progress at DQ all from one digital workspace.
           </p>
         </FadeInUpOnScroll>
 

@@ -311,7 +311,7 @@ export function GHCGlossaryDetailPage() {
   if (!term) {
     return (
       <div className="min-h-screen flex flex-col bg-gray-50">
-        <Header toggleSidebar={() => {}} sidebarOpen={false} />
+        <Header toggleSidebar={() => undefined} sidebarOpen={false} />
         <main className="container mx-auto px-4 py-8 flex-grow max-w-7xl">
           <div className="text-center py-12">
             <h1 className="text-2xl font-bold text-gray-900 mb-4">Term Not Found</h1>
@@ -333,7 +333,7 @@ export function GHCGlossaryDetailPage() {
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
-      <Header toggleSidebar={() => {}} sidebarOpen={false} />
+      <Header toggleSidebar={() => undefined} sidebarOpen={false} />
       
       {/* Hero Section */}
       <GlossaryHeroSection term={term} levelColor={levelColor} />

@@ -165,7 +165,7 @@ const EnterpriseStages: React.FC = () => {
   };
 
   return (
-    <div className="bg-gray-50 py-16">
+    <div className="bg-gray-50 pt-10 pb-16">
       <div className="container mx-auto px-4">
         <FadeInUpOnScroll className="mb-8 text-center">
           <h2 className="clamp-1 mb-3 text-3xl font-bold text-gray-900">

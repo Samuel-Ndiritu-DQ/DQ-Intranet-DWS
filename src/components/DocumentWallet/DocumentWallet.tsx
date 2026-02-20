@@ -3,88 +3,135 @@ import { DocumentDashboard } from './DocumentDashboard';
 import { DocumentTable } from './DocumentTable';
 import { DocumentUpload } from './DocumentUpload';
 import { DocumentDetail } from './DocumentDetail';
-import { SearchIcon, FilterIcon, XIcon } from 'lucide-react';
-import { mockDocumentData } from './mockDocumentData';
-import { getAllDocuments } from '../../services/DataverseService';
-import { deleteBlob, getBlobNameFromUrl } from '../../services/AzureBlobService';
-export function DocumentWallet() {
+import { SearchIcon, FilterIcon, XIcon, FolderIcon, UploadCloudIcon, AwardIcon } from 'lucide-react';
+import { getEmployeeDocuments, deleteDocument } from '../../services/employeeOnboardingService';
+import { useMsal } from "@azure/msal-react";
+
+export function DocumentWallet({
+    activeTab = 'my-documents',
+    setActiveTab
+}: {
+    activeTab?: 'my-documents' | 'uploads' | 'certificates';
+    setActiveTab?: (tab: 'my-documents' | 'uploads' | 'certificates') => void;
+}) {
+    const { accounts } = useMsal();
+    const account = accounts[0];
+    const employeeId = account?.localAccountId || account?.username || "";
+
     const [documents, setDocuments] = useState<any[]>([]);
+    // If props are provided, use them, otherwise use internal state for backward compatibility
+    const [internalActiveTab, setInternalActiveTab] = useState<'my-documents' | 'uploads' | 'certificates'>('my-documents');
+    const currentTab = setActiveTab ? activeTab : internalActiveTab;
+
     const [filteredDocuments, setFilteredDocuments] = useState<any[]>([]);
     const [searchTerm, setSearchTerm] = useState('');
     const [activeFilter, setActiveFilter] = useState('all');
     const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
+    const [preSelectedDocType, setPreSelectedDocType] = useState<string | undefined>(undefined);
     const [selectedDocument, setSelectedDocument] = useState(null);
     const [statusFilter, setStatusFilter] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [isFilterExpanded, setIsFilterExpanded] = useState(false);
-    // Fetch documents from Dataverse
+    const REQUIRED_DOCS = [
+        { name: 'National ID', category: 'Id', fieldName: 'national_id' },
+        { name: 'Degree Certificate', category: 'Certificate', fieldName: 'degree_certificate' },
+        { name: 'Employment Contract', category: 'Contract', fieldName: 'employment_contract' }
+    ];
+
+    // Function to fetch documents
+    const fetchDocs = async () => {
+        if (!employeeId) return;
+        try {
+            setIsLoading(true);
+            setError(null);
+            const data = await getEmployeeDocuments(employeeId);
+
+            // Transform database fields to UI fields
+            const uploadedDocs = data.map(doc => ({
+                ...doc,
+                name: doc.file_name,
+                category: getCategoryFromFieldName(doc.field_name),
+                uploadDate: doc.created_at,
+                expiryDate: null,
+                status: 'Uploaded',
+                fileType: doc.file_type.includes('pdf') ? 'pdf' : doc.file_type.includes('image') ? 'image' : 'file',
+            }));
+
+            // Get field names of uploaded docs
+            const uploadedFieldNames = data.map(d => d.field_name.toLowerCase());
+
+            // Identify missing required docs
+            const missingDocs = REQUIRED_DOCS.filter(req =>
+                !uploadedFieldNames.includes(req.fieldName)
+            ).map(missing => ({
+                id: `missing-${missing.fieldName}`,
+                name: missing.name,
+                category: missing.category,
+                status: 'Required',
+                isMissing: true,
+                fileType: 'none',
+                fieldName: missing.fieldName
+            }));
+
+            const allDocs = [...missingDocs, ...uploadedDocs];
+            setDocuments(allDocs);
+            setFilteredDocuments(allDocs);
+        } catch (error) {
+            console.error('Error fetching documents:', error);
+            setError('Failed to load documents. Please try again.');
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    // Helper to get category label from field_name
+    const getCategoryFromFieldName = (fieldName: string): string => {
+        const lower = fieldName.toLowerCase();
+        if (lower.includes('id') || lower.includes('passport')) return 'Id';
+        if (lower.includes('cert') || lower.includes('degree')) return 'Certificate';
+        if (lower.includes('contract')) return 'Contract';
+        if (lower.includes('letter')) return 'Letter';
+        return 'Other';
+    };
+
+    // Fetch documents from Supabase
     useEffect(() => {
-        const fetchDocuments = async () => {
-            try {
-                setIsLoading(true);
-                setError(null);
-                // In a real implementation, this would fetch from Dataverse
-                // const data = await getAllDocuments();
-                // For demo purposes, we'll use mock data with a delay to simulate API call
-                setTimeout(() => {
-                    setDocuments(mockDocumentData);
-                    setFilteredDocuments(mockDocumentData);
-                    setIsLoading(false);
-                }, 1000);
-            } catch (error) {
-                console.error('Error fetching documents:', error);
-                setError('Failed to load documents. Please try again.');
-                setIsLoading(false);
-                // Fall back to mock data in case of error
-                setDocuments(mockDocumentData);
-                setFilteredDocuments(mockDocumentData);
-            }
-        };
-        fetchDocuments();
-    }, []);
-    // Filter documents based on search term, active filter, and status filter
+        fetchDocs();
+    }, [employeeId]);
+    // Filter documents based on active tab, search term, and status
     useEffect(() => {
         let filtered = documents;
+
+        // Apply Tab Filter
+        if (currentTab === 'uploads') {
+            // Uploads & Validation: Focus on pending/recent uploads (exclude virtual missing docs)
+            filtered = filtered.filter(doc => !doc.isMissing && ['Uploaded', 'Reviewed'].includes(doc.status));
+        } else if (currentTab === 'certificates') {
+            // Certificates & Credentials
+            filtered = filtered.filter(doc => doc.category === 'Certificate');
+        } else {
+            // My Documents: Approved, General, or Required placeholders
+            filtered = filtered.filter(doc =>
+                doc.isMissing ||
+                doc.status === 'Approved' ||
+                doc.status === 'Required' ||
+                (doc.category !== 'Certificate' && doc.status !== 'Rejected')
+            );
+        }
+
         // Apply search filter
         if (searchTerm) {
             filtered = filtered.filter(
                 (doc) =>
                     doc.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                    doc.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                    doc.tags.some((tag: string) =>
-                        tag.toLowerCase().includes(searchTerm.toLowerCase()),
-                    ),
+                    doc.category.toLowerCase().includes(searchTerm.toLowerCase())
             );
         }
-        // Apply category filter
-        if (activeFilter !== 'all') {
-            filtered = filtered.filter((doc) => doc.category === activeFilter);
-        }
-        // Apply status filter
-        if (statusFilter) {
-            if (statusFilter === 'active') {
-                filtered = filtered.filter((doc) => doc.status === 'Active');
-            } else if (statusFilter === 'expired') {
-                filtered = filtered.filter((doc) => {
-                    if (!doc.expiryDate) return false;
-                    const today = new Date();
-                    const expiry = new Date(doc.expiryDate);
-                    return expiry < today || doc.status === 'Expired';
-                });
-            } else if (statusFilter === 'expiring') {
-                filtered = filtered.filter((doc) => {
-                    if (!doc.expiryDate) return false;
-                    const today = new Date();
-                    const expiry = new Date(doc.expiryDate);
-                    const diffTime = expiry.getTime() - today.getTime();
-                    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-                    return diffDays <= 30 && diffDays >= 0;
-                });
-            }
-        }
+
+        // ... (remaining status filters if needed)
         setFilteredDocuments(filtered);
-    }, [searchTerm, activeFilter, documents, statusFilter]);
+    }, [searchTerm, activeFilter, documents, statusFilter, currentTab]);
     // Get expiring documents (within 30 days)
     const expiringDocuments = documents.filter((doc) => {
         if (!doc.expiryDate) return false;
@@ -113,15 +160,10 @@ export function DocumentWallet() {
     };
     // Get unique categories for filter
     const categories = ['all', ...new Set(documents.map((doc) => doc.category))];
-    // Handle document upload
+    // Handle document upload - refresh from database
     const handleDocumentUpload = (newDocument: any) => {
-        setDocuments([
-            ...documents,
-            {
-                ...newDocument,
-                id: Date.now().toString(),
-            },
-        ]);
+        // Refresh the document list from the database to get accurate state
+        fetchDocs();
         setIsUploadModalOpen(false);
     };
     // Handle document replacement
@@ -152,28 +194,25 @@ export function DocumentWallet() {
         );
         setSelectedDocument(null);
     };
-    // Handle document deletion
     const handleDocumentDelete = async (docId: string) => {
         try {
             const docToDelete = documents.find((doc) => doc.id === docId);
-            if (docToDelete) {
-                // Delete all versions from blob storage
-                if (docToDelete.versions && docToDelete.versions.length > 0) {
-                    for (const version of docToDelete.versions) {
-                        const blobName = getBlobNameFromUrl(version.fileUrl);
-                        await deleteBlob(blobName);
-                    }
-                }
-                // Delete the current version
-                const blobName = getBlobNameFromUrl(docToDelete.fileUrl);
-                await deleteBlob(blobName);
+            if (!docToDelete || docToDelete.isMissing) {
+                // If it's a virtual missing doc, just ignore or handle specially
+                return;
             }
+
+            const result = await deleteDocument(docId, docToDelete.file_path);
+            if (!result.success) {
+                throw new Error(result.error || 'Failed to delete document');
+            }
+
             // Update state to remove the document
             setDocuments(documents.filter((doc) => doc.id !== docId));
             setSelectedDocument(null);
         } catch (error) {
             console.error('Error deleting document:', error);
-            // Continue with UI update even if blob deletion fails
+            // Fallback: still remove from UI if it was a virtual document or already gone
             setDocuments(documents.filter((doc) => doc.id !== docId));
             setSelectedDocument(null);
         }
@@ -185,33 +224,17 @@ export function DocumentWallet() {
     // Loading state
     if (isLoading) {
         return (
-            <div className="flex items-center justify-center h-screen bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+            <div className="flex items-center justify-center h-48 bg-white rounded-lg p-4">
                 <div className="text-center">
-                    <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-                    <p className="text-gray-600">Loading documents...</p>
+                    <div className="w-10 h-10 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+                    <p className="text-gray-600 text-sm">Loading documents...</p>
                 </div>
             </div>
         );
     }
     // Error state
-    if (error) {
-        return (
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                <div className="text-center">
-                    <div className="text-red-500 text-lg mb-2">Error</div>
-                    <p className="text-gray-600 mb-4">{error}</p>
-                    <button
-                        className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-                        onClick={() => window.location.reload()}
-                    >
-                        Retry
-                    </button>
-                </div>
-            </div>
-        );
-    }
     return (
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+        <div className="bg-white">
             {/* Dashboard Summary - 2x2 grid on mobile */}
             <div className="px-4 md:px-6 pt-4 md:pt-6">
                 <DocumentDashboard
@@ -369,6 +392,10 @@ export function DocumentWallet() {
                     <DocumentTable
                         documents={filteredDocuments}
                         onViewDocument={setSelectedDocument}
+                        onUploadDocument={(docType) => {
+                            setPreSelectedDocType(docType);
+                            setIsUploadModalOpen(true);
+                        }}
                     />
                 </div>
             )}
@@ -376,9 +403,13 @@ export function DocumentWallet() {
             {/* Upload Modal */}
             {isUploadModalOpen && (
                 <DocumentUpload
-                    onClose={() => setIsUploadModalOpen(false)}
+                    onClose={() => {
+                        setIsUploadModalOpen(false);
+                        setPreSelectedDocType(undefined);
+                    }}
                     onUpload={handleDocumentUpload}
                     categories={categories.filter((c) => c !== 'all')}
+                    preSelectedDocType={preSelectedDocType}
                 />
             )}
 

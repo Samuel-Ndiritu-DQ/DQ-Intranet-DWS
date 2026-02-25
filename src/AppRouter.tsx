@@ -41,6 +41,12 @@ import DiscoverDQ from "./pages/DiscoverDQ";
 import ComingSoonPage from "./pages/ComingSoonPage";
 import GrowthSectorsComingSoon from "./pages/GrowthSectorsComingSoon";
 import NotFound from "./pages/NotFound";
+import OnboardingLanding from "./pages/OnboardingLanding";
+import { OnboardingJourney } from "./pages/OnboardingJourney";
+import GHCLanding from "./pages/GHCLanding";
+import SixXDLanding from "./pages/6XDLanding";
+import SixXDProductsLanding from "./pages/6XDProductsLanding";
+import DigitalAcceleratorsLanding from "./pages/DigitalAcceleratorsLanding";
 import AdminGuidesList from "./pages/admin/guides/AdminGuidesList";
 import GuideEditor from "./pages/admin/guides/GuideEditor";
 const GHCInspectorPage = React.lazy(() => import("./pages/admin/ghc-inspector/GHCInspectorPage"));
@@ -74,6 +80,12 @@ export function AppRouter() {
                 <Route path="/discover-dq" element={<DiscoverDQ />} />
                 <Route path="/coming-soon" element={<ComingSoonPage />} />
                 <Route path="/growth-sectors-coming-soon" element={<GrowthSectorsComingSoon />} />
+                <Route path="/onboarding/welcome" element={<OnboardingLanding />} />
+                <Route path="/onboarding/journey" element={<OnboardingJourney />} />
+                <Route path="/ghc" element={<GHCLanding />} />
+                <Route path="/6xd" element={<SixXDLanding />} />
+                <Route path="/6xd-products" element={<SixXDProductsLanding />} />
+                <Route path="/knowledge-center/products/digital-accelerators" element={<DigitalAcceleratorsLanding />} />
                 <Route path="/marketplace/*" element={<MarketplaceRouter />} />
                 <Route path="/*" element={<App />} />
                 <Route path="/courses/:itemId" element={<LmsCourseDetailPage />} />

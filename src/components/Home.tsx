@@ -66,7 +66,7 @@ const approvedSections = {
       description:
         'Designed for your continuous growth. Access the upskilling and certification tools you need to deliver excellence.',
       icon: <BookOpen />,
-      path: '/marketplace/guides?tab=glossary',
+      path: '/lms',
       isActive: true,
     },
     {
@@ -75,7 +75,7 @@ const approvedSections = {
       description:
         'Explore the Golden Honeycomb of Competencies (GHC), the system behind how DQ works and delivers value.',
       icon: <GraduationCap />,
-      path: '/marketplace/guides/dq-ghc',
+      path: '/marketplace/guides?tab=strategy&collapsed=guide_type%2Csub_domain%2Cunit%2Clocation%2Ctestimonial_category%2Cproduct_type%2Cproduct_stage%2Cguidelines_category%2Ccategorization%2Cattachments%2Cstrategy_framework%2Cglossary_knowledge_system%2Cglossary_ghc_dimension%2Cglossary_6xd_perspective%2Cglossary_letter%2Cfaq_category',
       isActive: true,
     },
     {
@@ -84,7 +84,7 @@ const approvedSections = {
       description:
         'Official standards, governance models, and ways of working that guide execution across DQ.',
       icon: <ScrollText />,
-      path: '/marketplace/guides?tab=guidelines',
+      path: '/marketplace/guides?collapsed=guide_type%2Csub_domain%2Cunit%2Clocation%2Ctestimonial_category%2Cproduct_type%2Cproduct_stage%2Cguidelines_category%2Ccategorization%2Cattachments%2Cstrategy_framework%2Cglossary_knowledge_system%2Cglossary_ghc_dimension%2Cglossary_6xd_perspective%2Cglossary_letter%2Cfaq_category',
       isActive: true,
     },
     {
@@ -115,7 +115,7 @@ const approvedSections = {
       description:
         'Discover what is happening in DQ, including important announcements, and what teams are building.',
       icon: <Newspaper />,
-      path: '/marketplace/opportunities?tab=announcements',
+      path: '/marketplace/opportunities',
       isActive: true,
     },
     {

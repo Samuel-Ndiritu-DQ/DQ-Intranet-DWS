@@ -5,6 +5,7 @@ import {
   X,
   ChevronLeft,
   ChevronRight,
+  Lock,
 } from 'lucide-react';
 import {
   AnimatedCounter,
@@ -39,7 +40,7 @@ const associateFeedbacks: AssociateFeedback[] = [
       'https://i.ibb.co/XkGXwk4Z/Screenshot-2026-01-27-at-3-39-28-PM.png',
     rating: 5,
     feedback:
-      'DigitalQatalyst’s values helped me focus on creating real impact, not just completing tasks. They pushed me to take ownership, think clearly about outcomes, and stay open to continuous learning. Over time, this shifted how I approach my work: I plan with intent, communicate with purpose, and follow through with accountability. I’ve become more confident in making decisions, raising risks early, and supporting the team when challenges come up. These values also shaped me personally, helping me stay disciplined, curious, and responsible every day.',
+      'DigitalQatalyst\'s values shifted my focus from completing tasks to creating measurable impact. They strengthened my ownership, decision-making, and accountability both professionally and personally.',
   },
   {
     id: 'jerry',
@@ -49,7 +50,7 @@ const associateFeedbacks: AssociateFeedback[] = [
       'https://i.ibb.co/XMPk1nQ/Whats-App-Image-2026-01-23-at-11-20-35-AM-1.jpg',
     rating: 5,
     feedback:
-      'DigitalQatalyst’s values and mission encourage me to keep learning, adapt fast, and take real ownership of my work. They push me to face challenges with curiosity and to treat feedback as fuel for growth, not criticism. In a collaborative, innovative culture, I’ve strengthened my problem-solving, communication, and prioritization skills. I now raise risks earlier, ask better questions, and contribute with more confidence in meetings. This mindset helps me deliver value, not just activity, every single day. Overall, I’m more resilient and confident professionally and personally.',
+      'DigitalQatalyst\'s values drive me to learn continuously, adapt quickly, and take real ownership of outcomes. They\'ve strengthened my problem-solving, confidence, and resilience helping me deliver value, not just activity.',
   },
   {
     id: 'sharon',
@@ -59,7 +60,7 @@ const associateFeedbacks: AssociateFeedback[] = [
       'https://images.pexels.com/photos/3760853/pexels-photo-3760853.jpeg?auto=compress&cs=tinysrgb&w=1200',
     rating: 5,
     feedback:
-      'A value that has significantly influenced my growth is Collaboration. It taught me to lean on others’ strengths and share progress, challenges, and insights openly. By engaging more with my team, I gained fresh perspectives that improved the quality of my work and helped me avoid blind spots. I also learned to ask for feedback earlier, not at the end, so I can adjust faster and deliver stronger outcomes. Involving the right people sooner has made my work more efficient, better aligned, and more impactful.',
+      'DQ taught me the value of collaboration — I now ask for feedback early and share progress openly. This helps me deliver work that is better aligned, more efficient, and truly impactful.',
   },
   {
     id: 'fadil',
@@ -69,7 +70,7 @@ const associateFeedbacks: AssociateFeedback[] = [
       'https://images.pexels.com/photos/614810/pexels-photo-614810.jpeg?auto=compress&cs=tinysrgb&w=1200',
     rating: 5,
     feedback:
-      "One key value in DQ that has influenced my growth is ownership. It's still something I'm working on every day, but I've already noticed the positive impact it has on how I approach my tasks. For example, as a Scrum Master, I've been focusing on taking more responsibility for the challenges in the Product Factory. While it's a work in progress, I've seen improved collaboration and clearer accountability within the team when there's a strong sense of ownership, which has led to more streamlined processes.",
+      'One key value at DQ that shaped my growth is ownership — I\'m learning to take full responsibility for challenges, not just tasks. As a Scrum Master, this mindset has improved collaboration, accountability, and the way our team works together.',
   },
 ];
 
@@ -127,16 +128,15 @@ const AssociateFeedbackCard = ({ feedback }: { feedback: AssociateFeedback }) =>
 
   return (
     <div
-      className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-2xl p-8 shadow-sm hover:shadow-md transition-all duration-300 mx-auto flex flex-col overflow-hidden"
+      className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-2xl p-6 md:p-8 shadow-sm hover:shadow-md transition-all duration-300 mx-auto flex flex-col overflow-hidden"
       style={{
         width: '100%',
         maxWidth: '1030px',
-        height: '344px',
-        aspectRatio: '1030 / 344'
+        minHeight: 'auto'
       }}
     >
       {/* Large quote mark */}
-      <div className="mb-6 flex-shrink-0">
+      <div className="mb-4 flex-shrink-0">
         <svg
           width="48"
           height="48"
@@ -153,7 +153,7 @@ const AssociateFeedbackCard = ({ feedback }: { feedback: AssociateFeedback }) =>
       </div>
 
       {/* Testimonial text */}
-      <div className="mb-6 flex-1 min-h-0">
+      <div className="mb-4 flex-1 min-h-0">
         <p className="text-gray-700 leading-relaxed italic font-medium" style={{ fontSize: '17px' }}>
           {feedback.feedback}
         </p>
@@ -686,14 +686,9 @@ const PartnerCategoryCard = ({ category }) => {
   return (
     <div
       ref={ref}
-      className={`relative overflow-hidden rounded-xl p-6 transition-all duration-500 ease-out transform ${
+      className={`relative overflow-hidden rounded-2xl bg-[#F6F7F9] p-6 md:p-8 transition-all duration-500 ease-out transform min-h-[220px] h-full flex flex-col ${
         isHovered ? "shadow-md scale-[1.02]" : "shadow-sm"
       }`}
-      style={{
-        background: isHovered
-          ? `linear-gradient(to bottom right, #f9fafb, #ffffff)`
-          : "#ffffff",
-      }}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
@@ -715,20 +710,10 @@ const PartnerCategoryCard = ({ category }) => {
         </div>
       </div>
 
-      <h3 className="text-lg font-semibold text-gray-900 mb-1">
+      <h3 className="text-lg font-semibold text-gray-900 mb-2">
         {category.title}
       </h3>
-      <p className="text-sm text-gray-600 mb-4">{category.subtitle}</p>
-
-      <div
-        className={`text-3xl font-bold transition-all duration-300 ${
-          isHovered ? `text-${category.color}` : `text-${category.color}`
-        }`}
-      >
-        {hasAnimated && <AnimatedCounter value={parseInt(category.metric)} />}
-        {!hasAnimated && "0"}
-        {category.metric.includes("+") && "+"}
-      </div>
+      <p className="text-sm text-gray-600 mb-4 flex-grow">{category.subtitle}</p>
     </div>
   );
 };
@@ -853,11 +838,11 @@ const ProofAndTrust: React.FC = () => {
         <div className="mb-16">
           <FadeInUpOnScroll className="text-center mb-10">
             <h2 className="text-3xl font-bold text-gray-900 mb-3 clamp-1">
-              The DQ Agile Advantage
+              Experience the Future of Work in DQ
             </h2>
             <div>
               <p className="text-base sm:text-lg text-gray-600 mx-auto mb-8 text-balance leading-tight whitespace-normal sm:whitespace-nowrap max-w-full sm:max-w-4xl">
-                See how our way of working creates time for what matters: learning, focus, and meaningful impact.
+                DQ brings Agile to life through GHC and 7S ways of working priorities, feedback, and visible execution that moves.
               </p>
             </div>
           </FadeInUpOnScroll>
@@ -881,67 +866,88 @@ const ProofAndTrust: React.FC = () => {
                       })}
                     </span>
                   </div>
-                  <div className="text-3xl font-bold text-dq-navy mb-1 flex items-baseline justify-center">
-                    {stat.prefix && <span className="mr-1">{stat.prefix}</span>}
-                    <span className="inline-flex items-baseline tabular-nums">
-                      <AnimatedCounter value={stat.value} />{stat.suffix ? (
-                        <span>{stat.suffix}</span>
-                      ) : null}
-                    </span>
-                  </div>
-                  <div className="text-sm text-gray-600 text-center leading-tight mt-1 whitespace-normal break-words [text-overflow:clip] [overflow:visible] [display:block]">
+                  <h3 className="text-lg font-bold text-gray-900 mb-2">
                     {stat.label}
-                  </div>
+                  </h3>
+                  <p className="text-sm text-gray-600 text-center leading-tight">
+                    {stat.description}
+                  </p>
                 </div>
               );
             })}
           </StaggeredFadeIn>
+
+          {/* CTAs */}
+          <div className="flex flex-col sm:flex-row gap-4 justify-center mt-10">
+            <a
+              href="/ghc"
+              className="px-6 py-3 bg-[#FB5535] hover:bg-[#E64A2E] text-white font-bold rounded-lg shadow-lg transform transition-all duration-300 hover:-translate-y-1 hover:shadow-xl text-center flex items-center justify-center"
+            >
+              Explore DQ GHC
+            </a>
+          </div>
         </div>
 
         {/* Success Stories */}
         <div className="mb-16 bg-gradient-to-br from-gray-50 to-white rounded-2xl p-8 overflow-hidden relative">
           <FadeInUpOnScroll className="text-center mb-8 relative z-10">
             <h2 className="text-3xl font-bold text-gray-900 mb-3 clamp-1">
-              What Our Team Says
+              Some Associates' Perspectives
             </h2>
             <div>
               <p className="text-base sm:text-lg text-gray-600 mx-auto clamp-1 leading-tight whitespace-normal sm:whitespace-nowrap max-w-full sm:max-w-4xl">
-                Hear directly from the people who make it all happen.
+                Short reflections from Qatalysts living the DQ DNA what helped them collaborate better, learn faster, and deliver smarter today.
               </p>
             </div>
           </FadeInUpOnScroll>
 
-          <div className="relative z-10 max-w-6xl mx-auto">
+          <div className="relative z-10 max-w-6xl mx-auto mb-8">
             <AssociateFeedbackCarousel />
+          </div>
+
+          {/* CTA */}
+          <div className="flex justify-center relative z-10">
+            <a
+              href="/guides/associate-testimonials"
+              className="px-6 py-3 bg-white hover:bg-gray-50 text-gray-900 font-bold rounded-lg shadow-lg transform transition-all duration-300 hover:-translate-y-1 hover:shadow-xl text-center flex items-center justify-center border-2 border-gray-200"
+            >
+              Read More Associate Stories
+            </a>
           </div>
         </div>
 
-        {/* Powered by Strategic Partnerships - NEW SECTION */}
-        <div className="mb-16 bg-gradient-to-br from-gray-50 to-white rounded-2xl p-8 md:p-12 overflow-visible relative">
-          <HorizontalScrollReveal
-            direction="left"
-            className="text-center mb-10 relative z-10"
-          >
+        {/* Our Four Pillars of Success */}
+        <div className="mb-16 bg-gradient-to-br from-gray-50 to-white rounded-2xl p-8 overflow-hidden relative">
+          <FadeInUpOnScroll className="text-center mb-8 relative z-10">
             <h2 className="text-3xl font-bold text-gray-900 mb-3 clamp-1">
-              Our Four Pillars of Success
+              Primary Work Sectors in DQ
             </h2>
-            <div className="relative">
-              <p className="text-lg text-gray-600 max-w-3xl mx-auto clamp-2">
-                Governance, Operations, Platforms, and Delivery the four
-                pillars driving DQ’s success.
+            <div>
+              <p className="text-base sm:text-lg text-gray-600 mx-auto mb-8 text-balance leading-tight whitespace-normal sm:whitespace-nowrap max-w-full sm:max-w-4xl">
+                GHC sets compass; Agile Flows turn it into execution. These pillars show ownership, governance, and delivery across DQ.
               </p>
             </div>
-          </HorizontalScrollReveal>
+          </FadeInUpOnScroll>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
-            {partnerCategories.map((category, index) => (
-              <FadeInUpOnScroll key={category.id} delay={index * 0.15}>
-                <PartnerCategoryCard category={category} />
-              </FadeInUpOnScroll>
+          <StaggeredFadeIn
+            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl mx-auto relative z-10 mb-8"
+            staggerDelay={0.15}
+          >
+            {partnerCategories.map((category) => (
+              <PartnerCategoryCard key={category.id} category={category} />
             ))}
-          </div>
+          </StaggeredFadeIn>
 
-          <FeaturedPartnersCarousel />
+          {/* CTA */}
+          <div className="flex justify-center relative z-10">
+            <button
+              disabled
+              className="px-6 py-3 bg-gray-400 text-gray-200 font-bold rounded-lg shadow-lg cursor-not-allowed text-center flex items-center justify-center gap-2 opacity-60"
+            >
+              <Lock size={18} />
+              Explore the Work Directory
+            </button>
+          </div>
         </div>
 
         {/* Animations + CSS vars */}

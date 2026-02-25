@@ -331,12 +331,14 @@ interface CategoryHeaderProps {
   icon: React.ReactNode;
   title: string;
   count?: number | null;
+  description?: string;
 }
 
 const CategoryHeader: React.FC<CategoryHeaderProps> = ({
   icon,
   title,
   count = null,
+  description,
 }) => {
   const [ref] = useInView({ threshold: 0.1 });
   const [isHovered, setIsHovered] = React.useState(false);
@@ -355,6 +357,11 @@ const CategoryHeader: React.FC<CategoryHeaderProps> = ({
         </div>
         <h2 className="text-2xl font-bold text-gray-800 clamp-1">{title}</h2>
       </div>
+      {description && (
+        <div className="ml-13 text-gray-600 text-base mb-2">
+          {description}
+        </div>
+      )}
       {count !== null && (
         <div className="ml-13 text-gray-600 clamp-2">
           <span className="font-semibold mr-1">
@@ -402,14 +409,14 @@ export const HomePage: React.FC = () => {
     <div className="bg-white py-16">
       <div className="container mx-auto px-4">
         {/* Marketplaces by Category */}
-        <div className="mb-16">
+        <div className="mb-16" id="tools-resources-services">
           <FadeInUpOnScroll className="text-center mb-12">
             <h2 className="text-3xl font-bold text-gray-900 mb-3 clamp-1">
-              Services & Marketplaces
+              Tools, Resources & Services
             </h2>
             <div>
-              <p className="text-base sm:text-lg text-gray-600 mx-auto clamp-1 leading-tight whitespace-normal sm:whitespace-nowrap max-w-full sm:max-w-4xl text-balance">
-                Everything you need to get started, work smarter, and unlock real progress at DQ all from one digital workspace.
+              <p className="text-base sm:text-lg text-gray-600 mx-auto leading-relaxed max-w-4xl whitespace-nowrap">
+                Access tools, learning, and guidelines designed to help you work smarter and act confidently all in one place.
               </p>
             </div>
           </FadeInUpOnScroll>
@@ -420,7 +427,7 @@ export const HomePage: React.FC = () => {
               <CategoryHeader
                 icon={<BookOpen size={24} />}
                 title="Learning Center & DQ Knowledge"
-                count={homeSections.learningHub.length}
+                description="Learn, reference standards, and access knowledge that guides delivery."
               />
             </FadeInUpOnScroll>
             <ServiceCarousel
@@ -447,7 +454,7 @@ export const HomePage: React.FC = () => {
               <CategoryHeader
                 icon={<Newspaper size={24} />}
                 title="Media & Communications"
-                count={homeSections.mediaHub.length}
+                description="Stay aligned with what's happening — news, stories, and internal updates."
               />
             </FadeInUpOnScroll>
             <ServiceCarousel
@@ -474,7 +481,7 @@ export const HomePage: React.FC = () => {
               <CategoryHeader
                 icon={<Briefcase size={24} />}
                 title="Service Requests & Enablement"
-                count={homeSections.serviceEnablementHub.length}
+                description="Request support and enablement services — tracked and visible."
               />
             </FadeInUpOnScroll>
             <ServiceCarousel
@@ -501,7 +508,7 @@ export const HomePage: React.FC = () => {
               <CategoryHeader
                 icon={<Users size={24} />}
                 title="Organization, Roles & People"
-                count={homeSections.orgRolesPeople.length}
+                description="Understand teams, roles, and who to contact."
               />
             </FadeInUpOnScroll>
             <ServiceCarousel

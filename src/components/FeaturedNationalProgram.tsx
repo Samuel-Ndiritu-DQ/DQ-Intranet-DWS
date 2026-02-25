@@ -13,7 +13,7 @@ interface FeaturedProgram {
   learnMoreHref: string;
   applyNowHref?: string;
   backgroundImage?: string;
-  category: 'Articles' | 'Predictions' | 'Case Studies' | 'Jobs';
+  category: 'News' | 'Insight' | 'Jobs';
 }
 
 function isPodcast(item: NewsItem): boolean {
@@ -48,17 +48,17 @@ function mapNewsToFeatured(item: NewsItem): FeaturedProgram {
   const bgImage = item.image || '/images/honeycomb.png';
   
   let title: string;
-  let category: 'Articles' | 'Predictions' | 'Case Studies';
+  let category: 'News' | 'Insight';
   
   if (isBlog) {
     title = item.title;
-    category = 'Articles';
+    category = 'Insight';
   } else if (item.type === 'Announcement') {
     title = item.title;
-    category = 'Articles';
+    category = 'News';
   } else {
     title = item.title;
-    category = 'Case Studies';
+    category = 'News';
   }
   
   return {
@@ -99,7 +99,7 @@ const fallbackPrograms: FeaturedProgram[] = [
     learnMoreHref: '/marketplace/guides?tab=guidelines',
     backgroundImage:
       'linear-gradient(90deg, rgba(251, 83, 53, 0.6) 0%, rgba(26, 46, 110, 0.6) 50%, rgba(3, 15, 53, 0.6) 100%), url(/images/honeycomb.png)',
-    category: 'Articles',
+    category: 'News',
   },
 ];
 
@@ -135,10 +135,10 @@ export const FeaturedNationalProgram: React.FC = () => {
         const allNews = newsItems ?? [];
         const allJobs = jobItems ?? [];
 
-        // Latest articles/blogs (excluding events and podcasts)
-        const latestArticles = allNews
+        // Latest articles/blogs/news (excluding events and podcasts)
+        const latestNews = allNews
           .filter((item) => !isPodcast(item) && !isEvent(item))
-          .slice(0, 4)
+          .slice(0, 5)
           .map(mapNewsToFeatured);
 
         // Latest jobs
@@ -146,7 +146,8 @@ export const FeaturedNationalProgram: React.FC = () => {
           .slice(0, 3)
           .map(mapJobToFeatured);
 
-        const combined = [...latestArticles, ...latestJobs];
+        // Combine and prioritize: mix news and jobs for variety
+        const combined = [...latestNews, ...latestJobs].slice(0, 8);
 
         setPrograms(combined.length > 0 ? combined : fallbackPrograms);
         setActiveIndex(0);
@@ -167,11 +168,11 @@ export const FeaturedNationalProgram: React.FC = () => {
     <div className="w-full py-8 px-4">
       <FadeInUpOnScroll className="text-center mb-10">
         <h2 className="text-3xl font-bold text-gray-900 mb-3 clamp-1">
-          What's Happening at DQ 
+          Latest Updates
         </h2>
         <div>
-          <p className="text-lg text-gray-600 max-w-3xl mx-auto">
-            Catch up on fresh stories, new podcasts, and highlights curated for you.
+          <p className="text-base sm:text-lg text-gray-600 mx-auto text-balance leading-tight whitespace-normal sm:whitespace-nowrap max-w-full sm:max-w-4xl">
+            Catch the latest DQ news, insights, and job opportunities curated for quick scanning, with one click to dive deeper.
           </p>
         </div>
       </FadeInUpOnScroll>
@@ -179,17 +180,19 @@ export const FeaturedNationalProgram: React.FC = () => {
       <div className="relative rounded-3xl overflow-hidden shadow-xl w-full max-w-[1506px] mx-auto">
         {activeProgram && (
         <div
-          key={activeProgram.id}
-          className="h-[360px] p-10 flex flex-col justify-between relative animate-fade-in bg-cover bg-center"
+          key={`${activeProgram.id}-${activeIndex}`}
+          className="h-[360px] p-10 flex flex-col justify-between relative bg-cover bg-center transition-opacity duration-500"
           style={
             activeProgram.backgroundImage
               ? {
                   backgroundImage: `linear-gradient(to right, rgba(15, 29, 74, 0.45), rgba(15, 29, 74, 0.45)), ${activeProgram.backgroundImage}`,
                   backgroundSize: 'cover',
                   backgroundPosition: 'center',
+                  animation: 'fadeSlideIn 0.6s ease-out'
                 }
               : {
                   backgroundColor: 'rgba(15, 29, 74, 0.45)',
+                  animation: 'fadeSlideIn 0.6s ease-out'
                 }
           }
         >
@@ -208,7 +211,9 @@ export const FeaturedNationalProgram: React.FC = () => {
               href={activeProgram.learnMoreHref}
               className="px-6 py-3 bg-white text-[#0F1D4A] font-semibold rounded-lg hover:bg-gray-100 transition-colors flex items-center gap-2 shadow-lg"
             >
-              {activeProgram.category === 'Jobs' ? 'VIEW OPPORTUNITY' : 'READ MORE'}
+              {activeProgram.category === 'Jobs' && 'VIEW OPPORTUNITY'}
+              {activeProgram.category === 'News' && 'READ STORY'}
+              {activeProgram.category === 'Insight' && 'READ INSIGHT'}
               <ArrowRight size={18} />
             </a>
           </div>
@@ -235,18 +240,15 @@ export const FeaturedNationalProgram: React.FC = () => {
       )}
 
       <style>{`
-        @keyframes fade-in {
+        @keyframes fadeSlideIn {
           from {
             opacity: 0;
-            transform: translateX(20px);
+            transform: translateX(30px);
           }
           to {
             opacity: 1;
             transform: translateX(0);
           }
-        }
-        .animate-fade-in {
-          animation: fade-in 0.5s ease-out;
         }
       `}</style>
     </div>

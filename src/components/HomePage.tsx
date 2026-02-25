@@ -3,6 +3,7 @@ import { useLocation } from 'react-router-dom';
 import { Header } from '../components/Header';
 import { Footer } from '../components/Footer';
 import HeroSection from './HeroSection';
+import DailyQuoteSection from './DailyQuoteSection';
 import { FeaturedNationalProgram } from './FeaturedNationalProgram';
 import ProofAndTrust from './ProofAndTrust';
 import EnterpriseStages from './EnterpriseStages';
@@ -49,6 +50,7 @@ const HomePage: React.FC = () => {
       />
       <main className="flex-grow">
         <HeroSection />
+        <DailyQuoteSection />
         <FeaturedNationalProgram />
         <ProofAndTrust />
         <EnterpriseStages />

@@ -3,9 +3,9 @@ import {
   Landmark,
   Network,
   Users2,
-  Users,
-  BookOpen,
-  Heart,
+  Zap,
+  Target,
+  TrendingUp,
   Rocket,
   Sparkles,
   type LucideIcon,
@@ -61,6 +61,7 @@ export interface ImpactStat {
   value: number;
   prefix?: string;
   suffix?: string;
+  description?: string;
   iconComponent: LucideIcon;
   iconSize?: number;
   iconClassName?: string;
@@ -186,9 +187,9 @@ export const testimonials: Testimonial[] = [
 export const partnerCategories: PartnerCategory[] = [
   {
     id: "government",
-    title: "Governance Sector",
+    title: "Governance",
     subtitle:
-      "Leadership, strategy, and value management for enterprise alignment",
+      "Direction, priorities, and decision-making that keep work aligned.",
     iconComponent: Building2,
     iconSize: 28,
     metric: "4+",
@@ -196,9 +197,9 @@ export const partnerCategories: PartnerCategory[] = [
   },
   {
     id: "financial",
-    title: "Operations Sector",
+    title: "Operations",
     subtitle:
-      "HR, Finance, and Deals support factories for day-to-day enablement",
+      "HR, Finance, and enablement that remove friction day to day.",
     iconComponent: Landmark,
     iconSize: 28,
     metric: "5+",
@@ -206,9 +207,9 @@ export const partnerCategories: PartnerCategory[] = [
   },
   {
     id: "service",
-    title: "Platform Sector",
+    title: "Platform",
     subtitle:
-      "Intelligence, Solutions, Security, and Products driving digital platforms",
+      "Products, security, and solutions that power digital execution.",
     iconComponent: Users2,
     iconSize: 28,
     metric: "6+",
@@ -216,9 +217,9 @@ export const partnerCategories: PartnerCategory[] = [
   },
   {
     id: "network",
-    title: "Delivery Sector",
+    title: "Delivery",
     subtitle:
-      "Design, Deploys, and Accounts teams ensuring outcomes and engagements",
+      "Design, deployments, and accounts that deliver outcomes.",
     iconComponent: Network,
     iconSize: 28,
     metric: "3+",
@@ -242,27 +243,26 @@ export const featuredSectors: FeaturedSector[] = [
 // ============================================
 export const impactStats: ImpactStat[] = [
   {
-    label: 'Faster Delivery',
-    value: 80,
-    prefix: 'Over',
-    suffix: '%',
-    iconComponent: Users,
+    label: 'Fast Delivery',
+    value: 0,
+    description: 'Short cycles, fewer blockers.',
+    iconComponent: Zap,
     iconSize: 20,
     iconClassName: "text-[#FB5535]",
   },
   {
-    label: 'New Skills Learned Weekly',
-    value: 5,
-    suffix: '+',
-    iconComponent: BookOpen,
+    label: 'Clear Alignment',
+    value: 0,
+    description: 'Everyone knows what matters now.',
+    iconComponent: Target,
     iconSize: 20,
     iconClassName: "text-[#FB5535]",
   },
   {
-    label: 'Team Satisfaction Score',
-    value: 4.8,
-    suffix: '/5',
-    iconComponent: Heart,
+    label: 'Continuous Improvement',
+    value: 0,
+    description: 'Learn, reflect, and get better weekly.',
+    iconComponent: TrendingUp,
     iconSize: 20,
     iconClassName: "text-[#FB5535]",
   },
@@ -272,9 +272,9 @@ export const impactStats: ImpactStat[] = [
 // HERO CONTENT
 // ============================================
 export const heroContent: HeroContent = {
-  title: "Welcome Home, Qatalyst.",
+  title: "Welcome to Digital Workspace",
   subtitle:
-    "Connect, learn, and collaborate in one place. Your personalized workspace designed to make your daily work simpler and more meaningful.",
+    "Start here to execute with clarity: find tools, updates, and actions fast. Search or choose a path below.",
   suggestionPills: [
     "Open an IT service request",
     "Where's the HR leave policy?",

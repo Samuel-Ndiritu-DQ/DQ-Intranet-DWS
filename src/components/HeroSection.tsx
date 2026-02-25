@@ -61,18 +61,9 @@ const HeroSection: React.FC<HeroSectionProps> = ({ "data-id": dataId }) => {
     setPrompt('');
   };
 
-  const scrollToMarketplaces = () => {
-    const marketplacesSection = document.getElementById("marketplaces-section");
-    if (marketplacesSection) {
-      marketplacesSection.scrollIntoView({
-        behavior: "smooth",
-      });
-    }
-  };
-
   // Show suggestion pills with delay after focus
   useEffect(() => {
-    let timer: NodeJS.Timeout;
+    let timer: NodeJS.Timeout | undefined;
     if (isSearchFocused) {
       timer = setTimeout(() => {
         setShowSuggestions(true);
@@ -80,7 +71,9 @@ const HeroSection: React.FC<HeroSectionProps> = ({ "data-id": dataId }) => {
     } else {
       setShowSuggestions(false);
     }
-    return () => clearTimeout(timer);
+    return () => {
+      if (timer) clearTimeout(timer);
+    };
   }, [isSearchFocused]);
 
   const suggestionPills = heroContent.suggestionPills;
@@ -150,14 +143,14 @@ const HeroSection: React.FC<HeroSectionProps> = ({ "data-id": dataId }) => {
                     value={prompt}
                     onChange={(e) => setPrompt(e.target.value)}
                     onFocus={() => setIsSearchFocused(true)}
-                    onBlur={() =>
-                      setTimeout(() => setIsSearchFocused(false), 200)
-                    }
+                    onBlur={() => {
+                      setTimeout(() => setIsSearchFocused(false), 200);
+                    }}
                   />
                   <div className="absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none">
                     <span className="text-xs text-green-600 font-medium flex items-center gap-1">
                       <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
-                      {' '}AI Ready
+                      <span>AI Ready</span>
                     </span>
                   </div>
                 </div>
@@ -165,11 +158,11 @@ const HeroSection: React.FC<HeroSectionProps> = ({ "data-id": dataId }) => {
                 <button
                   type="submit"
                   aria-label="Ask AI Assistant"
-                  disabled={!prompt.trim()}
+                  disabled={prompt.trim() === ''}
                   className={`ml-2 p-3 rounded-lg flex items-center justify-center transition-all ${
-                    !prompt.trim()
-                      ? 'bg-gray-200 cursor-not-allowed text-gray-400'
-                      : 'bg-[image:var(--dq-cta-gradient)] hover:brightness-105 text-white shadow-md hover:shadow-lg'
+                    prompt.trim()
+                      ? 'bg-[image:var(--dq-cta-gradient)] hover:brightness-105 text-white shadow-md hover:shadow-lg'
+                      : 'bg-gray-200 cursor-not-allowed text-gray-400'
                   }`}
                   title="Ask the AI Assistant"
                 >
@@ -196,7 +189,7 @@ const HeroSection: React.FC<HeroSectionProps> = ({ "data-id": dataId }) => {
               <div className="flex flex-wrap gap-2">
                 {suggestionPills.map((pill) => (
                   <button
-                    key={pill}
+                    key={`suggestion-pill-${pill}`}
                     className="text-xs bg-white border border-blue-200 rounded-full px-3 py-1.5 text-gray-700 hover:bg-blue-50 hover:border-blue-300 transition-all shadow-sm"
                     style={{
                       opacity: showSuggestions ? 1 : 0,
@@ -218,11 +211,11 @@ const HeroSection: React.FC<HeroSectionProps> = ({ "data-id": dataId }) => {
               </div>
               <p className="text-xs text-blue-600 mt-2 flex items-center gap-1">
                 <span className="w-1.5 h-1.5 bg-blue-500 rounded-full" />
-                {' '}Powered by AI - I can explain features, guide you, and help you find what you need
+                <span>Powered by AI - I can explain features, guide you, and help you find what you need</span>
               </p>
               <p id="hero-chat-hint" className="text-xs text-blue-500 mt-1 flex items-center gap-1">
                 <span className="inline-block w-4 h-px bg-blue-300" aria-hidden="true" />
-                {' '}Connected to the chat — your question opens in the assistant (bottom-right)
+                <span>Connected to the chat — your question opens in the assistant (bottom-right)</span>
               </p>
             </div>
           </div>
@@ -232,12 +225,18 @@ const HeroSection: React.FC<HeroSectionProps> = ({ "data-id": dataId }) => {
           staggerDelay={0.2}
           className="flex flex-col sm:flex-row gap-4 mt-2"
         >
-          <Link
-            to={ctaHref}
+          <button
+            onClick={() => {
+              const section = document.getElementById('tools-resources-services');
+              section?.scrollIntoView({
+                behavior: 'smooth',
+                block: 'start'
+              });
+            }}
             className="px-8 py-3 bg-[linear-gradient(135deg,_#FB5535_0%,_#1A2E6E_50%,_#030F35_100%)] hover:brightness-105 text-white font-bold rounded-lg shadow-lg transform transition-all duration-300 hover:-translate-y-1 hover:shadow-xl text-center flex items-center justify-center overflow-hidden group"
           >
             <span className="relative z-10">
-              Start Your Onboarding Journey
+              Browse Marketplaces
             </span>
             <ArrowRight
               size={18}
@@ -247,6 +246,16 @@ const HeroSection: React.FC<HeroSectionProps> = ({ "data-id": dataId }) => {
             <span className="absolute inset-0 overflow-hidden rounded-lg">
               <span className="absolute inset-0 bg-white/20 transform scale-0 opacity-0 group-hover:scale-[2.5] group-hover:opacity-100 rounded-full transition-all duration-700 origin-center"></span>
             </span>
+          </button>
+          <Link
+            to={ctaHref}
+            className="px-8 py-3 bg-white hover:bg-gray-50 text-gray-900 font-bold rounded-lg shadow-lg transform transition-all duration-300 hover:-translate-y-1 hover:shadow-xl text-center flex items-center justify-center border-2 border-gray-200"
+          >
+            <span>Start Your Onboarding Journey</span>
+            <ArrowRight
+              size={18}
+              className="ml-2 transition-transform duration-300 group-hover:translate-x-1"
+            />
           </Link>
         </StaggeredFadeIn>
       </div>
@@ -260,7 +269,17 @@ const HeroSection: React.FC<HeroSectionProps> = ({ "data-id": dataId }) => {
             behavior: "smooth",
           });
         }}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            const nextSection = document.querySelector("main > div:nth-child(2)");
+            nextSection?.scrollIntoView({
+              behavior: "smooth",
+            });
+          }
+        }}
         aria-label="Scroll to next section"
+        tabIndex={0}
       >
         <ChevronDown size={24} className="text-white" />
       </button>

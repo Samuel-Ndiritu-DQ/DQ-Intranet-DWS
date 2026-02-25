@@ -7,6 +7,7 @@ export const NewsCard = ({
   content,
   onQuickView,
   onReadMore = () => {}, // Add default empty function to make it optional in the wrapper
+  ctaLabel,
   ...props
 }) => {
   const newsItem = {
@@ -31,7 +32,7 @@ export const NewsCard = ({
       ? { text: 'Play', icon: <Play size={12} />, variant: 'info' as const }
       : undefined;
   
-  return <CardsNewsCard item={newsItem} pill={pill} onQuickView={onQuickView} onReadMore={onReadMore} {...props} />;
+  return <CardsNewsCard item={newsItem} pill={pill} onQuickView={onQuickView} onReadMore={onReadMore} ctaLabel={ctaLabel} {...props} />;
 };
 
 // EventCard wrapper

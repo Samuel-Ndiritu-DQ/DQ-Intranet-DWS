@@ -1,8 +1,15 @@
-// hooks/useOnboardingForm.js
+// hooks/useOnboardingForm.ts
 import { useState, useEffect, useRef } from "react";
+import { useMsal } from "@azure/msal-react";
 import { validateFormField } from "../utils/validation";
+import {
+  getOnboardingData,
+  saveOnboardingData,
+  completeOnboarding,
+  ensureEmployeeRecord,
+} from "../services/employeeOnboardingService";
 
-export function useOnboardingForm(steps, onComplete, isRevisit) {
+export function useOnboardingForm(steps, onComplete) {
   const [currentStep, setCurrentStep] = useState(0);
   const [formData, setFormData] = useState<any>({});
   const [errors, setErrors] = useState<any>({});
@@ -11,6 +18,7 @@ export function useOnboardingForm(steps, onComplete, isRevisit) {
   const [isEditingWelcome, setIsEditingWelcome] = useState(false);
   const [showStepsDropdown, setShowStepsDropdown] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [initialLoading, setInitialLoading] = useState(true);
 
   const stepsDropdownRef: any = useRef(null);
 
@@ -28,26 +36,70 @@ export function useOnboardingForm(steps, onComplete, isRevisit) {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Load initial data
+  // Use MSAL to get the logged-in user's info
+  const { accounts } = useMsal();
+
+  // Get employee ID from MSAL account (using localAccountId or email as fallback)
+  const getEmployeeId = (): string => {
+    const account = accounts[0];
+    // Use localAccountId if available, otherwise use email
+    return account?.localAccountId || account?.username || "";
+  };
+
+  // Load initial data from Supabase
   useEffect(() => {
     const loadData = async () => {
-      // Azure B2C claims (in real app, this would come from auth context)
-      const azureB2CClaims = {
-        tradeName: "FutureTech",
-        industry: "Information Technology",
-        companyStage: "growth",
-        contactName: "John Smith",
-        phone: "+971 50 123 4567",
-        email: "john.smith@futuretech.com",
+      setInitialLoading(true);
+      const account = accounts[0];
+      const employeeId = getEmployeeId();
+
+      // Default data from MSAL
+      const defaultData = {
+        tradeName: account?.name || "",
+        role: "",
+        email: account?.username || "",
+        phone: "",
+        industry: "",
+        companyStage: "",
+        contactName: account?.name || "",
       };
 
-      // In real implementation, load from persistent storage
-      // For now, just use claims
-      setFormData(azureB2CClaims);
+      if (employeeId) {
+        try {
+          // 1. Ensure employee record exists first (to avoid foreign key violations)
+          await ensureEmployeeRecord({
+            employee_id: employeeId,
+            email: account?.username || "",
+            name: account?.name || "",
+          });
+
+          // 2. Try to load existing data from Supabase
+          const existingData = await getOnboardingData(employeeId);
+          if (existingData) {
+            // Merge existing data with defaults (existing takes precedence)
+            setFormData({ ...defaultData, ...existingData });
+            console.log("✅ Loaded existing onboarding data from Supabase");
+          } else {
+            setFormData(defaultData);
+            console.log("ℹ️ No existing onboarding data, using defaults");
+          }
+        } catch (error) {
+          console.error("Error loading onboarding data:", error);
+          setFormData(defaultData);
+        }
+      } else {
+        setFormData(defaultData);
+      }
+
+      setInitialLoading(false);
     };
 
-    loadData();
-  }, []);
+    if (accounts.length > 0) {
+      loadData();
+    } else {
+      setInitialLoading(false);
+    }
+  }, [accounts]);
 
   const handleInputChange = (fieldName, value) => {
     setFormData((prev) => ({
@@ -119,24 +171,18 @@ export function useOnboardingForm(steps, onComplete, isRevisit) {
   const getWelcomeFields = () => [
     {
       fieldName: "tradeName",
-      label: "Company Name",
+      label: "Name",
       required: true,
       minLength: 2,
     },
-    { fieldName: "industry", label: "Industry", required: true },
-    {
-      fieldName: "contactName",
-      label: "Contact Name",
-      required: true,
-      minLength: 3,
-      pattern: "^[a-zA-Z\\s.-]+$",
-    },
+    { fieldName: "department", label: "Department", required: true },
+    { fieldName: "role", label: "Role", required: true },
+    { fieldName: "studio", label: "Studio", required: true },
     { fieldName: "email", label: "Email", required: true, type: "email" },
     { fieldName: "phone", label: "Phone", required: true, type: "tel" },
   ];
 
   const validateCurrentStep = () => {
-    if (currentStep === 0 && !isEditingWelcome) return true;
     if (currentStep === steps.length - 1) return true;
 
     const step = steps[currentStep];
@@ -161,12 +207,20 @@ export function useOnboardingForm(steps, onComplete, isRevisit) {
 
   const getStepFields = (step) => {
     const fields: any = [];
+
+    const isVisible = (item: any) => {
+      if (!item.applicableStudio) return true;
+      return item.applicableStudio === formData.studio;
+    };
+
     if (step.sections) {
       step.sections.forEach((section) => {
-        if (section.fields) fields.push(...section.fields);
+        if (isVisible(section) && section.fields) {
+          fields.push(...section.fields.filter(isVisible));
+        }
       });
     } else if (step.fields) {
-      fields.push(...step.fields);
+      fields.push(...step.fields.filter(isVisible));
     }
     return fields;
   };
@@ -198,12 +252,31 @@ export function useOnboardingForm(steps, onComplete, isRevisit) {
 
     if (isValid) {
       setLoading(true);
-      try {
-        // Save to backend (commented out for this example)
-        // await saveOnboardingData(formData);
+      const employeeId = getEmployeeId();
 
-        // Simulate API call
-        await new Promise((resolve) => setTimeout(resolve, 1000));
+      try {
+        if (employeeId) {
+          const account = accounts[0];
+          // Save form data to Supabase
+          const saveResult = await saveOnboardingData(employeeId, formData, currentStep, {
+            name: account?.name || "",
+            email: account?.username || ""
+          });
+
+          if (!saveResult.success) {
+            console.error("Failed to save onboarding data:", saveResult.error);
+            // Still try to complete if save partially worked
+          }
+
+          // Mark onboarding as complete
+          const completeResult = await completeOnboarding(employeeId);
+
+          if (!completeResult.success) {
+            console.error("Failed to mark onboarding complete:", completeResult.error);
+          } else {
+            console.log("✅ Onboarding completed successfully!");
+          }
+        }
 
         onComplete();
       } catch (error) {
@@ -244,10 +317,9 @@ export function useOnboardingForm(steps, onComplete, isRevisit) {
   };
 
   const getStepCompletionStatus = (stepIndex) => {
-    if (stepIndex === 0 || stepIndex === steps.length - 1) return true;
+    if (stepIndex === steps.length - 1) return true;
 
-    const step = steps[stepIndex];
-    const fields = getStepFields(step);
+    const fields = stepIndex === 0 ? getWelcomeFields() : getStepFields(steps[stepIndex]);
 
     return fields.every((field) => {
       if (!field.required) return true;
@@ -265,6 +337,7 @@ export function useOnboardingForm(steps, onComplete, isRevisit) {
     isEditingWelcome,
     showStepsDropdown,
     loading,
+    initialLoading,
     stepsDropdownRef,
     setCurrentStep,
     setShowStepsDropdown,
@@ -276,5 +349,6 @@ export function useOnboardingForm(steps, onComplete, isRevisit) {
     handleSubmit,
     handleJumpToStep,
     getStepCompletionStatus,
+    getEmployeeId,
   };
 }

@@ -30,7 +30,7 @@ const typeFallbacks: Record<string, string> = {
 const GHC_IMAGE = '/images/honeycomb.png'
 
 // HoV (House of Values) main image
-const HOV_IMAGE = '/images/house-of-values.png'
+const HOV_IMAGE = '/images/House%20of%20Values.png'
 
 // Guidelines image
 const GUIDELINES_IMAGE = '/images/guidelines.PNG'
@@ -64,15 +64,42 @@ const hovValueImages: Record<string, string> = {
   'dq-competencies-trust': 'https://images.unsplash.com/photo-1521737604893-d14cc237f11d?q=80&w=1600&auto=format&fit=crop&ixlib=rb-4.0.3', // Handshake, partnership, integrity - handshake/partnership
 }
 
-// Strategy images - dark backgrounds with abstract green/blue light effects
+// Strategy images - use local GHC/strategy assets from public/images
 const strategyFallbacks: string[] = [
-  'https://images.unsplash.com/photo-1557683316-973673baf926?q=80&w=1600&auto=format&fit=crop&ixlib=rb-4.0.3', // Dark with blue/green lights
-  'https://images.unsplash.com/photo-1557682250-33bd709cbe85?q=80&w=1600&auto=format&fit=crop&ixlib=rb-4.0.3', // Dark abstract with lights
-  'https://images.unsplash.com/photo-1557683311-eac922347aa1?q=80&w=1600&auto=format&fit=crop&ixlib=rb-4.0.3', // Dark tech background
-  'https://images.unsplash.com/photo-1557682224-5b8590cd9ec5?q=80&w=1600&auto=format&fit=crop&ixlib=rb-4.0.3', // Dark abstract
-  'https://images.unsplash.com/photo-1557682257-2f9c37d3b5ab?q=80&w=1600&auto=format&fit=crop&ixlib=rb-4.0.3', // Dark with neon lights
-  'https://images.unsplash.com/photo-1557682260-9c0c0a4c3c8b?q=80&w=1600&auto=format&fit=crop&ixlib=rb-4.0.3', // Dark digital pattern
+  '/images/DQ%20GHC%20Overview%20(6).png',
+  '/images/DQ%20GHC%20Overview%20.png',
+  '/images/Vision.png',
+  '/images/Persona.png',
+  '/images/Agile%206xD.png',
+  '/images/Agile%20TMS.png',
+  '/images/Agile%20SoS.png',
+  '/images/Agile%20Flows.png',
+  '/images/House%20of%20Values.png',
 ]
+
+// Explicit strategy/GHC mappings keyed by slug fragments to ensure card names get the right image
+const strategyGuideImages: Record<string, string> = {
+  'dq-agile-6xd': '/images/Agile%206xD.png',
+  'agile-6xd': '/images/Agile%206xD.png',
+  'dq-agile-flows': '/images/Agile%20Flows.png',
+  'agile-flows': '/images/Agile%20Flows.png',
+  'dq-agile-sos': '/images/Agile%20SoS.png',
+  'agile-sos': '/images/Agile%20SoS.png',
+  'dq-agile-tms': '/images/Agile%20TMS.png',
+  'agile-tms': '/images/Agile%20TMS.png',
+  'dq-ghc': '/images/DQ%20GHC%20Overview%20.png',
+  'ghc-overview': '/images/DQ%20GHC%20Overview%20.png',
+  'golden-honeycomb': '/images/DQ%20GHC%20Overview%20.png',
+  'golden honeycomb': '/images/DQ%20GHC%20Overview%20.png',
+  'dq-golden-honeycomb': '/images/DQ%20GHC%20Overview%20.png',
+  'dq golden honeycomb': '/images/DQ%20GHC%20Overview%20.png',
+  'dq-vision': '/images/Vision.png',
+  'vision': '/images/Vision.png',
+  'dq-persona': '/images/Persona.png',
+  'persona': '/images/Persona.png',
+  'dq-hov': '/images/House%20of%20Values.png',
+  'hov': '/images/House%20of%20Values.png'
+}
 
 const neutralFallback = '/image.png'
 
@@ -180,12 +207,21 @@ function isGHCGuide(g: GuideLike): boolean {
 export function getGuideImageUrl(g: GuideLike): string {
   const slug = (g.slug || '').toLowerCase()
   const title = (g.title || '').toLowerCase()
+  const isMainGHC = () => {
+    return slug === 'dq-ghc' ||
+           slug.includes('golden-honeycomb') ||
+           title.includes('golden honeycomb') ||
+           title.includes('dq ghc')
+  }
   
   // Determine guide categories first
   const isBlueprint = (g.domain || '').toLowerCase().includes('blueprint') || 
                       (g.guideType || '').toLowerCase().includes('blueprint')
-  const isStrategy = (g.domain || '').toLowerCase().includes('strategy') || 
-                     (g.guideType || '').toLowerCase().includes('strategy')
+  const domainLower = (g.domain || '').toLowerCase()
+  const guideTypeLower = (g.guideType || '').toLowerCase()
+  const isStrategy = domainLower.includes('strategy') ||
+                     guideTypeLower.includes('strategy') ||
+                     domainLower.includes('ghc') || guideTypeLower.includes('ghc')
   const isTestimonial = (g.domain || '').toLowerCase().includes('testimonial') ||
                         (g.guideType || '').toLowerCase().includes('testimonial')
   
@@ -198,8 +234,33 @@ export function getGuideImageUrl(g: GuideLike): string {
   if (isGuidelinesDomain && !isHOVGuide(g) && !isGHCGuide(g) && !isBlueprint && !isStrategy && !isTestimonial) {
     return GUIDELINES_IMAGE
   }
+
+  // HoV: always use local House of Values image, overriding remote hero images
+  if (isHOVGuide(g)) {
+    return HOV_IMAGE
+  }
+
+  // For GHC/Strategy guides: ALWAYS prioritize local assets over Supabase images
+  // This ensures consistent branding and prevents database images from overriding local assets
+  if (isStrategy || isGHCGuide(g)) {
+    // Check for explicit strategy guide mappings first
+    for (const [match, imageUrl] of Object.entries(strategyGuideImages)) {
+      if (slug.includes(match) || title.includes(match)) {
+        return imageUrl
+      }
+    }
+    
+    // For main GHC overview, use the overview image
+    if (isMainGHC()) {
+      return '/images/DQ%20GHC%20Overview%20.png'
+    }
+    
+    // Fallback to first strategy image or honeycomb
+    return strategyFallbacks[0] || GHC_IMAGE
+  }
   
-  // For non-guidelines guides, prioritize heroImageUrl if it's a valid URL
+  // PRIORITY 1: For non-Strategy guides, prioritize heroImageUrl from database if it's a valid URL
+  // This ensures database images are used for Guidelines, Products, etc.
   const src = (g.heroImageUrl || '').trim()
   if (src && src.startsWith('http')) {
     return src
@@ -232,7 +293,14 @@ export function getGuideImageUrl(g: GuideLike): string {
   
   // Check if this is a GHC guide - use golden honeycomb image
   if (isGHCGuide(g)) {
-    return GHC_IMAGE
+    // First try explicit mappings so card titles get matching artwork
+    for (const [match, imageUrl] of Object.entries(strategyGuideImages)) {
+      if (slug.includes(match) || title.includes(match)) {
+        return imageUrl
+      }
+    }
+    // Deterministic fallback for GHC: first strategy image or honeycomb
+    return strategyFallbacks[0] || GHC_IMAGE
   }
   
   // Check if this is a blueprint/product
@@ -248,9 +316,14 @@ export function getGuideImageUrl(g: GuideLike): string {
 
   // Check if this is a strategy guide - use dark abstract images
   if (isStrategy && strategyFallbacks.length) {
-    const key = (g.slug || g.id || g.title || '').trim()
-    const idx = key ? stringHash(key) % strategyFallbacks.length : 0
-    return strategyFallbacks[idx]
+    // Prefer explicit strategy mappings (non-GHC cases)
+    for (const [match, imageUrl] of Object.entries(strategyGuideImages)) {
+      if (slug.includes(match) || title.includes(match)) {
+        return imageUrl
+      }
+    }
+    // Deterministic fallback: use first strategy image to avoid random assignment
+    return strategyFallbacks[0]
   }
   
   // Fallback to domain-based images

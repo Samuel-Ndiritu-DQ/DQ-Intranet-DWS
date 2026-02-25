@@ -19,10 +19,10 @@ const MarkdownRenderer: React.FC<{ body: string }> = ({ body }) => {
             const classValue = node.properties.class
             if (classValue) {
               // Convert to string
-              const classStr = Array.isArray(classValue)
-                ? classValue.join(' ')
+              const classStr = Array.isArray(classValue) 
+                ? classValue.join(' ') 
                 : String(classValue)
-
+              
               // ALWAYS set className from class (this is critical for react-markdown)
               node.properties.className = classStr
               // Also keep class for compatibility
@@ -40,14 +40,12 @@ const MarkdownRenderer: React.FC<{ body: string }> = ({ body }) => {
       walk(tree)
     }
   }, [])
-
+  
   // Rehype plugin: remove leading icon nodes (img/svg/span with img) from list items
   const rehypeStripListIcons = React.useMemo(() => {
     const stripText = (s: string) => {
       return (s || '')
-        // eslint-disable-next-line no-misleading-character-class
         .replace(/^(?:[\u25A0-\u25FF]\uFE0F?\s*)+/, '') // geometric arrows
-        // eslint-disable-next-line no-misleading-character-class
         .replace(/^[\u200d\ufe0f\uFE0F\u2060\s]*[\u{1F300}-\u{1FAFF}\u{1F900}-\u{1F9FF}\u{1F1E6}-\u{1F1FF}\u{2600}-\u{27BF}]+\s*/u, '') // emoji
     }
     const containsImage = (node: any): boolean => {
@@ -97,10 +95,8 @@ const MarkdownRenderer: React.FC<{ body: string }> = ({ body }) => {
       const prefix = m ? m[1] : ''
       if (prefix) line = line.slice(prefix.length)
       // Remove leading geometric-shape arrows/bullets (includes ▶, ►, ▸ and many others)
-      // eslint-disable-next-line no-misleading-character-class
       line = line.replace(/^(?:[\u25A0-\u25FF]\uFE0F?\s*)+/, '')
       // Remove leading emoji pictographs
-      // eslint-disable-next-line no-misleading-character-class
       line = line.replace(/^[\u200d\ufe0f\uFE0F\u2060\s]*[\u{1F300}-\u{1FAFF}\u{1F900}-\u{1F9FF}\u{1F1E6}-\u{1F1FF}\u{2600}-\u{27BF}]+\s*/u, '')
       // Replace leading markdown/HTML image icons with their alt text (to keep names)
       line = line
@@ -120,184 +116,152 @@ const MarkdownRenderer: React.FC<{ body: string }> = ({ body }) => {
   }, [])
   const processedBody = React.useMemo(() => sanitizeDecorators(body), [body, sanitizeDecorators])
   return (
-    <div className="markdown-content">
-      <ReactMarkdown
-        remarkPlugins={([remarkGfm as any, remarkSlug as any] as any)}
-        rehypePlugins={[
-          [rehypeAutolinkHeadings, { behavior: 'append' }],
-          rehypeRaw,
-          rehypePreserveDivClass as any,
-          [
-            rehypeSanitize,
-            {
-              tagNames: ['div', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'p', 'strong', 'em', 'ul', 'ol', 'li', 'blockquote'],
-              attributes: {
-                div: ['class', 'className'],
-                '*': ['class', 'className', 'id']
-              },
-              strip: []
-            }
-          ],
-          rehypeStripListIcons as any
-        ] as any}
-        components={{
-          img: ({ node, ...props }) => (
-            // Constrain and lazy-load images for performance
-            <img loading="lazy" decoding="async" style={{ maxWidth: '100%', height: 'auto' }} {...(props as any)} />
-          ),
-          h1: ({ node, ...props }) => <h1 className="text-3xl font-bold mt-6 mb-4 text-gray-900" {...props} />,
-          h2: ({ node, ...props }) => {
-            // Check if heading content starts with a number (e.g., "1.", "2.", etc.)
-            const childrenText = typeof props.children === 'string'
-              ? props.children
-              : React.Children.toArray(props.children).join('');
-            const isNumberedHeading = /^(\*\*)?\d+\.\s/.test(childrenText.trim());
-
-            return (
-              <h2 className={`text-2xl font-bold mt-5 mb-3 text-gray-900 ${isNumberedHeading ? 'pl-0' : 'pl-4 relative border-0'}`} {...(props as any)}>
-                {!isNumberedHeading && (
-                  <span className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-[#1A2E6E] via-[#1A2E6E]/80 to-transparent"></span>
-                )}
-                {props.children}
-              </h2>
-            );
-          },
-          h3: ({ node, ...props }) => {
-            const childrenText = typeof props.children === 'string'
-              ? props.children
-              : React.Children.toArray(props.children).join('');
-            const isNumberedHeading = /^(\*\*)?\d+\.\s/.test(childrenText.trim());
-
-            return (
-              <h3 className={`text-xl font-semibold mt-4 mb-2 text-gray-900 ${isNumberedHeading ? 'pl-0' : 'pl-4 relative border-0'}`} {...(props as any)}>
-                {!isNumberedHeading && (
-                  <span className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-[#1A2E6E] via-[#1A2E6E]/80 to-transparent"></span>
-                )}
-                {props.children}
-              </h3>
-            );
-          },
-          h4: ({ node, ...props }) => {
-            const childrenText = typeof props.children === 'string'
-              ? props.children
-              : React.Children.toArray(props.children).join('');
-            const isNumberedHeading = /^(\*\*)?\d+\.\s/.test(childrenText.trim());
-
-            return (
-              <h4 className={`text-lg font-semibold mt-3 mb-2 text-gray-900 ${isNumberedHeading ? 'pl-0' : 'pl-4 relative border-0'}`} {...(props as any)}>
-                {!isNumberedHeading && (
-                  <span className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-[#1A2E6E] via-[#1A2E6E]/80 to-transparent"></span>
-                )}
-                {props.children}
-              </h4>
-            );
-          },
-          h5: ({ node, ...props }) => <h5 className="text-base font-semibold mt-3 mb-2 text-gray-900" {...props} />,
-          h6: ({ node, ...props }) => <h6 className="text-sm font-semibold mt-2 mb-2 text-gray-900" {...props} />,
-          p: ({ node, ...props }) => <p className="mb-4 text-gray-700 leading-relaxed" {...props} />,
-          a: ({ node, ...props }) => <a className="text-blue-600 underline hover:text-blue-800 transition-colors" {...props} />,
-          ul: ({ node, ...props }) => <ul className="list-disc list-inside mb-4 space-y-2 text-gray-700" {...props} />,
-          ol: ({ node, ...props }) => <ol className="list-decimal list-inside mb-4 space-y-2 text-gray-700" {...props} />,
-          li: ({ node, ...props }) => <li className="ml-4" {...props} />,
-          strong: ({ node, ...props }) => <strong className="font-semibold text-gray-900" {...props} />,
-          em: ({ node, ...props }) => <em className="italic" {...props} />,
-          code: ({ node, inline, ...props }: any) =>
-            inline ? (
-              <code className="bg-gray-100 text-gray-800 px-1.5 py-0.5 rounded text-sm font-mono" {...props} />
-            ) : (
-              <code className="block bg-gray-100 text-gray-800 p-4 rounded-lg text-sm font-mono overflow-x-auto mb-4" {...props} />
-            ),
-          blockquote: ({ node, ...props }) => (
-            <blockquote className="border-l-4 border-gray-300 pl-4 italic text-gray-600 my-4" {...props} />
-          ),
-          table: ({ node, ...props }) => (
-            <div className="overflow-x-auto my-8">
-              <table className="min-w-full border-collapse border border-gray-300" {...(props as any)} />
-            </div>
-          ),
-          thead: ({ node, ...props }) => (
-            <thead {...(props as any)} />
-          ),
-          tbody: ({ node, ...props }) => (
-            <tbody className="bg-white" {...(props as any)} />
-          ),
-          tr: ({ node, ...props }) => (
-            <tr className="bg-white" {...(props as any)} />
-          ),
-          th: ({ node, ...props }) => (
-            <th
-              className="px-6 py-4 text-left text-sm font-semibold text-white border border-gray-300"
-              style={{ backgroundColor: '#030E31', minWidth: '180px' }}
-              {...(props as any)}
-            />
-          ),
-          td: ({ node, ...props }) => (
-            <td
-              className="px-6 py-4 text-sm text-gray-900 border border-gray-300 whitespace-pre-line"
-              style={{ minWidth: '300px' }}
-              {...(props as any)}
-            />
-          ),
-          div: (props: any) => {
-            const { node, children, className, class: classProp, ...restProps } = props
-
-            // CRITICAL: Check node.properties FIRST (this is where rehypePreserveDivClass sets it)
-            const nodeClass = node?.properties?.className || node?.properties?.class
-            const nodeClassStr = nodeClass
-              ? (Array.isArray(nodeClass) ? nodeClass.join(' ') : String(nodeClass))
-              : ''
-
-            // Also check props (fallback)
-            const propsClass = className || classProp
-            const propsClassStr = propsClass
-              ? (Array.isArray(propsClass) ? propsClass.join(' ') : String(propsClass))
-              : ''
-
-            // Combine and check
-            const combinedClass = nodeClassStr || propsClassStr
-            const isFeatureBox = combinedClass && combinedClass.includes('feature-box')
-
-            if (isFeatureBox) {
-              // Filter out empty children (whitespace-only text nodes, empty elements)
-              const filteredChildren = React.Children.toArray(children).filter((child: any) => {
-                if (typeof child === 'string') {
-                  return child.trim().length > 0
-                }
-                if (React.isValidElement(child)) {
-                  // Check if element has meaningful content
-                  const childProps = child.props as { children?: unknown } | undefined
-                  const childChildren = childProps?.children
-                  if (typeof childChildren === 'string') {
-                    return childChildren.trim().length > 0
-                  }
-                  return true
-                }
-                return false
-              })
-
-              // Don't render if no meaningful content
-              if (filteredChildren.length === 0) {
-                return null
-              }
-
-              return (
-                <div
-                  className="bg-white rounded-lg border border-gray-200 shadow-sm p-6 mb-4"
-                  {...restProps}
-                >
-                  {filteredChildren}
-                </div>
-              )
-            }
-
-            // Default div rendering - preserve className
-            return <div className={combinedClass || className || classProp} {...restProps}>{children}</div>
+    <ReactMarkdown
+      remarkPlugins={([remarkGfm as any, remarkSlug as any] as any)}
+      rehypePlugins={[
+        [rehypeAutolinkHeadings, { behavior: 'append' }], 
+        rehypeRaw,
+        rehypePreserveDivClass as any,
+        [
+          rehypeSanitize,
+          {
+            tagNames: ['div', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'p', 'strong', 'em', 'ul', 'ol', 'li', 'blockquote'],
+            attributes: {
+              div: ['class', 'className'],
+              '*': ['class', 'className', 'id']
+            },
+            strip: []
           }
-        }}
-      >
-        {processedBody}
-      </ReactMarkdown>
-    </div>
+        ],
+        rehypeStripListIcons as any
+      ] as any}
+      components={{
+        p: ({ node, ...props }) => (
+          <p className="mb-3 text-gray-700 leading-relaxed" {...(props as any)}>
+            {props.children}
+          </p>
+        ),
+        h1: ({ node, ...props }) => (
+          <h1 className="text-3xl font-bold text-gray-900 mt-6 mb-4 pl-5 relative" {...(props as any)}>
+            <span className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-[#1A2E6E] via-[#1A2E6E]/60 to-transparent rounded-full"></span>
+            {props.children}
+          </h1>
+        ),
+        h2: ({ node, ...props }) => (
+          <h2 className="text-2xl font-bold text-gray-900 mt-6 mb-3" {...(props as any)}>
+            {props.children}
+          </h2>
+        ),
+        h3: ({ node, ...props }) => (
+          <h3 className="text-xl font-semibold text-gray-900 mt-5 mb-2.5" {...(props as any)}>
+            {props.children}
+          </h3>
+        ),
+        h4: ({ node, ...props }) => (
+          <h4 className="text-lg font-semibold text-gray-900 mt-4 mb-2" {...(props as any)}>
+            {props.children}
+          </h4>
+        ),
+        img: ({ node, ...props }) => (
+          // Constrain and lazy-load images for performance
+          <img loading="lazy" decoding="async" style={{ maxWidth: '100%', height: 'auto' }} {...(props as any)} />
+        ),
+        ul: ({ node, ...props }) => (
+          <ul className="list-disc pl-6 space-y-1.5 mb-3 mt-2" {...(props as any)} />
+        ),
+        ol: ({ node, ...props }) => (
+          <ol className="list-decimal pl-6 space-y-1.5 mb-3 mt-2" {...(props as any)} />
+        ),
+        li: ({ node, ...props }) => (
+          <li className="ml-1 text-gray-700 leading-relaxed" {...(props as any)} />
+        ),
+        table: ({ node, ...props }) => (
+          <div className="overflow-x-auto my-8">
+            <table className="min-w-full border-collapse border border-gray-300" {...(props as any)} />
+          </div>
+        ),
+        thead: ({ node, ...props }) => (
+          <thead {...(props as any)} />
+        ),
+        tbody: ({ node, ...props }) => (
+          <tbody className="bg-white" {...(props as any)} />
+        ),
+        tr: ({ node, ...props }) => (
+          <tr className="bg-white" {...(props as any)} />
+        ),
+        th: ({ node, ...props }) => (
+          <th 
+            className="px-6 py-4 text-left text-sm font-semibold text-white border border-gray-300" 
+            style={{ backgroundColor: '#030E31', minWidth: '180px' }} 
+            {...(props as any)} 
+          />
+        ),
+        td: ({ node, ...props }) => (
+          <td 
+            className="px-6 py-4 text-sm text-gray-900 border border-gray-300 whitespace-pre-line" 
+            style={{ minWidth: '300px' }} 
+            {...(props as any)} 
+          />
+        ),
+        div: (props: any) => {
+          const { node, children, className, class: classProp, ...restProps } = props
+          
+          // CRITICAL: Check node.properties FIRST (this is where rehypePreserveDivClass sets it)
+          const nodeClass = node?.properties?.className || node?.properties?.class
+          const nodeClassStr = nodeClass 
+            ? (Array.isArray(nodeClass) ? nodeClass.join(' ') : String(nodeClass))
+            : ''
+          
+          // Also check props (fallback)
+          const propsClass = className || classProp
+          const propsClassStr = propsClass
+            ? (Array.isArray(propsClass) ? propsClass.join(' ') : String(propsClass))
+            : ''
+          
+          // Combine and check
+          const combinedClass = nodeClassStr || propsClassStr
+          const isFeatureBox = combinedClass && combinedClass.includes('feature-box')
+          
+          if (isFeatureBox) {
+            // Filter out empty children (whitespace-only text nodes, empty elements)
+            const filteredChildren = React.Children.toArray(children).filter((child: any) => {
+              if (typeof child === 'string') {
+                return child.trim().length > 0
+              }
+              if (React.isValidElement(child)) {
+                // Check if element has meaningful content
+                const childProps = child.props as { children?: unknown } | undefined
+                const childChildren = childProps?.children
+                if (typeof childChildren === 'string') {
+                  return childChildren.trim().length > 0
+                }
+                return true
+              }
+              return true
+            })
+            
+            // Don't render if no meaningful content
+            if (filteredChildren.length === 0) {
+              return null
+            }
+            
+            return (
+              <div
+                className="bg-white rounded-lg border border-gray-200 shadow-sm p-6 mb-4"
+                {...restProps}
+              >
+                {filteredChildren}
+              </div>
+            )
+          }
+          
+          // Default div rendering - preserve className
+          return <div className={combinedClass || className || classProp} {...restProps}>{children}</div>
+        }
+      }}
+    >
+      {processedBody}
+    </ReactMarkdown>
   )
 }
 

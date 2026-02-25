@@ -1,12 +1,24 @@
 import React from 'react'
 
-export function HeroSection() {
+interface HeroSectionProps {
+  title?: string
+  subtitle?: string
+  imageUrl?: string
+  badge?: string
+}
+
+export function HeroSection({ 
+  title = 'DQ Golden Honeycomb of Competencies (GHC)', 
+  subtitle = 'DQ Leadership • Digital Qatalyst',
+  imageUrl,
+  badge = 'Strategy Framework'
+}: HeroSectionProps) {
   return (
-    <div className="relative w-full h-[500px] overflow-hidden">
+    <div className="relative w-full h-[325px] overflow-hidden">
       <div 
         className="absolute inset-0 bg-cover bg-center"
         style={{
-          backgroundImage: 'url(https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=1920)',
+          backgroundImage: imageUrl ? `url(${imageUrl})` : 'url(https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=1920)',
         }}
       >
         <div className="absolute inset-0 bg-[#030E31] bg-opacity-80"></div>
@@ -14,21 +26,25 @@ export function HeroSection() {
 
       <div className="relative z-10 h-full flex flex-col justify-center px-6 md:px-12 lg:px-24 text-white">
         <div className="max-w-4xl">
-          <span className="inline-block px-4 py-1.5 rounded-full bg-white/20 backdrop-blur-sm text-sm font-medium mb-4">
-            Strategy Framework
-          </span>
+          {badge && (
+            <span className="inline-block px-4 py-1.5 rounded-full bg-white/20 backdrop-blur-sm text-sm font-medium mb-4">
+              {badge}
+            </span>
+          )}
 
           <div className="text-sm text-white/90 mb-6 font-inter">
             {new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
           </div>
 
-          <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-8 leading-tight font-inter">
-            DQ Golden Honeycomb of Competencies (GHC)
+          <h1 className="text-[28px] font-bold mb-8 leading-tight font-inter whitespace-nowrap">
+            {title}
           </h1>
 
-          <div className="flex items-center gap-3 text-sm text-white/90 font-inter">
-            <span>DQ Leadership • Digital Qatalyst</span>
-          </div>
+          {subtitle && (
+            <div className="flex items-center gap-3 text-[14px] text-white/90 font-inter">
+              <span>{subtitle}</span>
+            </div>
+          )}
         </div>
       </div>
 

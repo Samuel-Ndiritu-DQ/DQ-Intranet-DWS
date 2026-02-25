@@ -292,7 +292,7 @@ export const KnowledgeHubCard: React.FC<KnowledgeHubItemProps> = ({
         metadata.icon = getContentTypeIcon()
         metadata.videoUrl = getVideoUrl(item)
         break
-      case 'podcast': {
+      case 'podcast':
         // Use the getDuration selector for consistent duration display
         const audioDuration = getDuration(item)
         if (audioDuration.available) {
@@ -307,7 +307,6 @@ export const KnowledgeHubCard: React.FC<KnowledgeHubItemProps> = ({
         // Resolve the audio URL using the selector
         metadata.audioUrl = getAudioUrl(item)
         break
-      }
       case 'resource':
         metadata.resourceType = item.mediaType
         if (item.downloadCount) {

@@ -35,10 +35,7 @@ export const GuideCard: React.FC<GuideCardProps> = ({ guide, onClick, imageOverr
         navigate(`/marketplace/guides/${encodeURIComponent(data.slug)}`, { state: { fromBlueprint: true } })
         return
       }
-    } catch (e) {
-      // Log and fall back to client-side navigation
-      console.error('GuideCard: failed to resolve guideline slug', e)
-    }
+    } catch (_) {}
     // Fallback to Guidelines tab search
     navigate(`/marketplace/guides?tab=guidelines&q=${encodeURIComponent(guide.title)}`)
   }
@@ -56,7 +53,36 @@ export const GuideCard: React.FC<GuideCardProps> = ({ guide, onClick, imageOverr
     const cleaned = value.toLowerCase().replace(/[_-]+/g, ' ').trim()
     return cleaned.endsWith('s') ? cleaned.slice(0, -1) : cleaned
   }
-  const domainLabel = isBlueprint ? 'Product' : formatLabel(domain)
+  
+  // Determine the badge label based on framework for Strategy guides
+  const getBadgeLabel = (): string => {
+    if (isBlueprint) return 'Product'
+    if (domain?.toLowerCase() === 'strategy') {
+      const slug = (guide.slug || '').toLowerCase()
+      const subDomain = (guide.subDomain || (guide as any).sub_domain || '').toLowerCase()
+      
+      // Check for HoV framework first (more specific)
+      // HoV includes: dq-hov and all dq-competencies-* guides
+      if (slug === 'dq-hov' || slug.includes('competencies') || subDomain.includes('hov') || subDomain.includes('competencies')) {
+        return 'GHC'
+      }
+      
+      // Check for GHC framework (but not overview)
+      // GHC includes: dq-vision, dq-persona, dq-agile-* (excluding overview)
+      if (slug === 'dq-vision' || 
+          slug === 'dq-persona' || 
+          slug.includes('agile-') ||
+          (subDomain.includes('ghc') && !subDomain.includes('competencies'))) {
+        return 'GHC'
+      }
+      
+      // Default to Strategy if no framework match
+      return formatLabel(domain)
+    }
+    return formatLabel(domain)
+  }
+  
+  const domainLabel = getBadgeLabel()
   const isDuplicateTag = normalizeTag(domain) !== '' && normalizeTag(domain) === normalizeTag(guide.guideType)
   
   // Get product metadata if this is a product
@@ -72,7 +98,58 @@ export const GuideCard: React.FC<GuideCardProps> = ({ guide, onClick, imageOverr
   
   // Transform title to remove "Blueprint" and use proper product naming
   const getDisplayTitle = (): string => {
-    if (!isBlueprint) return guide.title || ''
+    if (!isBlueprint) {
+      const rawTitle = guide.title || ''
+      const slug = (guide.slug || '').toLowerCase()
+      
+      // Canonical GHC element titles with numbering
+      const ghcTitleBySlug: Record<string, string> = {
+        'dq-ghc': 'GHC Overview',
+        'dq-vision': 'GHC 1 - Vision (Purpose)',
+        'dq-hov': 'GHC 2 - House of Values (HoV)',
+        'dq-persona': 'GHC 3 - Persona',
+        'dq-agile-tms': 'GHC 4 - Agile TMS',
+        'dq-agile-sos': 'GHC 5 - Agile SoS',
+        'dq-agile-flows': 'GHC 6 - Agile Flows',
+        'dq-agile-6xd': 'GHC 7 - Agile 6xD (Products)',
+      }
+      const hovOrder = [
+        'dq-competencies-emotional-intelligence',
+        'dq-competencies-growth-mindset',
+        'dq-competencies-purpose',
+        'dq-competencies-perceptive',
+        'dq-competencies-proactive',
+        'dq-competencies-perseverance',
+        'dq-competencies-precision',
+        'dq-competencies-customer',
+        'dq-competencies-learning',
+        'dq-competencies-collaboration',
+        'dq-competencies-responsibility',
+        'dq-competencies-trust'
+      ]
+      const hovTitleFromSlug = (s: string): string | null => {
+        const idx = hovOrder.indexOf(s)
+        if (idx === -1) return null
+        const label = s.replace('dq-competencies-', '').replace(/-/g, ' ')
+        const nice = label.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')
+        return `HoV ${idx + 1} - ${nice}`
+      }
+      if (slug && ghcTitleBySlug[slug]) return ghcTitleBySlug[slug]
+      const hovTitle = slug ? hovTitleFromSlug(slug) : null
+      if (hovTitle) return hovTitle
+      
+      // Title-based fallback for GHC overview
+      const lowerTitle = rawTitle.toLowerCase()
+      if (lowerTitle.includes('golden honeycomb')) return 'GHC Overview'
+      
+      // Regex rename for legacy "GHC Competency N: X (Y)"
+      const ghcCompetencyMatch = rawTitle.match(/^GHC\s+Competency\s+(\d+):\s*(.+)/i)
+      if (ghcCompetencyMatch) {
+        const [, num, rest] = ghcCompetencyMatch
+        return `GHC ${num} - ${rest.trim()}`
+      }
+      return rawTitle
+    }
     
     const title = guide.title || ''
     
@@ -139,17 +216,23 @@ export const GuideCard: React.FC<GuideCardProps> = ({ guide, onClick, imageOverr
   // Ensure we're using the correct property name - check both camelCase and snake_case
   const heroImage = guide.heroImageUrl || (guide as any).hero_image_url || null
   const subDomain = guide.subDomain || (guide as any).sub_domain || null
-  const defaultImageUrl = getGuideImageUrl({
-    heroImageUrl: heroImage,
-    domain: guide.domain,
-    guideType: guide.guideType,
-    subDomain: subDomain,
-    id: guide.id,
-    slug: guide.slug || guide.id,
-    title: guide.title,
-  })
+
+  // For products/blueprints, prioritize the product image from metadata (e.g. TMaaS card image)
+  const defaultImageUrl = isBlueprint && productMetadata?.imageUrl
+    ? productMetadata.imageUrl
+    : getGuideImageUrl({
+        heroImageUrl: heroImage,
+        domain: guide.domain,
+        guideType: guide.guideType,
+        subDomain: subDomain,
+        id: guide.id,
+        slug: guide.slug || guide.id,
+        title: guide.title,
+      })
+
   const imageUrl = imageOverrideUrl || defaultImageUrl
   const isTestimonial = ((guide.domain || '').toLowerCase().includes('testimonial')) || ((guide.guideType || '').toLowerCase().includes('testimonial'))
+  const isGhcOverview = (guide.slug || '').toLowerCase() === 'dq-ghc'
   
   // Use product description if available, otherwise use summary
   const displayDescription = productMetadata?.description || guide.summary || ''
@@ -163,87 +246,113 @@ export const GuideCard: React.FC<GuideCardProps> = ({ guide, onClick, imageOverr
     }
   }
   
+  // Check if guide is in Draft status
+  const isDraft = guide.status === 'Draft'
+  const isPublished = guide.status === 'Published' || guide.status === 'Approved'
+  
   return (
-    <div className="bg-white rounded-lg shadow p-4 hover:shadow-md transition-shadow cursor-pointer h-full flex flex-col" onClick={onClick}>
+    <div className="bg-white rounded-lg shadow border border-gray-200 p-3 hover:shadow-md transition-shadow cursor-pointer h-[400px] flex flex-col" onClick={isDraft ? undefined : onClick}>
       {imageUrl && (
-        <div className="rounded-lg overflow-hidden mb-3">
+        <div className="rounded-lg overflow-hidden mb-2.5 bg-slate-50 flex-shrink-0" style={{ height: '160px', minHeight: '160px', maxHeight: '160px' }}>
           <img 
             src={imageUrl} 
             alt={displayTitle} 
-            className="w-full h-48 object-cover" 
+            className="w-full h-full object-cover"
             loading="lazy" 
             decoding="async" 
             width={640} 
-            height={180}
+            height={160}
             onError={handleImageError}
             crossOrigin="anonymous"
           />
         </div>
       )}
-      <h3 className="font-semibold text-gray-900 mb-1 line-clamp-2 min-h-[40px]" title={displayTitle}>{displayTitle}</h3>
-      <p className="text-sm text-gray-600 line-clamp-3 min-h-[60px] mb-3">{displayDescription}</p>
-      <div className="flex flex-wrap gap-2 mb-3">
-        {/* For products, show Product Type and Stage instead of domain/guideType */}
-        {isBlueprint && productMetadata ? (
-          <>
-            <span className="inline-flex items-center px-3 py-1 text-xs font-medium rounded-full border" style={{ backgroundColor: 'var(--dws-chip-bg)', color: 'var(--dws-chip-text)', borderColor: 'var(--dws-card-border)' }}>
-              {productMetadata.productType}
-            </span>
-            <span className="inline-flex items-center px-3 py-1 text-xs font-medium rounded-full border" style={{ backgroundColor: 'var(--dws-chip-bg)', color: 'var(--dws-chip-text)', borderColor: 'var(--dws-card-border)' }}>
-              {productMetadata.productStage}
-            </span>
-          </>
-        ) : (
+      <h3 className="font-semibold text-gray-900 mb-2 flex-shrink-0" style={{ 
+        display: '-webkit-box',
+        WebkitLineClamp: 2,
+        WebkitBoxOrient: 'vertical',
+        overflow: 'hidden',
+        minHeight: '44px',
+        maxHeight: '44px',
+        lineHeight: '1.375rem'
+      }} title={displayTitle}>{displayTitle}</h3>
+      <p className="text-sm text-gray-600 mb-2.5 flex-shrink-0" style={{
+        display: '-webkit-box',
+        WebkitLineClamp: 2,
+        WebkitBoxOrient: 'vertical',
+        overflow: 'hidden',
+        minHeight: '36px',
+        maxHeight: '36px',
+        lineHeight: '1.125rem'
+      }}>{displayDescription}</p>
+      <div className="flex flex-wrap gap-2 mb-2 flex-shrink-0">
+        {!isBlueprint && (
           <>
             {domain && (
               <span className="inline-flex items-center px-3 py-1 text-xs font-medium rounded-full border" style={{ backgroundColor: 'var(--dws-chip-bg)', color: 'var(--dws-chip-text)', borderColor: 'var(--dws-card-border)' }}>
                 {domainLabel}
               </span>
             )}
-            {guide.guideType && !isTestimonial && !isDuplicateTag && (
+            {guide.guideType && !isTestimonial && !isDuplicateTag && !((guide.slug || '').toLowerCase() === 'dq-ghc') && (
               <span className="inline-flex items-center px-3 py-1 text-xs font-medium rounded-full border" style={{ backgroundColor: 'var(--dws-chip-bg)', color: 'var(--dws-chip-text)', borderColor: 'var(--dws-card-border)' }}>
                 {formatLabel(guide.guideType)}
               </span>
             )}
+            {isTestimonial && guide.unit && (
+              <span className="inline-flex items-center px-3 py-1 text-xs font-medium rounded-full border" style={{ backgroundColor: 'var(--dws-chip-bg)', color: 'var(--dws-chip-text)', borderColor: 'var(--dws-card-border)' }}>
+                {formatLabel(guide.unit)}
+              </span>
+            )}
+            {isTestimonial && guide.location && (
+              <span className="inline-flex items-center px-3 py-1 text-xs font-medium rounded-full border" style={{ backgroundColor: 'var(--dws-chip-bg)', color: 'var(--dws-chip-text)', borderColor: 'var(--dws-card-border)' }}>
+                {formatLabel(guide.location)}
+              </span>
+            )}
           </>
         )}
-        {isTestimonial && guide.unit && (
-          <span className="inline-flex items-center px-3 py-1 text-xs font-medium rounded-full border" style={{ backgroundColor: 'var(--dws-chip-bg)', color: 'var(--dws-chip-text)', borderColor: 'var(--dws-card-border)' }}>
-            {formatLabel(guide.unit)}
-          </span>
-        )}
-        {isTestimonial && guide.location && (
-          <span className="inline-flex items-center px-3 py-1 text-xs font-medium rounded-full border" style={{ backgroundColor: 'var(--dws-chip-bg)', color: 'var(--dws-chip-text)', borderColor: 'var(--dws-card-border)' }}>
-            {formatLabel(guide.location)}
-          </span>
-        )}
       </div>
-      <div className="flex items-center text-xs text-gray-500 gap-3 mb-3">
+      <div className="flex items-center text-xs text-gray-500 gap-3 mb-2.5 flex-shrink-0">
         {timeBucket && <span>{timeBucket}</span>}
         {lastUpdated && <span>{lastUpdated}</span>}
       </div>
-      {/* Always show author info for products, show for others only if author exists */}
-      {(isBlueprint || guide.authorName || guide.authorOrg) && (
-        <div className="text-xs text-gray-600 mb-3">
+      {/* Show author info only when provided and not a product or GHC/Strategy guide or Guidelines */}
+      {(!isBlueprint && !isGhcOverview && domain?.toLowerCase() !== 'strategy' && domain?.toLowerCase() !== 'guidelines' && (guide.authorName || guide.authorOrg)) && (
+        <div className="text-xs text-gray-600 mb-2.5 flex-shrink-0">
           <span
             className="truncate"
-            title={isBlueprint ? 'Product Owner / Practice' : `${guide.authorName || ''}${guide.authorOrg ? ' • ' + guide.authorOrg : ''}`}
+            title={`${guide.authorName || ""}${guide.authorOrg ? " - " + guide.authorOrg : ""}`}
           >
-            {isBlueprint ? 'Product Owner / Practice' : `${guide.authorName || ''}${guide.authorOrg ? ` • ${guide.authorOrg}` : ''}`}
+            {/* Filter out "bb" and other placeholder text */}
+            {(() => {
+              const authorText = `${guide.authorName || ""}${guide.authorOrg ? ` - ${guide.authorOrg}` : ""}`.trim();
+              // Don't show if it's just "bb" or other single/double letter placeholders
+              if (authorText.toLowerCase() === 'bb' || authorText.length <= 2) {
+                return null;
+              }
+              return authorText;
+            })()}
           </span>
         </div>
       )}
-      <div className="mt-auto pt-3 border-t border-gray-100">
+      {/* Spacer to push button to bottom */}
+      <div className="pt-2 mt-auto border-t border-gray-100 flex-shrink-0">
         <button
           type="button"
           onClick={(e) => {
             e.stopPropagation()
-            onClick()
+            if (!isDraft && !isBlueprint) {
+              onClick()
+            }
           }}
-            className="w-full inline-flex items-center justify-center rounded-full bg-[var(--guidelines-primary-solid)] text-white text-sm font-semibold px-4 py-2 transition-all hover:bg-[var(--guidelines-primary-solid-hover)] focus:outline-none focus:ring-2 focus:ring-[var(--guidelines-ring-color)]"
-            aria-label="View details"
-          >
-            View Details
+          disabled={isDraft || isBlueprint}
+          className={`w-full inline-flex items-center justify-center rounded-full text-sm font-semibold px-4 py-2 transition-all focus:outline-none focus:ring-2 ${
+            isDraft || isBlueprint
+              ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+              : 'bg-[#030E31] text-white hover:bg-[#020A28] focus:ring-[#030E31]'
+          }`}
+          aria-label={isDraft || isBlueprint ? 'Coming soon' : 'Read more'}
+        >
+          {isDraft || isBlueprint ? 'Coming Soon' : 'Read More'}
         </button>
       </div>
     </div>

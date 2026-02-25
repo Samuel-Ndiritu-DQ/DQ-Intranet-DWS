@@ -213,7 +213,14 @@ export const getNewsTypeDisplay = (item: NewsItem): { label: string; color: stri
     Notice: { label: 'Holidays', color: '#16A34A' },                  // Green
     'Thought Leadership': { label: 'Blog', color: '#14B8A6' }         // Teal for blogs
   };
-  return typeFallback[item.type];
+  
+  // Return fallback if type exists, otherwise return default
+  if (item.type && typeFallback[item.type]) {
+    return typeFallback[item.type];
+  }
+  
+  // Default fallback for any missing types
+  return { label: 'Company News', color: '#0EA5E9' };
 };
 
 /**

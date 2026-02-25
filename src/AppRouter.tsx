@@ -1,3 +1,4 @@
+import React from "react";
 import { BrowserRouter, Routes, Route, Navigate, useParams } from "react-router-dom";
 import { AuthProvider } from "./components/Header";
 import { ProtectedRoute } from "./components/ProtectedRoute";
@@ -17,6 +18,7 @@ import CreatePost from "./communities/pages/CreatePost";
 import PostDetail from "./communities/pages/PostDetail";
 import ProfileDashboard from "./communities/pages/ProfileDashboard";
 import { AuthProvider as CommunitiesAuthProvider } from "./communities/contexts/AuthProvider";
+import { CommunitiesRouter } from "./communities/CommunitiesRouter";
 
 import MarketplaceDetailsPage from "./pages/marketplace/MarketplaceDetailsPage";
 import LmsCourseDetailPage from "./pages/lms/LmsCourseDetailPage";
@@ -41,6 +43,7 @@ import GrowthSectorsComingSoon from "./pages/GrowthSectorsComingSoon";
 import NotFound from "./pages/NotFound";
 import AdminGuidesList from "./pages/admin/guides/AdminGuidesList";
 import GuideEditor from "./pages/admin/guides/GuideEditor";
+const GHCInspectorPage = React.lazy(() => import("./pages/admin/ghc-inspector/GHCInspectorPage"));
 import { ApolloClient, InMemoryCache, HttpLink } from "@apollo/client";
 import { ApolloProvider } from "@apollo/client/react";
 import EventsPage from "./pages/events/EventsPage";
@@ -71,6 +74,7 @@ export function AppRouter() {
                 <Route path="/discover-dq" element={<DiscoverDQ />} />
                 <Route path="/coming-soon" element={<ComingSoonPage />} />
                 <Route path="/growth-sectors-coming-soon" element={<GrowthSectorsComingSoon />} />
+                <Route path="/marketplace/*" element={<MarketplaceRouter />} />
                 <Route path="/*" element={<App />} />
                 <Route path="/courses/:itemId" element={<LmsCourseDetailPage />} />
                 <Route path="/lms" element={<LmsCourses />} />
@@ -90,71 +94,30 @@ export function AppRouter() {
                     />
                   }
                 />
-                <Route
-                  path="/onboarding/:itemId/details"
-                  element={
-                    <MarketplaceDetailsPage
-                      marketplaceType="onboarding"
-                    />
-                  }
-                />
-                <Route path="/marketplace/*" element={<MarketplaceRouter />} />
-                {/* Admin - Guides CRUD */}
+                {/* Admin Section */}
                 <Route path="/admin/guides" element={<AdminGuidesList />} />
                 <Route path="/admin/guides/new" element={<GuideEditor />} />
                 <Route path="/admin/guides/:id" element={<GuideEditor />} />
-                {/* Canonical and compatibility routes for Guides marketplace */}
-                <Route path="/guides" element={<Navigate to="/marketplace/guides" replace />} />
-                <Route path="/knowledge-hub" element={<Navigate to="/marketplace/guides" replace />} />
-                <Route
-                  path="/dashboard/*"
-                  element={<DashboardRouter />}
-                />
-                <Route path="/asset-library" element={<AssetLibraryPage />} />
-                <Route path="/blueprints" element={<BlueprintsPage />} />
-                <Route path="/blueprints/:projectId" element={<BlueprintsPage />} />
-                <Route
-                  path="/blueprints/:projectId/:folderId"
-                  element={<BlueprintsPage />}
-                />
-                <Route path="/play/dq-agile-kpis" element={<DQAgileKPIsPage />} />
-                <Route path="/thank-you" element={<ThankYou />} />
-                {/* Redirect encoded leading-space path to canonical route */}
-                <Route path="/%20marketplace/news" element={<Navigate to="/marketplace/news" replace />} />
-                <Route path="/events" element={<EventsPage />} />
-                {/* Community Routes */}
-                <Route path="/community" element={<Home />} />
-                <Route path="/communities" element={<Communities />} />
-                <Route path="/community/:id" element={<Community />} />
-                <Route path="/feed" element={<CommunityFeed />} />
-                <Route
-                  path="/community/:id/members"
-                  element={<CommunityMembers />}
-                />
-                <Route
-                  path="/community/:id/settings"
-                  element={<CommunitySettings />}
-                />
-                <Route path="/moderation" element={<ModerationDashboard />} />
-                <Route path="/analytics" element={<CommunityAnalytics />} />
-                <Route path="/activity" element={<ActivityCenter />} />
-                <Route path="/messages" element={<MessagingDashboard />} />
-                <Route path="/create-post" element={<CreatePost />} />
-                <Route path="/post/edit/:id" element={<CreatePost />} />
-                <Route path="/post/:id" element={<PostDetail />} />
-                <Route
-                  path="/profile/:userId?"
-                  element={<ProfileDashboard />}
-                />
-                {/* Work Directory Routes */}
+                <Route path="/admin/ghc-inspector" element={<React.Suspense fallback={<div>Loading...</div>}><GHCInspectorPage /></React.Suspense>} />
+
+                {/* Onboarding & Directory */}
+                <Route path="/onboarding/:itemId/details" element={<MarketplaceDetailsPage marketplaceType="onboarding" />} />
                 <Route path="/work-directory/units/:slug" element={<UnitProfilePage />} />
                 <Route path="/work-directory/positions/:slug" element={<WorkPositionProfilePage />} />
-                {/* Role Profile Route */}
                 <Route path="/roles/:slug" element={<RoleProfilePage />} />
-                <Route
-                  path="/women-entrepreneurs"
-                  element={<WomenEntrepreneursPage />}
-                />
+
+                {/* Messaging & Communities */}
+                {/* Note: I've used the CommunitiesRouter here. 
+    Ensure the routes from 'develop' (Feed, Analytics, etc.) 
+    are moved into the CommunitiesRouter component. 
+*/}
+                <Route path="/communities/*" element={<CommunitiesRouter />} />
+                <Route path="/messages" element={<MessagingDashboard />} />
+
+                {/* Utilities */}
+                <Route path="/asset-library" element={<AssetLibraryPage />} />
+                <Route path="/discover-dq" element={<DiscoverDQ />} />
+                <Route path="/thank-you" element={<ThankYou />} />
                 <Route path="/404" element={<NotFound />} />
 
                 <Route path="*" element={<Navigate to="/404" replace />} />

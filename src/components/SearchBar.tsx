@@ -1,11 +1,12 @@
+// import React, { Component } from 'react';
 /**
  * SearchBar Component
  *
  * A reusable search input component with clear functionality.
- * Matches the design of the Communities marketplace search bar.
+ * Used for searching courses in the marketplace.
  */
 
-import { Search, X } from 'lucide-react';
+import { SearchIcon, XIcon } from 'lucide-react';
 /**
  * Props for the SearchBar component
  */
@@ -16,39 +17,28 @@ interface SearchBarProps {
   setSearchQuery: (query: string) => void;
   /** Optional placeholder text */
   placeholder?: string;
+  /** Optional aria-label for accessibility */
+  ariaLabel?: string;
 }
-
 /**
  * SearchBar Component
  *
  * @param props - Component props
- * @returns A search input with clear button matching Communities design
+ * @returns A search input with clear button
  */
 export const SearchBar: React.FC<SearchBarProps> = ({
   searchQuery,
   setSearchQuery,
-  placeholder = 'Search...'
+  placeholder = "Search onboarding flows by title, skill, or tool…",
+  ariaLabel = "Search onboarding flows"
 }) => {
-  return (
-    <div className="relative">
-      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" aria-hidden="true" />
-      <input
-        type="text"
-        placeholder={placeholder}
-        value={searchQuery}
-        onChange={(e) => setSearchQuery(e.target.value)}
-        className="flex h-10 w-full rounded-md border border-gray-300 bg-white pl-10 pr-10 py-2 text-sm text-gray-700 placeholder:text-gray-500 hover:border-brand-teal focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal focus-visible:border-brand-teal transition-all"
-        aria-label="Search"
-      />
-      {searchQuery && (
-        <button
-          className="absolute inset-y-0 right-0 flex items-center pr-3"
-          onClick={() => setSearchQuery('')}
-          aria-label="Clear search"
-        >
-          <X className="h-4 w-4 text-gray-400 hover:text-gray-600" />
-        </button>
-      )}
-    </div>
-  );
+  return <div className="relative">
+      <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+        <SearchIcon className="h-5 w-5 text-gray-400" aria-hidden="true" />
+      </div>
+      <input type="text" className="block w-full pl-10 pr-10 py-3 text-sm border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder={placeholder} value={searchQuery} onChange={e => setSearchQuery(e.target.value)} aria-label={ariaLabel} />
+      {searchQuery && <button className="absolute inset-y-0 right-0 flex items-center pr-3" onClick={() => setSearchQuery('')} aria-label="Clear search">
+          <XIcon className="h-5 w-5 text-gray-400 hover:text-gray-600" />
+        </button>}
+    </div>;
 };

@@ -233,20 +233,20 @@ export function PostComposer({
         setSubmitting(false);
         return;
       }
-      
+
       const userId = user.id;
-      
+
       // Insert the post into posts_v2 (simplified schema)
       // Note: posts_v2 only has: id, community_id, user_id, title, content, created_at, updated_at
       // Additional metadata (post_type, tags, etc.) can be stored in content or handled separately
       let postContent = contentHtml || content; // Use HTML if available, otherwise plain text
-      
+
       // If media post, add media HTML to content immediately
       if (postType === 'media' && mediaUrl) {
         const mediaHtml = `<div class="media-content"><img src="${mediaUrl.trim()}" alt="${caption || 'Media'}" style="max-width: 100%; height: auto; border-radius: 8px; margin-top: 12px;" />${caption ? `<p class="text-sm text-gray-600 mt-2">${caption}</p>` : ''}</div>`;
         postContent = postContent ? `${postContent}\n${mediaHtml}` : mediaHtml;
       }
-      
+
       const query = supabase.from('posts_v2').insert({
         title: title.trim(),
         content: postContent.trim(),
@@ -305,7 +305,7 @@ export function PostComposer({
     setSubmitting(false);
   };
   const isFormValid = title.trim() && content.trim() && communityId && !submitting;
-  
+
   // User should be authenticated via Azure AD at app level
   // If user is not available, show loading state
   if (!user && loading) {
@@ -317,11 +317,12 @@ export function PostComposer({
             <DialogDescription>
               Please wait while we verify your authentication.
             </DialogDescription>
-          </DialogContent>
-        </Dialog>
-      );
+          </DialogHeader>
+        </DialogContent>
+      </Dialog>
+    );
   }
-  
+
   if (!user) {
     return (
       <Dialog open={open} onOpenChange={onOpenChange}>
@@ -344,7 +345,7 @@ export function PostComposer({
       </Dialog>
     );
   }
-  
+
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
@@ -356,32 +357,32 @@ export function PostComposer({
             </DialogDescription>
           </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Post Type Tabs */}
-          <Tabs value={postType} onValueChange={value => setPostType(value as PostType)} className="w-full">
-            <TabsList className="grid w-full grid-cols-4 bg-muted h-auto p-1">
-              <TabsTrigger value="text" className="gap-2 data-[state=active]:bg-background data-[state=active]:shadow-sm">
-                <FileText className="h-4 w-4" />
-                Text
-              </TabsTrigger>
-              <TabsTrigger value="media" className="gap-2 data-[state=active]:bg-background data-[state=active]:shadow-sm">
-                <ImageIcon className="h-4 w-4" />
-                Media
-              </TabsTrigger>
-              <TabsTrigger value="poll" className="gap-2 data-[state=active]:bg-background data-[state=active]:shadow-sm">
-                <BarChart3 className="h-4 w-4" />
-                Poll
-              </TabsTrigger>
-              <TabsTrigger value="event" className="gap-2 data-[state=active]:bg-background data-[state=active]:shadow-sm">
-                <Calendar className="h-4 w-4" />
-                Event
-              </TabsTrigger>
-            </TabsList>
+          <form onSubmit={handleSubmit} className="space-y-6">
+            {/* Post Type Tabs */}
+            <Tabs value={postType} onValueChange={value => setPostType(value as PostType)} className="w-full">
+              <TabsList className="grid w-full grid-cols-4 bg-muted h-auto p-1">
+                <TabsTrigger value="text" className="gap-2 data-[state=active]:bg-background data-[state=active]:shadow-sm">
+                  <FileText className="h-4 w-4" />
+                  Text
+                </TabsTrigger>
+                <TabsTrigger value="media" className="gap-2 data-[state=active]:bg-background data-[state=active]:shadow-sm">
+                  <ImageIcon className="h-4 w-4" />
+                  Media
+                </TabsTrigger>
+                <TabsTrigger value="poll" className="gap-2 data-[state=active]:bg-background data-[state=active]:shadow-sm">
+                  <BarChart3 className="h-4 w-4" />
+                  Poll
+                </TabsTrigger>
+                <TabsTrigger value="event" className="gap-2 data-[state=active]:bg-background data-[state=active]:shadow-sm">
+                  <Calendar className="h-4 w-4" />
+                  Event
+                </TabsTrigger>
+              </TabsList>
 
-            {/* Common Fields */}
-            <div className="space-y-4 mt-4">
-              {/* Community Selection */}
-              {!initialCommunityId && <div className="space-y-2">
+              {/* Common Fields */}
+              <div className="space-y-4 mt-4">
+                {/* Community Selection */}
+                {!initialCommunityId && <div className="space-y-2">
                   <Label htmlFor="community">Community</Label>
                   <Select value={communityId} onValueChange={setCommunityId} disabled={loading || submitting}>
                     <SelectTrigger id="community">
@@ -389,134 +390,134 @@ export function PostComposer({
                     </SelectTrigger>
                     <SelectContent>
                       {communities.map(community => <SelectItem key={community.id} value={community.id}>
-                          {community.name}
-                        </SelectItem>)}
+                        {community.name}
+                      </SelectItem>)}
                     </SelectContent>
                   </Select>
                   {communities.length === 0 && !loading && <p className="text-sm text-muted-foreground">
-                      Join a community first to create posts
-                    </p>}
+                    Join a community first to create posts
+                  </p>}
                 </div>}
 
-              {/* Title */}
-              <div className="space-y-2">
-                <Label htmlFor="title">
-                  Title <span className="text-muted-foreground text-xs">({titleCharCount}/100)</span>
-                </Label>
-                <Input id="title" placeholder="Enter post title..." value={title} onChange={e => setTitle(e.target.value)} required disabled={submitting} maxLength={100} />
+                {/* Title */}
+                <div className="space-y-2">
+                  <Label htmlFor="title">
+                    Title <span className="text-muted-foreground text-xs">({titleCharCount}/100)</span>
+                  </Label>
+                  <Input id="title" placeholder="Enter post title..." value={title} onChange={e => setTitle(e.target.value)} required disabled={submitting} maxLength={100} />
+                </div>
+
+                {/* Content */}
+                <div className="space-y-2">
+                  <Label htmlFor="content">
+                    Content <span className="text-muted-foreground text-xs">({contentCharCount}/1000)</span>
+                  </Label>
+                  <RichTextEditor content={contentHtml} onUpdate={(html, text) => {
+                    setContentHtml(html);
+                    setContent(text);
+                  }} placeholder="What's on your mind?" />
+                </div>
+
+                {/* Tags */}
+                <div className="space-y-2">
+                  <Label htmlFor="tags" className="flex items-center gap-2">
+                    <TagIcon className="h-4 w-4" />
+                    Tags (Optional)
+                  </Label>
+                  <TagAutocomplete selectedTags={tags} onTagsChange={handleTagsChange} maxTags={5} />
+                </div>
               </div>
 
-              {/* Content */}
-              <div className="space-y-2">
-                <Label htmlFor="content">
-                  Content <span className="text-muted-foreground text-xs">({contentCharCount}/1000)</span>
-                </Label>
-                <RichTextEditor content={contentHtml} onUpdate={(html, text) => {
-                setContentHtml(html);
-                setContent(text);
-              }} placeholder="What's on your mind?" />
-              </div>
+              {/* Type-Specific Fields */}
+              <TabsContent value="media" className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="mediaUrl" className="flex items-center gap-2">
+                    <ImageIcon className="h-4 w-4" />
+                    Media URL *
+                  </Label>
+                  <Input id="mediaUrl" value={mediaUrl} onChange={e => setMediaUrl(e.target.value)} placeholder="https://example.com/image.jpg" disabled={submitting} required />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="caption">Caption (Optional)</Label>
+                  <Input id="caption" value={caption} onChange={e => setCaption(e.target.value)} placeholder="Add a caption..." disabled={submitting} />
+                </div>
+              </TabsContent>
 
-              {/* Tags */}
-              <div className="space-y-2">
-                <Label htmlFor="tags" className="flex items-center gap-2">
-                  <TagIcon className="h-4 w-4" />
-                  Tags (Optional)
-                </Label>
-                <TagAutocomplete selectedTags={tags} onTagsChange={handleTagsChange} maxTags={5} />
-              </div>
-            </div>
-
-            {/* Type-Specific Fields */}
-            <TabsContent value="media" className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="mediaUrl" className="flex items-center gap-2">
-                  <ImageIcon className="h-4 w-4" />
-                  Media URL *
-                </Label>
-                <Input id="mediaUrl" value={mediaUrl} onChange={e => setMediaUrl(e.target.value)} placeholder="https://example.com/image.jpg" disabled={submitting} required />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="caption">Caption (Optional)</Label>
-                <Input id="caption" value={caption} onChange={e => setCaption(e.target.value)} placeholder="Add a caption..." disabled={submitting} />
-              </div>
-            </TabsContent>
-
-            <TabsContent value="poll" className="space-y-4">
-              <div className="space-y-2">
-                <Label>Poll Options</Label>
-                {pollOptions.map((option, index) => <div key={index} className="flex gap-2">
+              <TabsContent value="poll" className="space-y-4">
+                <div className="space-y-2">
+                  <Label>Poll Options</Label>
+                  {pollOptions.map((option, index) => <div key={index} className="flex gap-2">
                     <Input value={option} onChange={e => handlePollOptionChange(index, e.target.value)} placeholder={`Option ${index + 1}`} disabled={submitting} maxLength={200} />
                     {pollOptions.length > 2 && <Button type="button" variant="outline" size="icon" onClick={() => handleRemovePollOption(index)} disabled={submitting}>
-                        <X className="h-4 w-4" />
-                      </Button>}
+                      <X className="h-4 w-4" />
+                    </Button>}
                   </div>)}
-                {pollOptions.length < 5 && <Button type="button" variant="outline" onClick={handleAddPollOption} disabled={submitting} className="w-full">
+                  {pollOptions.length < 5 && <Button type="button" variant="outline" onClick={handleAddPollOption} disabled={submitting} className="w-full">
                     <Plus className="h-4 w-4 mr-2" />
                     Add Option
                   </Button>}
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="pollDuration">Poll Duration (Days)</Label>
-                <Select value={pollDuration} onValueChange={setPollDuration} disabled={submitting}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="1">1 Day</SelectItem>
-                    <SelectItem value="3">3 Days</SelectItem>
-                    <SelectItem value="7">7 Days</SelectItem>
-                    <SelectItem value="14">14 Days</SelectItem>
-                    <SelectItem value="30">30 Days</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </TabsContent>
-
-            <TabsContent value="event" className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="eventStart">Start Date/Time *</Label>
-                  <Input id="eventStart" type="datetime-local" value={eventStart} onChange={e => setEventStart(e.target.value)} disabled={submitting} required />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="eventEnd">End Date/Time</Label>
-                  <Input id="eventEnd" type="datetime-local" value={eventEnd} onChange={e => setEventEnd(e.target.value)} disabled={submitting} />
+                  <Label htmlFor="pollDuration">Poll Duration (Days)</Label>
+                  <Select value={pollDuration} onValueChange={setPollDuration} disabled={submitting}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="1">1 Day</SelectItem>
+                      <SelectItem value="3">3 Days</SelectItem>
+                      <SelectItem value="7">7 Days</SelectItem>
+                      <SelectItem value="14">14 Days</SelectItem>
+                      <SelectItem value="30">30 Days</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="eventLocation" className="flex items-center gap-2">
-                  <MapPin className="h-4 w-4" />
-                  Location *
-                </Label>
-                <Input id="eventLocation" value={eventLocation} onChange={e => setEventLocation(e.target.value)} placeholder="Event location..." disabled={submitting} required />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="eventImage">Cover Image URL</Label>
-                <Input id="eventImage" value={eventImage} onChange={e => setEventImage(e.target.value)} placeholder="https://example.com/event-cover.jpg" disabled={submitting} />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="rsvpLimit">RSVP Limit (Optional)</Label>
-                <Input id="rsvpLimit" type="number" value={rsvpLimit} onChange={e => setRsvpLimit(e.target.value)} placeholder="Max attendees..." disabled={submitting} min="1" />
-              </div>
-            </TabsContent>
-          </Tabs>
+              </TabsContent>
 
-          {/* Action Buttons */}
-          <div className="flex justify-end gap-3 pt-4 border-t">
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={submitting}>
-              Cancel
-            </Button>
-            <Button type="submit" disabled={!isFormValid || submitting}>
-              {submitting ? <>
+              <TabsContent value="event" className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="eventStart">Start Date/Time *</Label>
+                    <Input id="eventStart" type="datetime-local" value={eventStart} onChange={e => setEventStart(e.target.value)} disabled={submitting} required />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="eventEnd">End Date/Time</Label>
+                    <Input id="eventEnd" type="datetime-local" value={eventEnd} onChange={e => setEventEnd(e.target.value)} disabled={submitting} />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="eventLocation" className="flex items-center gap-2">
+                    <MapPin className="h-4 w-4" />
+                    Location *
+                  </Label>
+                  <Input id="eventLocation" value={eventLocation} onChange={e => setEventLocation(e.target.value)} placeholder="Event location..." disabled={submitting} required />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="eventImage">Cover Image URL</Label>
+                  <Input id="eventImage" value={eventImage} onChange={e => setEventImage(e.target.value)} placeholder="https://example.com/event-cover.jpg" disabled={submitting} />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="rsvpLimit">RSVP Limit (Optional)</Label>
+                  <Input id="rsvpLimit" type="number" value={rsvpLimit} onChange={e => setRsvpLimit(e.target.value)} placeholder="Max attendees..." disabled={submitting} min="1" />
+                </div>
+              </TabsContent>
+            </Tabs>
+
+            {/* Action Buttons */}
+            <div className="flex justify-end gap-3 pt-4 border-t">
+              <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={submitting}>
+                Cancel
+              </Button>
+              <Button type="submit" disabled={!isFormValid || submitting}>
+                {submitting ? <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   Creating...
                 </> : 'Create Post'}
-            </Button>
-          </div>
-        </form>
-      </DialogContent>
-    </Dialog>
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }

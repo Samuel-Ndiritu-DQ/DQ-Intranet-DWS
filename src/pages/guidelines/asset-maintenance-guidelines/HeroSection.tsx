@@ -8,7 +8,7 @@ interface HeroSectionProps {
 
 export function HeroSection({ title = 'DQ Asset Maintenance, Repair and Disposal Guidelines', date = 'September 2025', author = 'Version 1.3 • DQ Operations • Digital Qatalyst' }: HeroSectionProps) {
   return (
-    <div className="relative w-full h-[500px] overflow-hidden">
+    <div className="relative w-full h-[325px] overflow-hidden">
       <div 
         className="absolute inset-0 bg-cover bg-center"
         style={{
@@ -30,7 +30,7 @@ export function HeroSection({ title = 'DQ Asset Maintenance, Repair and Disposal
             </div>
           )}
 
-          <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-8 leading-tight font-inter">
+          <h1 className="text-[40px] font-bold mb-8 leading-tight font-inter">
             {title}
           </h1>
 

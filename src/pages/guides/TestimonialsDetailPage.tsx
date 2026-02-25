@@ -1,4 +1,4 @@
-import React, { useState } from "react"
+import React from "react"
 import { Link } from "react-router-dom"
 import { HomeIcon, ChevronRightIcon } from "lucide-react"
 import { Header } from "../../components/Header"
@@ -27,11 +27,10 @@ const featuredTestimonialsData = [
 ]
 
 const TestimonialsDetailPage: React.FC = () => {
-  const [activeFilter, setActiveFilter] = useState<string>("all")
   const disclaimer = '(not approved for external publication)'
 
   // Keep testimonials-specific hero image but style like guidelines hero
-  const heroImage = "https://images.unsplash.com/photo-1522071820081-009f0129c71c?q=80&w=2970&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
+  const heroImage = "/images/testimonials-hero.png"
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -75,18 +74,12 @@ const TestimonialsDetailPage: React.FC = () => {
           >
             <div className="absolute inset-0 bg-[#030E31] bg-opacity-75" />
           </div>
-          <div className="relative z-10 h-full flex flex-col justify-center px-6 md:px-12 lg:px-16 text-white max-w-6xl mx-auto">
-            <span
-              className="inline-flex self-start px-4 py-1.5 rounded-full bg-white/15 backdrop-blur-sm text-sm font-medium mb-4"
-              style={{ width: 'fit-content' }}
-            >
-              Testimonial
-            </span>
+          <div className="relative z-10 h-full flex flex-col justify-center px-4 md:px-6 lg:px-8 text-white max-w-full">
             <h1 className="text-4xl md:text-5xl font-bold mb-4 leading-tight">
               Client Feedback
             </h1>
             <p className="text-white/85 max-w-2xl">
-              Highlights from DFSA, ADIB, and Khalifa Fund showcasing how Digital Qatalyst engagements accelerate transformation outcomes.
+              Feedback from institutions on how DQ accelerates strategic transformation outcomes.
             </p>
           </div>
         </div>
@@ -94,43 +87,8 @@ const TestimonialsDetailPage: React.FC = () => {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
 
-        {/* Header Section */}
-        <div className="bg-white rounded-lg shadow-sm p-6 mb-8">
-          {/* Filter Buttons */}
-          <div className="flex flex-wrap gap-2 mb-4">
-            <button
-              onClick={() => setActiveFilter("all")}
-              className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
-                activeFilter === "all"
-                  ? "bg-gray-200 text-gray-900"
-                  : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-              }`}
-            >
-              Testimonials
-            </button>
-            <button
-              onClick={() => setActiveFilter("uae")}
-              className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
-                activeFilter === "uae"
-                  ? "bg-gray-200 text-gray-900"
-                  : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-              }`}
-            >
-              UAE
-            </button>
-          </div>
-        </div>
-
         {/* Featured Clients Section */}
         <div className="mb-8">
-          <div className="mb-6">
-            <p className="text-xs uppercase tracking-wider text-gray-500 mb-2">FEATURED CLIENTS</p>
-            <h2 className="text-3xl font-bold text-gray-900 mb-3">Why organizations choose DQ</h2>
-            <p className="text-gray-600">
-              Stories from DFSA, ADIB, and Khalifa Fund demonstrate how DQ engagements translate into measurable outcomes.
-            </p>
-          </div>
-
           {/* Featured Testimonial Cards Grid */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {featuredTestimonialsData.map((testimonial) => (

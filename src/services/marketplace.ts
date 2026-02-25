@@ -3,7 +3,6 @@ import { MARKETPLACE_QUERIES } from "./graphql/queries";
 import { FilterConfig } from "../components/marketplace/FilterSidebar";
 import { MarketplaceItem } from "../components/marketplace/MarketplaceGrid";
 import { getMarketplaceConfig } from "../utils/marketplaceConfig";
-import { supabaseClient } from "../lib/supabaseClient";
 
 /**
  * Fetches marketplace items based on marketplace type, filters, and search query
@@ -16,11 +15,18 @@ export const fetchMarketplaceItems = async (
   try {
     // Get the marketplace config to access query and mapping functions
     const config = getMarketplaceConfig(marketplaceType);
+
     // Get the appropriate query for this marketplace type
     const query =
       MARKETPLACE_QUERIES[marketplaceType as keyof typeof MARKETPLACE_QUERIES]
         ?.getItems;
+
     if (!query) {
+      // Fall back to config-defined mock items if no query is available
+      if (config.mockData?.items) {
+        console.log(`No query defined for ${marketplaceType}, using mock data from config`);
+        return config.mockData.items;
+      }
       throw new Error(
         `No query defined for marketplace type: ${marketplaceType}`
       );
@@ -50,6 +56,22 @@ export const fetchMarketplaceItems = async (
     return data.items || [];
   } catch (error) {
     console.error(`Error fetching ${marketplaceType} items:`, error);
+
+    // Final fallback to config-defined mock data or specific mock constants
+    const config = getMarketplaceConfig(marketplaceType);
+    if (config.mockData?.items) {
+      return config.mockData.items;
+    }
+
+    if (marketplaceType === 'non-financial') {
+      try {
+        const { mockNonFinancialServices } = await import('../utils/mockMarketplaceData');
+        return mockNonFinancialServices;
+      } catch (mockError) {
+        // Ignore fallback error
+      }
+    }
+
     throw new Error(
       `Failed to load ${marketplaceType} items. Please try again later.`
     );
@@ -99,103 +121,6 @@ export const fetchMarketplaceFilters = async (
 };
 
 /**
- * Transforms events_v2 data to marketplace event detail format
- */
-const transformEventDetail = (event: any): any => {
-  const startDate = new Date(event.start_time);
-  const endDate = new Date(event.end_time);
-
-  // Format date
-  const dateStr = startDate.toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric'
-  });
-
-  // Format time range (start - end)
-  const timeStr = startDate.toLocaleTimeString('en-US', {
-    hour: 'numeric',
-    minute: '2-digit',
-    hour12: true
-  });
-
-  // Format end time
-  const endTimeStr = endDate.toLocaleTimeString('en-US', {
-    hour: 'numeric',
-    minute: '2-digit',
-    hour12: true
-  });
-
-  // Combine start and end time for display with timezone
-  const timeRangeStr = `${timeStr} - ${endTimeStr} (UTC +3)`;
-
-  // Calculate duration
-  const durationMs = endDate.getTime() - startDate.getTime();
-  const durationHours = Math.floor(durationMs / (1000 * 60 * 60));
-  const durationMinutes = Math.floor((durationMs % (1000 * 60 * 60)) / (1000 * 60));
-  let durationStr = '';
-  if (durationHours > 0) {
-    durationStr = `${durationHours} hour${durationHours > 1 ? 's' : ''}`;
-    if (durationMinutes > 0) {
-      durationStr += ` ${durationMinutes} minute${durationMinutes > 1 ? 's' : ''}`;
-    }
-  } else {
-    durationStr = `${durationMinutes} minute${durationMinutes > 1 ? 's' : ''}`;
-  }
-
-  // Provider information
-  const provider = {
-    name: event.organizer_name || "DQ Events",
-    logoUrl: "/DWS-Logo.png",
-    description: event.organizer_name ? `${event.organizer_name} - Digital Qatalyst Events` : "Digital Qatalyst Events"
-  };
-
-  // Create details array from description or tags
-  const details: string[] = [];
-  if (event.description) {
-    // Split description into sentences for details
-    const sentences = event.description.split(/[.!?]+/).filter(s => s.trim().length > 0);
-    details.push(...sentences.slice(0, 5).map(s => s.trim()));
-  }
-
-  return {
-    id: event.id,
-    title: event.title,
-    description: event.description || "",
-    category: event.category || "General",
-    eventType: event.category || "General",
-    businessStage: "All Stages",
-    provider: provider,
-    date: dateStr,
-    time: timeRangeStr, // Use time range instead of just start time
-    endTime: endTimeStr,
-    location: event.location || "TBA",
-    location_filter: event.location_filter || event.location || "TBA",
-    capacity: event.max_attendees ? `${event.max_attendees} attendees` : undefined,
-    details: details.length > 0 ? details : undefined,
-    tags: event.tags || [],
-    imageUrl: event.image_url || undefined,
-    department: event.department || undefined,
-    // Event-specific fields
-    registrationRequired: event.registration_required || false,
-    registrationDeadline: event.registration_deadline || null,
-    meetingLink: event.meeting_link || null,
-    isVirtual: event.is_virtual || false,
-    isAllDay: event.is_all_day || false,
-    organizerEmail: event.organizer_email || null,
-    organizerName: event.organizer_name || null,
-    organizerId: event.organizer_id || null,
-    startTime: event.start_time,
-    rawEndTime: event.end_time,
-    duration: durationStr,
-    status: event.status || "published",
-    isFeatured: event.is_featured || false,
-    createdAt: event.created_at,
-    updatedAt: event.updated_at
-  };
-};
-
-/**
  * Fetches details for a specific marketplace item
  */
 export const fetchMarketplaceItemDetails = async (
@@ -203,29 +128,6 @@ export const fetchMarketplaceItemDetails = async (
   itemId: string
 ): Promise<any> => {
   try {
-    // Handle events separately - fetch from Supabase events_v2 table
-    if (marketplaceType === 'events') {
-      const { data, error } = await supabaseClient
-        .from('events_v2')
-        .select('*')
-        .eq('id', itemId)
-        .eq('status', 'published')
-        .single();
-
-      if (error) {
-        console.error('Error fetching event details from events_v2:', error);
-        throw new Error(`Failed to load event details: ${error.message}`);
-      }
-
-      if (!data) {
-        throw new Error('Event not found');
-      }
-
-      // Transform the event data to marketplace format
-      return transformEventDetail(data);
-    }
-
-    // For other marketplace types, use GraphQL queries
     // Get the marketplace config
     const config = getMarketplaceConfig(marketplaceType);
     // Get the appropriate query for this marketplace type

@@ -589,6 +589,31 @@ export const LmsCourseDetailPage: React.FC = () => {
             <div className="lg:col-span-8">
 
 
+              {/* Explore Story Book Tab */}
+              {activeTab === 'story' && (
+                <section className="space-y-6">
+                  <div className="bg-blue-50 border border-blue-100 rounded-lg p-6">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-3">Explore the Story Book</h3>
+                    <p className="text-gray-700 mb-4">
+                      Dive into the narrative behind this courseâ€”the mission, journey, and why it matters to DQ.
+                    </p>
+                    <a
+                      href={course?.storyBookUrl || course?.url || '#'}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex items-center px-4 py-2 rounded-md text-white bg-blue-700 hover:bg-blue-800 transition-colors"
+                      style={{ backgroundColor: '#030F35' }}
+                    >
+                      Open Story Book
+                      <ExternalLink size={16} className="ml-2" />
+                    </a>
+                    {!course?.storyBookUrl && !course?.url && (
+                      <p className="text-xs text-gray-500 mt-2">Story book link not provided yet.</p>
+                    )}
+                  </div>
+                </section>
+              )}
+
               {/* Learning Outcomes Tab */}
               {activeTab === 'outcomes' && (
                 <section className="space-y-6">
@@ -736,7 +761,7 @@ export const LmsCourseDetailPage: React.FC = () => {
               )}
 
               {/* Curriculum Tab */}
-              {activeTab === 'curriculum' && (
+              {activeTab === 'course' && (
                 <section className="space-y-4">
                   {curriculum && curriculum.length > 0 && (
                     <div className="flex items-center justify-start mb-2">

@@ -9,6 +9,7 @@ import {
   SparklesIcon,
   LucideProps,
   BookOpen,
+  Layers,
 } from 'lucide-react';
 
 interface Marketplace {
@@ -72,6 +73,13 @@ const marketplaces: Marketplace[] = [
     description: 'Strategy guides, blueprints, libraries, and testimonials.',
     icon: BookOpen,
     href: '/marketplace/guides',
+  },
+  {
+    id: 'design-system',
+    name: 'Design System Marketplace',
+    description: 'Explore design system components, patterns, and resources (CI.DS, V.DS, CDS).',
+    icon: Layers,
+    href: '/marketplace/design-system',
   },
 ];
 

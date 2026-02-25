@@ -10,6 +10,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { useLocation, useParams, Link } from 'react-router-dom'
 import { Header } from '../../components/Header'
 import { Footer } from '../../components/Footer'
+import { HeroSection } from '../strategy/shared/HeroSection'
 import { ChevronRightIcon, HomeIcon, CheckCircle, Share2, Download, AlertTriangle, ExternalLink, Calendar, User, Building2, Heart, MessageCircle, BookmarkIcon, FileText, ChevronDown } from 'lucide-react'
 import { supabaseClient } from '../../lib/supabaseClient'
 import { getGuideImageUrl } from '../../utils/guideImageMap'
@@ -27,7 +28,6 @@ const QForumGuidelinePage = React.lazy(() => import('../guidelines/qforum-guidel
 const DQCompetenciesPage = React.lazy(() => import('../strategy/dq-competencies/GuidelinePage'))
 const DQVisionMissionPage = React.lazy(() => import('../strategy/dq-vision-mission/GuidelinePage'))
 const DQGHCPage = React.lazy(() => import('../strategy/dq-ghc/GuidelinePage'))
-const DQProductsPage = React.lazy(() => import('../strategy/dq-products/GuidelinePage'))
 const DQVisionPage = React.lazy(() => import('../strategy/dq-vision/GuidelinePage'))
 const DQHoVPage = React.lazy(() => import('../strategy/dq-hov/GuidelinePage'))
 const DQPersonaPage = React.lazy(() => import('../strategy/dq-persona/GuidelinePage'))
@@ -36,6 +36,29 @@ const DQAgileSoSPage = React.lazy(() => import('../strategy/dq-agile-sos/Guideli
 const DQAgileFlowsPage = React.lazy(() => import('../strategy/dq-agile-flows/GuidelinePage'))
 const DQAgile6xDPage = React.lazy(() => import('../strategy/dq-agile-6xd/GuidelinePage'))
 const BlueprintPage = React.lazy(() => import('../blueprints/detail/BlueprintPage'))
+const WFHGuidelinePage = React.lazy(() => import('../guidelines/wfh-guidelines/GuidelinePage'))
+const AssetMaintenanceGuidelinePage = React.lazy(() => import('../guidelines/asset-maintenance-guidelines/GuidelinePage'))
+const DressCodeGuidelinePage = React.lazy(() => import('../guidelines/dress-code-guidelines/GuidelinePage'))
+const DealsBDGuidelinePage = React.lazy(() => import('../guidelines/deals-bd-guidelines/GuidelinePage'))
+const ATPStopScansGuidelinePage = React.lazy(() => import('../guidelines/atp-stop-scans-guidelines/GuidelinePage'))
+const AVRAwardsGuidelinePage = React.lazy(() => import('../guidelines/avr-awards-guidelines/GuidelinePage'))
+const AzureDevOpsTaskGuidelinePage = React.lazy(() => import('../guidelines/azure-devops-task-guidelines/GuidelinePage'))
+const BiometricSystemGuidelinePage = React.lazy(() => import('../guidelines/biometric-system-guidelines/GuidelinePage'))
+const WRAttendancePunctualityPolicyPage = React.lazy(() => import('../guidelines/wr-attendance-punctuality-policy/GuidelinePage'))
+const AssociateOwnedAssetGuidelinePage = React.lazy(() => import('../guidelines/associate-owned-asset-guidelines/GuidelinePage'))
+// 12 Guiding Values pages
+const EmotionalIntelligencePage = React.lazy(() => import('../strategy/dq-competencies-emotional-intelligence/GuidelinePage'))
+const GrowthMindsetPage = React.lazy(() => import('../strategy/dq-competencies-growth-mindset/GuidelinePage'))
+const PurposePage = React.lazy(() => import('../strategy/dq-competencies-purpose/GuidelinePage'))
+const PerceptivePage = React.lazy(() => import('../strategy/dq-competencies-perceptive/GuidelinePage'))
+const ProactivePage = React.lazy(() => import('../strategy/dq-competencies-proactive/GuidelinePage'))
+const PerseverancePage = React.lazy(() => import('../strategy/dq-competencies-perseverance/GuidelinePage'))
+const PrecisionPage = React.lazy(() => import('../strategy/dq-competencies-precision/GuidelinePage'))
+const CustomerPage = React.lazy(() => import('../strategy/dq-competencies-customer/GuidelinePage'))
+const LearningPage = React.lazy(() => import('../strategy/dq-competencies-learning/GuidelinePage'))
+const CollaborationPage = React.lazy(() => import('../strategy/dq-competencies-collaboration/GuidelinePage'))
+const ResponsibilityPage = React.lazy(() => import('../strategy/dq-competencies-responsibility/GuidelinePage'))
+const TrustPage = React.lazy(() => import('../strategy/dq-competencies-trust/GuidelinePage'))
 
 const Markdown = React.lazy(() => import('../../components/guides/MarkdownRenderer'))
 
@@ -91,6 +114,11 @@ const GuideDetailPage: React.FC = () => {
     const title = (guide?.title || '').toLowerCase()
     return slug === 'dq-rescue-shift-guidelines' || slug === 'rescue-shift-guidelines' || title.includes('rescue shift')
   }, [guide?.slug, guide?.title])
+  const isVisionGuide = useMemo(() => {
+    const slug = (guide?.slug || '').toLowerCase()
+    const title = (guide?.title || '').toLowerCase()
+    return slug === 'dq-vision' || title.includes('vision')
+  }, [guide?.slug, guide?.title])
   const isRAID = useMemo(() => {
     const slug = (guide?.slug || '').toLowerCase()
     const title = (guide?.title || '').toLowerCase()
@@ -133,12 +161,25 @@ const GuideDetailPage: React.FC = () => {
   const isDQGHC = useMemo(() => {
     const slug = (guide?.slug || '').toLowerCase()
     const title = (guide?.title || '').toLowerCase()
-    return slug === 'dq-ghc' || slug === 'ghc' || slug === 'golden-honeycomb' || title.includes('ghc') || title.includes('golden honeycomb') || (title.includes('foundation') && title.includes('dna'))
-  }, [guide?.slug, guide?.title])
-  const isDQProducts = useMemo(() => {
-    const slug = (guide?.slug || '').toLowerCase()
-    const title = (guide?.title || '').toLowerCase()
-    return slug === 'dq-products' || slug === 'dq-products' || title.toLowerCase().includes('dq products') || (title.toLowerCase().includes('products') && !title.toLowerCase().includes('6xd'))
+    // Only match the main GHC overview page by slug (most reliable)
+    // Exclude GHC competency/element pages which have different slugs
+    if (slug === 'dq-ghc' || slug === 'ghc' || slug === 'golden-honeycomb') {
+      return true
+    }
+    // Fallback: Only match title if it's exactly the main GHC overview page
+    // Exclude any page that is a GHC competency or element (they have specific slugs)
+    const isGHCCompetencyOrElement = slug.includes('competency') || slug.includes('vision') || 
+                                      slug.includes('hov') || slug.includes('persona') || 
+                                      slug.includes('agile-tms') || slug.includes('agile-sos') ||
+                                      slug.includes('agile-flows') || slug.includes('agile-6xd')
+    if (isGHCCompetencyOrElement) {
+      return false
+    }
+    // Match main GHC page title patterns (only if not a competency/element)
+    return (title.includes('golden honeycomb of competencies') && 
+            !title.includes('competency:') && 
+            !title.includes('ghc competency')) ||
+           (title.includes('foundation') && title.includes('dna'))
   }, [guide?.slug, guide?.title])
   const isDQVision = useMemo(() => {
     const slug = (guide?.slug || '').toLowerCase()
@@ -168,11 +209,100 @@ const GuideDetailPage: React.FC = () => {
     const slug = (guide?.slug || '').toLowerCase()
     return slug === 'dq-agile-6xd' || slug === 'agile-6xd'
   }, [guide?.slug])
+  const isWFHGuidelines = useMemo(() => {
+    const slug = (guide?.slug || '').toLowerCase()
+    return slug === 'dq-wfh-guidelines' || slug === 'wfh-guidelines'
+  }, [guide?.slug])
+  const isAssetMaintenanceGuidelines = useMemo(() => {
+    const slug = (guide?.slug || '').toLowerCase()
+    return slug === 'dq-asset-maintenance-repair-disposal-guidelines' || slug === 'asset-maintenance-guidelines'
+  }, [guide?.slug])
+  const isDressCodeGuidelines = useMemo(() => {
+    const slug = (guide?.slug || '').toLowerCase()
+    return slug === 'dq-dress-code-guideline' || slug === 'dress-code-guideline'
+  }, [guide?.slug])
+  const isDealsBDGuidelines = useMemo(() => {
+    const slug = (guide?.slug || '').toLowerCase()
+    return slug === 'dq-deals-bd-guidelines' || slug === 'deals-bd-guidelines'
+  }, [guide?.slug])
+  const isATPStopScansGuidelines = useMemo(() => {
+    const slug = (guide?.slug || '').toLowerCase()
+    return slug === 'dq-atp-stop-scans-guidelines' || slug === 'atp-stop-scans-guidelines'
+  }, [guide?.slug])
+  const isAVRAwardsGuidelines = useMemo(() => {
+    const slug = (guide?.slug || '').toLowerCase()
+    return slug === 'dq-avr-awards-guidelines' || slug === 'avr-awards-guidelines'
+  }, [guide?.slug])
+  const isAzureDevOpsTaskGuidelines = useMemo(() => {
+    const slug = (guide?.slug || '').toLowerCase()
+    return slug === 'dq-azure-devops-task-guidelines' || slug === 'azure-devops-task-guidelines'
+  }, [guide?.slug])
+  const isBiometricSystemGuidelines = useMemo(() => {
+    const slug = (guide?.slug || '').toLowerCase()
+    return slug === 'dq-biometric-system-guidelines' || slug === 'biometric-system-guidelines'
+  }, [guide?.slug])
+  const isWRAttendancePunctualityPolicy = useMemo(() => {
+    const slug = (guide?.slug || '').toLowerCase()
+    return slug === 'dq-wr-attendance-punctuality-policy' || slug === 'wr-attendance-punctuality-policy'
+  }, [guide?.slug])
+  const isAssociateOwnedAssetGuidelines = useMemo(() => {
+    const slug = (guide?.slug || '').toLowerCase()
+    return slug === 'dq-associate-owned-asset-guidelines' || slug === 'associate-owned-asset-guidelines'
+  }, [guide?.slug])
+  // 12 Guiding Values checks
+  const isEmotionalIntelligence = useMemo(() => {
+    const slug = (guide?.slug || '').toLowerCase()
+    return slug === 'dq-competencies-emotional-intelligence' || slug === 'emotional-intelligence'
+  }, [guide?.slug])
+  const isGrowthMindset = useMemo(() => {
+    const slug = (guide?.slug || '').toLowerCase()
+    return slug === 'dq-competencies-growth-mindset' || slug === 'growth-mindset'
+  }, [guide?.slug])
+  const isPurpose = useMemo(() => {
+    const slug = (guide?.slug || '').toLowerCase()
+    return slug === 'dq-competencies-purpose'
+  }, [guide?.slug])
+  const isPerceptive = useMemo(() => {
+    const slug = (guide?.slug || '').toLowerCase()
+    return slug === 'dq-competencies-perceptive'
+  }, [guide?.slug])
+  const isProactive = useMemo(() => {
+    const slug = (guide?.slug || '').toLowerCase()
+    return slug === 'dq-competencies-proactive'
+  }, [guide?.slug])
+  const isPerseverance = useMemo(() => {
+    const slug = (guide?.slug || '').toLowerCase()
+    return slug === 'dq-competencies-perseverance'
+  }, [guide?.slug])
+  const isPrecision = useMemo(() => {
+    const slug = (guide?.slug || '').toLowerCase()
+    return slug === 'dq-competencies-precision'
+  }, [guide?.slug])
+  const isCustomer = useMemo(() => {
+    const slug = (guide?.slug || '').toLowerCase()
+    return slug === 'dq-competencies-customer'
+  }, [guide?.slug])
+  const isLearning = useMemo(() => {
+    const slug = (guide?.slug || '').toLowerCase()
+    return slug === 'dq-competencies-learning'
+  }, [guide?.slug])
+  const isCollaboration = useMemo(() => {
+    const slug = (guide?.slug || '').toLowerCase()
+    return slug === 'dq-competencies-collaboration'
+  }, [guide?.slug])
+  const isResponsibility = useMemo(() => {
+    const slug = (guide?.slug || '').toLowerCase()
+    return slug === 'dq-competencies-responsibility'
+  }, [guide?.slug])
+  const isTrust = useMemo(() => {
+    const slug = (guide?.slug || '').toLowerCase()
+    return slug === 'dq-competencies-trust'
+  }, [guide?.slug])
   
   // Check if this guide should use a custom GuidelinePage
   const hasCustomGuidelinePage = useMemo(() => {
-    return isL24WorkingRooms || isRescueShift || isRAID || isAgendaScheduling || isFunctionalTracker || isScrumMaster || isQForum || isDQCompetencies || isDQVisionMission || isDQGHC || isDQProducts || isDQVision || isDQHoV || isDQPersona || isDQAgileTMS || isDQAgileSoS || isDQAgileFlows || isDQAgile6xD
-  }, [isL24WorkingRooms, isRescueShift, isRAID, isAgendaScheduling, isFunctionalTracker, isScrumMaster, isQForum, isDQCompetencies, isDQVisionMission, isDQGHC, isDQProducts, isDQVision, isDQHoV, isDQPersona, isDQAgileTMS, isDQAgileSoS, isDQAgileFlows, isDQAgile6xD])
+    return isL24WorkingRooms || isRescueShift || isRAID || isAgendaScheduling || isFunctionalTracker || isScrumMaster || isQForum || isWFHGuidelines || isAssetMaintenanceGuidelines || isDressCodeGuidelines || isDealsBDGuidelines || isATPStopScansGuidelines || isAVRAwardsGuidelines || isAzureDevOpsTaskGuidelines || isBiometricSystemGuidelines || isWRAttendancePunctualityPolicy || isAssociateOwnedAssetGuidelines || isDQCompetencies || isDQVisionMission || isDQGHC || isDQVision || isDQHoV || isDQPersona || isDQAgileTMS || isDQAgileSoS || isDQAgileFlows || isDQAgile6xD || isEmotionalIntelligence || isGrowthMindset || isPurpose || isPerceptive || isProactive || isPerseverance || isPrecision || isCustomer || isLearning || isCollaboration || isResponsibility || isTrust
+  }, [isL24WorkingRooms, isRescueShift, isRAID, isAgendaScheduling, isFunctionalTracker, isScrumMaster, isQForum, isWFHGuidelines, isAssetMaintenanceGuidelines, isDressCodeGuidelines, isDealsBDGuidelines, isATPStopScansGuidelines, isAVRAwardsGuidelines, isAzureDevOpsTaskGuidelines, isBiometricSystemGuidelines, isWRAttendancePunctualityPolicy, isAssociateOwnedAssetGuidelines, isDQCompetencies, isDQVisionMission, isDQGHC, isDQVision, isDQHoV, isDQPersona, isDQAgileTMS, isDQAgileSoS, isDQAgileFlows, isDQAgile6xD, isEmotionalIntelligence, isGrowthMindset, isPurpose, isPerceptive, isProactive, isPerseverance, isPrecision, isCustomer, isLearning, isCollaboration, isResponsibility, isTrust])
   const featuredClientTestimonials = [
     {
       id: 'khalifa',
@@ -222,49 +352,43 @@ const TAB_LABELS: Record<GuideTabKey, string> = {
       setLoading(true)
       setError(null)
       try {
-        const res = await fetch(`/api/guides/${encodeURIComponent(itemId || '')}`)
-        const ct = res.headers.get('content-type') || ''
-        if (res.ok && ct.includes('application/json')) {
-          const data = await res.json()
-          if (!cancelled) setGuide(data)
-        } else {
-          const key = String(itemId || '')
-          const { data: slugRow, error: err1 } = await supabaseClient.from('guides').select('*').eq('slug', key).maybeSingle()
-          if (err1) throw err1
-          let row = slugRow
-          if (!row) {
-            const { data: row2, error: err2 } = await supabaseClient.from('guides').select('*').eq('id', key).maybeSingle()
-            if (err2) throw err2
-            row = row2 as any
-          }
-          if (!row) throw new Error('Not found')
-          const mapped: GuideRecord = {
-            id: row.id,
-            slug: row.slug,
-            title: row.title,
-            summary: row.summary ?? undefined,
-            heroImageUrl: row.hero_image_url ?? row.heroImageUrl ?? null,
-            domain: row.domain ?? null,
-            guideType: row.guide_type ?? row.guideType ?? null,
-            functionArea: row.function_area ?? null,
-            subDomain: row.sub_domain ?? row.subDomain ?? null,
-            unit: row.unit ?? null,
-            location: row.location ?? null,
-            status: row.status ?? null,
-            complexityLevel: row.complexity_level ?? null,
-            skillLevel: row.skill_level ?? row.skillLevel ?? null,
-            estimatedTimeMin: row.estimated_time_min ?? row.estimatedTimeMin ?? null,
-            lastUpdatedAt: row.last_updated_at ?? row.lastUpdatedAt ?? null,
-            authorName: row.author_name ?? row.authorName ?? null,
-            authorOrg: row.author_org ?? row.authorOrg ?? null,
-            isEditorsPick: row.is_editors_pick ?? row.isEditorsPick ?? null,
-            downloadCount: row.download_count ?? row.downloadCount ?? null,
-            documentUrl: row.document_url ?? row.documentUrl ?? null,
-            body: row.body ?? null,
-            steps: [], attachments: [], templates: [],
-          }
-          if (!cancelled) setGuide(mapped)
+        // Skip API call and go directly to Supabase since we're using Vite, not Next.js
+        const key = String(itemId || '')
+        const { data: row, error: err1 } = await supabaseClient.from('guides').select('*').eq('slug', key).maybeSingle()
+        if (err1) throw err1
+        let finalRow = row
+        if (!finalRow) {
+          const { data: row2, error: err2 } = await supabaseClient.from('guides').select('*').eq('id', key).maybeSingle()
+          if (err2) throw err2
+          finalRow = row2 as any
         }
+        if (!finalRow) throw new Error('Not found')
+        const mapped: GuideRecord = {
+          id: finalRow.id,
+          slug: finalRow.slug,
+          title: finalRow.title,
+          summary: finalRow.summary ?? undefined,
+          heroImageUrl: finalRow.hero_image_url ?? finalRow.heroImageUrl ?? null,
+          domain: finalRow.domain ?? null,
+          guideType: finalRow.guide_type ?? finalRow.guideType ?? null,
+          functionArea: finalRow.function_area ?? null,
+          subDomain: finalRow.sub_domain ?? finalRow.subDomain ?? null,
+          unit: finalRow.unit ?? null,
+          location: finalRow.location ?? null,
+          status: finalRow.status ?? null,
+          complexityLevel: finalRow.complexity_level ?? null,
+          skillLevel: finalRow.skill_level ?? finalRow.skillLevel ?? null,
+          estimatedTimeMin: finalRow.estimated_time_min ?? finalRow.estimatedTimeMin ?? null,
+          lastUpdatedAt: finalRow.last_updated_at ?? finalRow.lastUpdatedAt ?? null,
+          authorName: finalRow.author_name ?? finalRow.authorName ?? null,
+          authorOrg: finalRow.author_org ?? finalRow.authorOrg ?? null,
+          isEditorsPick: finalRow.is_editors_pick ?? finalRow.isEditorsPick ?? null,
+          downloadCount: finalRow.download_count ?? finalRow.downloadCount ?? null,
+          documentUrl: finalRow.document_url ?? finalRow.documentUrl ?? null,
+          body: finalRow.body ?? null,
+          steps: [], attachments: [], templates: [],
+        }
+        if (!cancelled) setGuide(mapped)
       } catch (e: any) {
         if (!cancelled) setError('Guide not found')
       } finally {
@@ -290,7 +414,7 @@ const TAB_LABELS: Record<GuideTabKey, string> = {
           if (!cancelled) setGuide({ ...guide, body: full.body || null })
         }
       } catch (error) {
-        console.error('GuideDetailPage: failed to load full guide body', error)
+        console.error('Error loading guide body:', error)
       }
     })()
     return () => { cancelled = true }
@@ -372,14 +496,19 @@ const TAB_LABELS: Record<GuideTabKey, string> = {
     return () => { cancelled = true }
   }, [guide?.id, guide?.domain, guide?.guideType, guide?.slug])
 
-  const imageUrl = useMemo(() => getGuideImageUrl({
-    heroImageUrl: guide?.heroImageUrl || undefined,
-    domain: guide?.domain || undefined,
-    guideType: guide?.guideType || undefined,
-    id: guide?.id,
-    slug: guide?.slug,
-    title: guide?.title,
-  }), [guide?.heroImageUrl, guide?.domain, guide?.guideType, guide?.id, guide?.slug, guide?.title])
+  const imageUrl = useMemo(() => {
+    const computed = getGuideImageUrl({
+      heroImageUrl: guide?.heroImageUrl || undefined,
+      domain: guide?.domain || undefined,
+      guideType: guide?.guideType || undefined,
+      subDomain: guide?.subDomain || (guide as any)?.sub_domain || undefined,
+      id: guide?.id,
+      slug: guide?.slug,
+      title: guide?.title,
+    })
+    const isGuidelinesDomain = (guide?.domain || '').toLowerCase().includes('guideline')
+    return isGuidelinesDomain ? '/images/guidelines-content.PNG' : computed
+  }, [guide?.heroImageUrl, guide?.domain, guide?.guideType, guide?.subDomain, (guide as any)?.sub_domain, guide?.id, guide?.slug, guide?.title])
   const normalizeTag = (value?: string | null) => {
     if (!value) return ''
     const cleaned = value.toLowerCase().replace(/[_-]+/g, ' ').trim()
@@ -490,13 +619,20 @@ const TAB_LABELS: Record<GuideTabKey, string> = {
     return (guideSections || [])?.find((s: any) => s.id === 'overview') || null
   }, [guideSections])
   const sectionsForTabs = useMemo(() => {
+    if (isVisionGuide) {
+      return [
+        { id: 'overview', title: 'Overview - Short Summary', content: '' },
+        { id: 'story', title: 'Explore Story Book', content: '' },
+        { id: 'course', title: 'Course - Learning Center', content: '' },
+      ]
+    }
     if (!guideSections) return null
     // If there's an Overview section, show it separately and put other sections in tabs
     // Otherwise, show all sections as tabs
     return overviewSection ? guideSections.filter((s: any) => s.id !== 'overview') : guideSections
-  }, [guideSections, overviewSection])
+  }, [guideSections, overviewSection, isVisionGuide])
   const hasTabsEffective = !!(sectionsForTabs && sectionsForTabs.length > 0)
-  const hasOverviewSection = !!overviewSection
+  const hasOverviewSection = isVisionGuide ? false : !!overviewSection
 
   // If Overview is separated and active tab is overview, default to first remaining section
   useEffect(() => {
@@ -651,7 +787,7 @@ const TAB_LABELS: Record<GuideTabKey, string> = {
             sections[currentSection] = content
           }
         }
-        let sectionTitle = h2Match[1].trim().replace(/\*\*/g, '')
+        const sectionTitle = h2Match[1].trim().replace(/\*\*/g, '')
         const normalized = sectionTitle.toLowerCase()
         currentSection = sectionMappings[normalized] || sectionTitle
         currentContent = []
@@ -860,11 +996,15 @@ const TAB_LABELS: Record<GuideTabKey, string> = {
         title: guide?.title || '',
         text: guide?.summary || '',
         url: window.location.href,
-      }).catch(() => {})
+      }).catch((error) => {
+        console.error('Error sharing:', error)
+      })
     } else {
       navigator.clipboard.writeText(window.location.href).then(() => {
         // Could show a toast notification here
-      }).catch(() => {})
+      }).catch((error) => {
+        console.error('Error copying to clipboard:', error)
+      })
     }
   }
   // CODEx: banner open/download controls for main document
@@ -932,7 +1072,7 @@ const TAB_LABELS: Record<GuideTabKey, string> = {
   if (loading) {
     return (
       <div className="min-h-screen flex flex-col bg-gray-50 guidelines-theme">
-        <Header toggleSidebar={() => undefined} sidebarOpen={false} />
+        <Header toggleSidebar={() => {}} sidebarOpen={false} />
         <main className="container mx-auto px-4 py-8 flex-grow max-w-7xl"><div className="bg-white rounded shadow p-8 text-center text-gray-500">Loading…</div></main>
         <Footer isLoggedIn={!!user} />
       </div>
@@ -942,7 +1082,7 @@ const TAB_LABELS: Record<GuideTabKey, string> = {
   if (error || !guide) {
     return (
       <div className="min-h-screen flex flex-col bg-gray-50 guidelines-theme">
-        <Header toggleSidebar={() => undefined} sidebarOpen={false} />
+        <Header toggleSidebar={() => {}} sidebarOpen={false} />
         <main className="container mx-auto px-4 py-8 flex-grow max-w-7xl">
           <nav className="flex mb-4" aria-label="Breadcrumb">
             <ol className="inline-flex items-center space-x-1 md:space-x-2">
@@ -997,6 +1137,46 @@ const TAB_LABELS: Record<GuideTabKey, string> = {
       return <SuspenseWrapper><QForumGuidelinePage /></SuspenseWrapper>
     }
 
+    if (isWFHGuidelines) {
+      return <SuspenseWrapper><WFHGuidelinePage /></SuspenseWrapper>
+    }
+
+    if (isAssetMaintenanceGuidelines) {
+      return <SuspenseWrapper><AssetMaintenanceGuidelinePage /></SuspenseWrapper>
+    }
+
+    if (isDressCodeGuidelines) {
+      return <SuspenseWrapper><DressCodeGuidelinePage /></SuspenseWrapper>
+    }
+
+    if (isDealsBDGuidelines) {
+      return <SuspenseWrapper><DealsBDGuidelinePage /></SuspenseWrapper>
+    }
+
+    if (isATPStopScansGuidelines) {
+      return <SuspenseWrapper><ATPStopScansGuidelinePage /></SuspenseWrapper>
+    }
+
+    if (isAVRAwardsGuidelines) {
+      return <SuspenseWrapper><AVRAwardsGuidelinePage /></SuspenseWrapper>
+    }
+
+    if (isAzureDevOpsTaskGuidelines) {
+      return <SuspenseWrapper><AzureDevOpsTaskGuidelinePage /></SuspenseWrapper>
+    }
+
+    if (isBiometricSystemGuidelines) {
+      return <SuspenseWrapper><BiometricSystemGuidelinePage /></SuspenseWrapper>
+    }
+
+    if (isWRAttendancePunctualityPolicy) {
+      return <SuspenseWrapper><WRAttendancePunctualityPolicyPage /></SuspenseWrapper>
+    }
+
+    if (isAssociateOwnedAssetGuidelines) {
+      return <SuspenseWrapper><AssociateOwnedAssetGuidelinePage /></SuspenseWrapper>
+    }
+
     // Check GHC BEFORE DQ Competencies (GHC is more specific and its title contains "Competencies")
     if (isDQGHC) {
       return <SuspenseWrapper><DQGHCPage /></SuspenseWrapper>
@@ -1004,10 +1184,6 @@ const TAB_LABELS: Record<GuideTabKey, string> = {
 
     if (isDQCompetencies) {
       return <SuspenseWrapper><DQCompetenciesPage /></SuspenseWrapper>
-    }
-
-    if (isDQProducts) {
-      return <SuspenseWrapper><DQProductsPage /></SuspenseWrapper>
     }
 
     if (isDQVisionMission) {
@@ -1018,6 +1194,7 @@ const TAB_LABELS: Record<GuideTabKey, string> = {
     if (isDQVision) {
       return <SuspenseWrapper><DQVisionPage /></SuspenseWrapper>
     }
+
 
     if (isDQHoV) {
       return <SuspenseWrapper><DQHoVPage /></SuspenseWrapper>
@@ -1042,6 +1219,55 @@ const TAB_LABELS: Record<GuideTabKey, string> = {
     if (isDQAgile6xD) {
       return <SuspenseWrapper><DQAgile6xDPage /></SuspenseWrapper>
     }
+
+    // 12 Guiding Values
+    if (isEmotionalIntelligence) {
+      return <SuspenseWrapper><EmotionalIntelligencePage /></SuspenseWrapper>
+    }
+
+    if (isGrowthMindset) {
+      return <SuspenseWrapper><GrowthMindsetPage /></SuspenseWrapper>
+    }
+
+    if (isPurpose) {
+      return <SuspenseWrapper><PurposePage /></SuspenseWrapper>
+    }
+
+    if (isPerceptive) {
+      return <SuspenseWrapper><PerceptivePage /></SuspenseWrapper>
+    }
+
+    if (isProactive) {
+      return <SuspenseWrapper><ProactivePage /></SuspenseWrapper>
+    }
+
+    if (isPerseverance) {
+      return <SuspenseWrapper><PerseverancePage /></SuspenseWrapper>
+    }
+
+    if (isPrecision) {
+      return <SuspenseWrapper><PrecisionPage /></SuspenseWrapper>
+    }
+
+    if (isCustomer) {
+      return <SuspenseWrapper><CustomerPage /></SuspenseWrapper>
+    }
+
+    if (isLearning) {
+      return <SuspenseWrapper><LearningPage /></SuspenseWrapper>
+    }
+
+    if (isCollaboration) {
+      return <SuspenseWrapper><CollaborationPage /></SuspenseWrapper>
+    }
+
+    if (isResponsibility) {
+      return <SuspenseWrapper><ResponsibilityPage /></SuspenseWrapper>
+    }
+
+    if (isTrust) {
+      return <SuspenseWrapper><TrustPage /></SuspenseWrapper>
+    }
   }
 
 
@@ -1057,200 +1283,15 @@ const TAB_LABELS: Record<GuideTabKey, string> = {
     return <SuspenseWrapper><BlueprintPage /></SuspenseWrapper>
   }
 
-  // OLD Blueprint rendering - now replaced by BlueprintPage component above
-  if (false && actualIsBlueprintDomain) {
-    return (
-      <div className="min-h-screen flex flex-col guidelines-theme dq-products-bg" style={{ minHeight: '100vh' }}>
-        <Header toggleSidebar={() => undefined} sidebarOpen={false} />
-        <main className="container mx-auto px-4 py-8 flex-grow max-w-7xl" role="main" style={{ backgroundColor: 'transparent' }}>
-          <nav className="flex mb-6" aria-label="Breadcrumb">
-            <ol className="inline-flex items-center space-x-1 md:space-x-2">
-              <li className="inline-flex items-center">
-                <Link to="/" className="text-gray-600 hover:text-gray-900 inline-flex items-center">
-                  <HomeIcon size={16} className="mr-1" />
-                  <span>Home</span>
-                </Link>
-              </li>
-              <li>
-                <div className="flex items-center">
-                  <ChevronRightIcon size={16} className="text-gray-400" />
-                  <Link to={backHref} className="ml-1 text-gray-600 hover:text-gray-900 md:ml-2">{breadcrumbLabel}</Link>
-                </div>
-              </li>
-              <li aria-current="page">
-                <div className="flex items-center">
-                  <ChevronRightIcon size={16} className="text-gray-400" />
-                  <span className="ml-1 text-gray-500 md:ml-2">{guide.title}</span>
-                </div>
-              </li>
-            </ol>
-          </nav>
-
-          {/* Full Width Layout */}
-          <div className="space-y-6">
-              {/* Hero Image - In left column */}
-              {imageUrl && (
-                <div className="rounded-xl overflow-hidden">
-                  <img 
-                    src={imageUrl} 
-                    alt={guide.title} 
-                    className="w-full h-auto object-cover"
-                    style={{ maxHeight: '400px' }}
-                  />
-                </div>
-              )}
-
-              {/* Title Section - In left column below image */}
-              <div className="mb-8">
-                <div className="flex items-start justify-between gap-4 mb-4">
-                  <div className="flex-1">
-                    <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">{guide.title}</h1>
-                    {guide.lastUpdatedAt && (
-                      <div className="flex items-center gap-2 text-sm text-gray-500">
-                        <span>{new Date(guide.lastUpdatedAt).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</span>
-                      </div>
-                    )}
-                  </div>
-                  <a
-                    href={primaryDocUrl || '#'}
-                    target={primaryDocUrl ? "_blank" : undefined}
-                    rel={primaryDocUrl ? "noopener noreferrer" : undefined}
-                    onClick={(e) => {
-                      if (!primaryDocUrl) {
-                        e.preventDefault()
-                        return
-                      }
-                      const category = actualIsBlueprintDomain ? 'view_blueprint_clicked' : 
-                                     actualIsGuidelinesDomain ? 'view_guideline_clicked' :
-                                     actualIsStrategyDomain ? 'view_strategy_clicked' : 'view_guide_clicked'
-                      track('Guides.CTA', { category, slug: guide.slug || guide.id, title: guide.title })
-                    }}
-                    className={`px-6 py-3 text-white font-semibold rounded-full transition-all flex items-center justify-center gap-2 whitespace-nowrap ${!primaryDocUrl ? 'opacity-50 cursor-not-allowed' : ''} focus:outline-none focus:ring-2 focus:ring-[var(--guidelines-ring-color)]`}
-                    style={{ 
-                      backgroundColor: '#030E31',
-                    }}
-                    onMouseEnter={(e) => {
-                      if (primaryDocUrl) {
-                        e.currentTarget.style.backgroundColor = '#020A28'
-                      }
-                    }}
-                    onMouseLeave={(e) => {
-                      if (primaryDocUrl) {
-                        e.currentTarget.style.backgroundColor = '#030E31'
-                      }
-                    }}
-                  >
-                    <ExternalLink size={18} />
-                    <span>
-                      {actualIsBlueprintDomain ? 'View Blueprint' : 
-                       actualIsGuidelinesDomain ? 'View Guideline' :
-                       actualIsStrategyDomain ? 'View Strategy' : 'View Guide'}
-                    </span>
-                  </a>
-                </div>
-              </div>
-              {/* Content Sections as Cards */}
-              {parsedGuideSections.length > 0 ? (
-                <div className="space-y-6">
-                  {parsedGuideSections.map((section, index) => (
-                    <div key={index} className="rounded-xl shadow-sm border border-gray-200" style={{ backgroundColor: '#F8FAFC' }}>
-                      <div className="p-6 md:p-8">
-                        <h2 className="text-xl md:text-2xl font-bold text-gray-900 mb-6 pl-4 relative">
-                          <span className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-[#1A2E6E] to-transparent"></span>
-                          {section.title}
-                        </h2>
-                        <div className="prose prose-sm max-w-none text-gray-700 leading-normal space-y-2">
-                          <React.Suspense fallback={<div className="animate-pulse text-gray-400">Loading content…</div>}>
-                            <Markdown body={section.content} />
-                          </React.Suspense>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : guide.body ? (
-                <div className="rounded-xl shadow-sm border border-gray-200" style={{ backgroundColor: '#F8FAFC' }}>
-                  <div className="p-6 md:p-8">
-                    <div className="prose prose-sm max-w-none text-gray-700 leading-normal">
-                      <React.Suspense fallback={<div className="animate-pulse text-gray-400">Loading content…</div>}>
-                        <Markdown body={guide.body} />
-                      </React.Suspense>
-                    </div>
-                  </div>
-                </div>
-              ) : guide.summary ? (
-                <div className="rounded-xl shadow-sm border border-gray-200" style={{ backgroundColor: '#F8FAFC' }}>
-                  <div className="p-6 md:p-8">
-                    <p className="text-gray-700 leading-normal">{guide.summary}</p>
-                  </div>
-                </div>
-              ) : null}
-          </div>
-
-          {/* Related Guides Section - Full width at bottom */}
-          {related && related.length > 0 && (
-            <div className="mt-12">
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-2xl font-bold text-gray-900">Related Guides</h2>
-                <Link 
-                  to={backHref} 
-                  className="font-medium flex items-center transition-colors" 
-                  style={{ color: '#0B1E67' }}
-                  onMouseEnter={(e) => e.currentTarget.style.color = '#092256'}
-                  onMouseLeave={(e) => e.currentTarget.style.color = '#0B1E67'}
-                >
-                  See All Guides
-                  <ChevronRightIcon size={16} className="ml-1" />
-                </Link>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                {related.slice(0, 3).map((r) => (
-                  <Link
-                    key={r.slug || r.id}
-                    to={`/marketplace/guides/${encodeURIComponent(r.slug || r.id)}`}
-                    className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow cursor-pointer"
-                  >
-                    <img
-                      src={getGuideImageUrl({
-                        heroImageUrl: r.heroImageUrl || undefined,
-                        domain: r.domain || undefined,
-                        guideType: r.guideType || undefined,
-                        id: r.id,
-                        slug: r.slug,
-                        title: r.title,
-                      })}
-                      alt={r.title}
-                      className="w-full h-32 object-cover"
-                      loading="lazy"
-                    />
-                    <div className="p-4">
-                      {r.lastUpdatedAt && (
-                        <p className="text-xs text-gray-500 mb-2">
-                          {new Date(r.lastUpdatedAt).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
-                        </p>
-                      )}
-                      <h3 className="font-semibold text-gray-900 mb-2 line-clamp-2">{r.title}</h3>
-                      {r.summary && (
-                        <p className="text-sm text-gray-600 line-clamp-2">{r.summary}</p>
-                      )}
-                    </div>
-                  </Link>
-                ))}
-              </div>
-            </div>
-          )}
-        </main>
-        <Footer isLoggedIn={!!user} />
-      </div>
-    )
-  }
+  // OLD Blueprint rendering - removed as it's no longer needed
+  // The code below has been replaced by BlueprintPage component above
 
   // Render all guides with clean card layout (no tabs) - Matching the design image
   // Skip blueprint domain as it has its own special layout
   if (!actualIsBlueprintDomain) {
     return (
-      <div className="min-h-screen flex flex-col guidelines-theme dq-products-bg" style={{ minHeight: '100vh' }}>
-        <Header toggleSidebar={() => undefined} sidebarOpen={false} />
+      <div className="min-h-screen flex flex-col guidelines-theme" style={{ minHeight: '100vh' }}>
+        <Header toggleSidebar={() => {}} sidebarOpen={false} />
         <main className="container mx-auto px-4 py-8 flex-grow max-w-7xl" role="main" style={{ backgroundColor: 'transparent' }}>
           <nav className="flex mb-6" aria-label="Breadcrumb">
             <ol className="inline-flex items-center space-x-1 md:space-x-2">
@@ -1293,12 +1334,7 @@ const TAB_LABELS: Record<GuideTabKey, string> = {
               <div className="mb-8">
                 <div className="flex items-start justify-between gap-4 mb-4">
                   <div className="flex-1">
-                    <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">{guide.title}</h1>
-                    {guide.lastUpdatedAt && (
-                      <div className="flex items-center gap-2 text-sm text-gray-500">
-                        <span>{new Date(guide.lastUpdatedAt).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</span>
-                      </div>
-                    )}
+                    <h1 className={`font-bold text-gray-900 mb-4 ${guide.slug === 'dq-ghc' ? 'text-2xl md:text-3xl' : 'text-3xl md:text-4xl'}`}>{guide.title}</h1>
                   </div>
                   <a
                     href={primaryDocUrl || '#'}
@@ -1348,7 +1384,7 @@ const TAB_LABELS: Record<GuideTabKey, string> = {
                           <span className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-[#1A2E6E] to-transparent"></span>
                           {section.title}
                         </h2>
-                        <div className="prose prose-sm max-w-none text-gray-700 leading-normal space-y-2">
+                        <div className="prose prose-sm max-w-none text-gray-700 leading-relaxed space-y-4">
                           <React.Suspense fallback={<div className="animate-pulse text-gray-400">Loading content…</div>}>
                             <Markdown body={section.content} />
                           </React.Suspense>
@@ -1360,7 +1396,7 @@ const TAB_LABELS: Record<GuideTabKey, string> = {
               ) : guide.body ? (
                 <div className="rounded-xl shadow-sm border border-gray-200" style={{ backgroundColor: '#F8FAFC' }}>
                   <div className="p-6 md:p-8">
-                    <div className="prose prose-sm max-w-none text-gray-700 leading-normal">
+                    <div className="prose prose-sm max-w-none text-gray-700 leading-relaxed">
                       <React.Suspense fallback={<div className="animate-pulse text-gray-400">Loading content…</div>}>
                         <Markdown body={guide.body} />
                       </React.Suspense>
@@ -1370,7 +1406,7 @@ const TAB_LABELS: Record<GuideTabKey, string> = {
               ) : guide.summary ? (
                 <div className="rounded-xl shadow-sm border border-gray-200" style={{ backgroundColor: '#F8FAFC' }}>
                   <div className="p-6 md:p-8">
-                    <p className="text-gray-700 leading-normal">{guide.summary}</p>
+                    <p className="text-gray-700 leading-relaxed">{guide.summary}</p>
                   </div>
                 </div>
               ) : null}
@@ -1404,6 +1440,7 @@ const TAB_LABELS: Record<GuideTabKey, string> = {
                         heroImageUrl: r.heroImageUrl || undefined,
                         domain: r.domain || undefined,
                         guideType: r.guideType || undefined,
+                        subDomain: r.subDomain || (r as any)?.sub_domain || undefined,
                         id: r.id,
                         slug: r.slug,
                         title: r.title,
@@ -1436,7 +1473,7 @@ const TAB_LABELS: Record<GuideTabKey, string> = {
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50 guidelines-theme">
-      <Header toggleSidebar={() => undefined} sidebarOpen={false} />
+      <Header toggleSidebar={() => {}} sidebarOpen={false} />
       <main className="container mx-auto px-4 py-8 flex-grow guide-detail max-w-7xl" role="main">
         <nav className="flex mb-4" aria-label="Breadcrumb">
           <ol className="inline-flex items-center space-x-1 md:space-x-2">
@@ -1551,7 +1588,7 @@ const TAB_LABELS: Record<GuideTabKey, string> = {
             
             {/* Description */}
             {guide.summary && (
-              <p className="text-gray-700 text-base leading-normal mb-2">
+              <p className="text-gray-700 text-base leading-relaxed mb-4">
                 {guide.summary}
               </p>
             )}
@@ -1585,8 +1622,8 @@ const TAB_LABELS: Record<GuideTabKey, string> = {
                 {sectionsForTabs.map((section) => (
                   <button
                     key={section.id}
-                    onClick={() => setActiveContentTab(section.id)}
-                    className={`px-0 py-4 text-sm font-medium border-b-2 transition-colors ${
+                  onClick={() => setActiveContentTab(section.id)}
+                  className={`px-0 py-4 text-sm font-medium border-b-2 transition-colors ${
                       activeContentTab === section.id
                         ? 'border-blue-600 text-blue-600'
                         : 'border-transparent text-gray-500 hover:text-gray-700'
@@ -1609,15 +1646,62 @@ const TAB_LABELS: Record<GuideTabKey, string> = {
                   role="tabpanel"
                   aria-labelledby={`tab-${section.id}`}
                 >
-                  <article
-                    ref={articleRef}
-                    className="markdown-body"
-                    dir={typeof document !== 'undefined' ? (document.documentElement.getAttribute('dir') || 'ltr') : 'ltr'}
-                  >
-                    <React.Suspense fallback={<div className="animate-pulse text-gray-400">Loading content…</div>}>
-                      <Markdown body={formatSectionContent(section)} />
-                    </React.Suspense>
-                  </article>
+                  {isVisionGuide && section.id === 'overview' && (
+                    <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
+                      <h3 className="text-lg font-semibold text-gray-900 mb-3">Overview - Short Summary</h3>
+                      <p className="text-gray-700">
+                        {guide?.summary || 'This guide introduces the Vision—why DQ exists, what makes it unique, and how it directs all competencies.'}
+                      </p>
+                    </div>
+                  )}
+                  {isVisionGuide && section.id === 'story' && (
+                    <div className="bg-blue-50 border border-blue-100 rounded-lg p-6">
+                      <h3 className="text-lg font-semibold text-gray-900 mb-3">Explore the Story Book</h3>
+                      <p className="text-gray-700 mb-4">
+                        Dive deeper into the Vision story—why DQ exists, our mission, and how the GHC shapes the journey.
+                      </p>
+                      <a
+                        href={guide?.documentUrl || guide?.heroImageUrl || '#'}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-flex items-center px-4 py-2 rounded-md text-white bg-blue-700 hover:bg-blue-800 transition-colors"
+                        style={{ backgroundColor: '#030F35' }}
+                      >
+                        Open Story Book
+                        <ExternalLink size={16} className="ml-2" />
+                      </a>
+                      {!(guide?.documentUrl || guide?.heroImageUrl) && (
+                        <p className="text-xs text-gray-500 mt-2">Story book link not provided yet.</p>
+                      )}
+                    </div>
+                  )}
+                  {isVisionGuide && section.id === 'course' && (
+                    <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
+                      <h3 className="text-lg font-semibold text-gray-900 mb-3">Course - Learning Center</h3>
+                      <p className="text-gray-700 mb-4">
+                        Continue your learning with the GHC Course in the Learning Center.
+                      </p>
+                      <a
+                        href="/lms/ghc-course"
+                        className="inline-flex items-center px-4 py-2 rounded-md text-white bg-blue-700 hover:bg-blue-800 transition-colors"
+                        style={{ backgroundColor: '#030F35' }}
+                      >
+                        Go to Course
+                        <ExternalLink size={16} className="ml-2" />
+                      </a>
+                    </div>
+                  )}
+                  {!isVisionGuide && (
+                    <article
+                      ref={articleRef}
+                      className="markdown-body"
+                      dir={typeof document !== 'undefined' ? (document.documentElement.getAttribute('dir') || 'ltr') : 'ltr'}
+                    >
+                      <React.Suspense fallback={<div className="animate-pulse text-gray-400">Loading content…</div>}>
+                        <Markdown body={formatSectionContent(section)} />
+                      </React.Suspense>
+                    </article>
+                  )}
                 </div>
               ))}
             </div>
@@ -1927,46 +2011,41 @@ const TAB_LABELS: Record<GuideTabKey, string> = {
             )}
           </div>
 
-          {/* Sidebar: Related News and Announcements - Updated to match screenshot */}
+          {/* Sidebar: Related Announcements - Updated to match screenshot */}
           <aside className="lg:col-span-1 space-y-6 lg:sticky lg:top-24" aria-label="Secondary">
             {related && related.length > 0 && (
               <section aria-labelledby="related-title" className="bg-white rounded-lg shadow p-6" id="related">
-                <h2 id="related-title" className="text-xl font-semibold mb-4">Related News and Announcements</h2>
+                <h2 id="related-title" className="text-xl font-semibold mb-4">Related Announcements</h2>
                 <div className="space-y-3">
-                  {related.slice(0, 3).map((r) => {
-                    const relatedDate = r.lastUpdatedAt ? new Date(r.lastUpdatedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : null
-                    const getTagColor = (type: string | null | undefined) => {
-                      if (!type) return 'bg-gray-100 text-gray-700'
-                      const lowerType = type.toLowerCase()
-                      if (lowerType.includes('event') || lowerType.includes('upcoming')) return 'bg-orange-100 text-orange-700'
-                      if (lowerType.includes('recognition') || lowerType.includes('employee')) return 'bg-green-100 text-green-700'
-                      if (lowerType.includes('policy') || lowerType.includes('update')) return 'bg-purple-100 text-purple-700'
-                      return 'bg-blue-100 text-blue-700'
-                    }
-                    return (
-                      <Link
-                        key={r.slug || r.id}
-                        to={`/marketplace/guides/${encodeURIComponent(r.slug || r.id)}`}
-                        className="block border border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition-colors focus:outline-none focus:ring-2 focus:ring-[var(--guidelines-ring-color)]"
-                        onClick={() => track('Guides.RelatedClick', { from: guide.slug || guide.id, to: r.slug || r.id })}
-                      >
-                        <div className="flex items-start justify-between gap-3">
-                          <div className="flex-1 min-w-0">
-                            {r.guideType && (
-                              <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium mb-2 ${getTagColor(r.guideType)}`}>
-                                {r.guideType}
-                              </span>
-                            )}
-                            {relatedDate && (
-                              <div className="text-xs text-gray-500 mb-2">{relatedDate}</div>
-                            )}
-                            <div className="font-medium text-gray-900 line-clamp-2" title={r.title}>{r.title}</div>
-                          </div>
-                          <ChevronRightIcon size={18} className="text-gray-400 flex-shrink-0 mt-1" />
+                  {related.map((r) => (
+                    <Link
+                      key={r.slug || r.id}
+                      to={`/marketplace/guides/${encodeURIComponent(r.slug || r.id)}`}
+                      className="block border border-gray-200 rounded-lg p-3 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-[var(--guidelines-ring-color)]"
+                      onClick={() => track('Guides.RelatedClick', { from: guide.slug || guide.id, to: r.slug || r.id })}
+                    >
+                      <div className="flex gap-3">
+                        <img
+                          src={getGuideImageUrl({
+                            heroImageUrl: r.heroImageUrl || undefined,
+                            domain: r.domain || undefined,
+                            guideType: r.guideType || undefined,
+                            subDomain: r.subDomain || (r as any)?.sub_domain || undefined,
+                            id: r.id,
+                            slug: r.slug,
+                            title: r.title,
+                          })}
+                          alt={r.title}
+                          className="w-20 h-20 object-cover rounded"
+                          loading="lazy"
+                        />
+                        <div className="min-w-0">
+                          <div className="font-medium text-gray-900 truncate" title={r.title}>{r.title}</div>
+                          {r.summary && <div className="text-sm text-gray-600 line-clamp-2">{r.summary}</div>}
                         </div>
-                      </Link>
-                    );
-                  })}
+                      </div>
+                    </Link>
+                  ))}
                 </div>
               </section>
             )}
@@ -1984,7 +2063,7 @@ const TAB_LABELS: Record<GuideTabKey, string> = {
   // Final safety fallback - should never reach here, but ensures something always renders
   return (
     <div className="min-h-screen flex flex-col bg-gray-50 guidelines-theme">
-      <Header toggleSidebar={() => undefined} sidebarOpen={false} />
+      <Header toggleSidebar={() => {}} sidebarOpen={false} />
       <main className="container mx-auto px-4 py-8 flex-grow max-w-7xl">
         <div className="bg-white rounded shadow p-8 text-center">
           <h2 className="text-xl font-medium text-gray-900 mb-2">Unable to load guide</h2>

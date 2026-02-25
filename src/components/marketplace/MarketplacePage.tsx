@@ -6,7 +6,7 @@ import { SearchBar } from '../SearchBar.js';
 import { FilterIcon, XIcon, HomeIcon, ChevronRightIcon, InfoIcon } from 'lucide-react';
 import { ErrorDisplay, CourseCardSkeleton } from '../SkeletonLoader.js';
 import { fetchMarketplaceItems, fetchMarketplaceFilters } from '../../services/marketplace.js';
-import { getMarketplaceConfig, getTabSpecificFilters } from '../../utils/marketplaceConfig.js';
+import { getMarketplaceConfig, getTabSpecificFilters, getDesignSystemTabSpecificFilters } from '../../utils/marketplaceConfig.js';
 import { MarketplaceComparison } from './MarketplaceComparison.js';
 import { Header } from '../Header';
 import { Footer } from '../Footer';
@@ -32,6 +32,8 @@ import { track } from '../../utils/analytics';
 import FAQsPageContent from '../../pages/guides/FAQsPageContent';
 import { glossaryTerms, GlossaryTerm, CATEGORIES } from '../../pages/guides/glossaryData';
 import { STATIC_PRODUCTS } from '../../utils/staticProducts';
+import { DESIGN_SYSTEM_ITEMS, getDesignSystemItemsByType } from '../../utils/designSystemData';
+import { DesignSystemCard } from './DesignSystemCard';
 const LEARNING_TYPE_FILTER: FilterConfig = {
   id: 'learningType',
   title: 'Learning Type',
@@ -338,7 +340,6 @@ type DesignSystemTab = 'cids' | 'vds' | 'cds';
       next.delete('blueprint_sector');
       next.delete('product_type');
       next.delete('product_stage');
-      next.delete('product_class');
       next.delete('product_sector');
     }
     const qs = next.toString();
@@ -392,7 +393,7 @@ type DesignSystemTab = 'cids' | 'vds' | 'cds';
       changed = true;
     }
     if (activeTab !== 'blueprints') {
-      const productFilterKeys = ['blueprint_framework', 'blueprint_sector', 'product_type', 'product_stage', 'product_class', 'product_sector'];
+      const productFilterKeys = ['blueprint_framework', 'blueprint_sector', 'product_type', 'product_stage', 'product_sector'];
       productFilterKeys.forEach(key => {
         if (next.has(key)) {
           next.delete(key);
@@ -589,11 +590,12 @@ type DesignSystemTab = 'cids' | 'vds' | 'cds';
         return;
       }
       
-      // For Design System, use config.filterCategories directly
+      // For Design System, use tab-specific filters
       if (isDesignSystem) {
-        setFilterConfig(config.filterCategories);
+        const tabFilters = getDesignSystemTabSpecificFilters(activeDesignSystemTab);
+        setFilterConfig(tabFilters);
         const initial: Record<string, string | string[]> = {};
-        config.filterCategories.forEach(c => { initial[c.id] = ''; });
+        tabFilters.forEach(c => { initial[c.id] = ''; });
         setFilters(initial);
         return;
       }
@@ -614,7 +616,7 @@ type DesignSystemTab = 'cids' | 'vds' | 'cds';
       }
     };
     loadFilterOptions();
-  }, [marketplaceType, config, isCourses, isGuides, isKnowledgeHub, isServicesCenter, isDesignSystem, activeServiceTab, filterConfig.length, Object.keys(filters).length]);
+  }, [marketplaceType, config, isCourses, isGuides, isKnowledgeHub, isServicesCenter, isDesignSystem, activeServiceTab, activeDesignSystemTab, filterConfig.length, Object.keys(filters).length]);
   
   // Fetch items based on marketplace type
   useEffect(() => {
@@ -655,7 +657,9 @@ type DesignSystemTab = 'cids' | 'vds' | 'cds';
           setLoading(true);
           try {
             const qStr = queryParams.get('q') || '';
-            const productClasses = parseFilterValues(queryParams, 'product_class');
+            const productTypes = parseFilterValues(queryParams, 'product_type');
+            const productStages = parseFilterValues(queryParams, 'product_stage');
+            const productSectors = parseFilterValues(queryParams, 'product_sector');
 
             // Convert static products to guide format
             let out = STATIC_PRODUCTS.map(product => ({
@@ -679,23 +683,30 @@ type DesignSystemTab = 'cids' | 'vds' | 'cds';
               complexityLevel: null,
               productType: product.productType,
               productStage: product.productStage,
-              productClass: product.productClass,
             }));
 
-            // Apply product class filter
-            if (productClasses.length > 0) {
-              out = out.filter(it => {
-                const itemProductClass = (it.productClass || '').toLowerCase();
-                return productClasses.some(selectedClass => {
-                  return itemProductClass === selectedClass.toLowerCase();
-                });
+            // Apply product filters
+          if (productTypes.length > 0) {
+            out = out.filter(it => {
+              const itemProductType = (it.productType || '').toLowerCase();
+              return productTypes.some(selectedType => {
+                const normalizedSelected = slugify(selectedType);
+                const typeMap: Record<string, string[]> = {
+                  'tmaas': ['tmaas'],
+                  'dtma': ['dtma'],
+                  'dtmp': ['dtmp'],
+                  'plant-4-0': ['plant 4.0', 'plant-4.0', 'plant40'],
+                  'dtmcc': ['dtmcc']
+                };
+                const searchTerms = typeMap[selectedType] || [normalizedSelected];
+                return searchTerms.some(term => itemProductType.includes(term));
               });
+            });
             }
-
-            // If Class 01 is selected, show no cards
-            if (productClasses.includes('class-01')) {
-              out = [];
+            if (productStages.length > 0) {
+              out = out.filter(it => it.productStage && productStages.includes(it.productStage.toLowerCase()));
             }
+            // Note: Static products don't have sectors, so productSectors filter will show no results
 
             // Apply search query if provided
             if (qStr) {
@@ -705,7 +716,7 @@ type DesignSystemTab = 'cids' | 'vds' | 'cds';
                   it.title,
                   it.summary,
                   it.productType,
-                  it.guideType,
+                  it.productStage,
                 ].filter(Boolean).join(' ').toLowerCase();
                 return searchableText.includes(query);
               });
@@ -790,15 +801,7 @@ type DesignSystemTab = 'cids' | 'vds' | 'cds';
             return;
           }
 
-          if (statuses.length) q = q.in('status', statuses); else {
-            // For Strategy tab: show Published/Approved AND Draft (but not Archived)
-            // For other tabs: show only Approved
-            if (isStrategyTab) {
-              q = q.in('status', ['Approved', 'Published', 'Draft']);
-            } else {
-              q = q.eq('status', 'Approved');
-            }
-          }
+          if (statuses.length) q = q.in('status', statuses); else q = q.eq('status', 'Approved');
           if (qStr) q = q.or(`title.ilike.%${qStr}%,summary.ilike.%${qStr}%`);
           if (isStrategyTab) {
             q = q.or('domain.ilike.%Strategy%,guide_type.ilike.%Strategy%');
@@ -854,21 +857,8 @@ type DesignSystemTab = 'cids' | 'vds' | 'cds';
           // Exclude removed guidelines from facets
           let facetQ = supabaseClient
             .from('guides')
-            .select('domain,sub_domain,guide_type,function_area,unit,location,status');
-          
-          // Apply same status filter as main query for facets
-          if (statuses.length) {
-            facetQ = facetQ.in('status', statuses);
-          } else {
-            // For Strategy tab: show Published/Approved AND Draft (but not Archived)
-            // For other tabs: show only Approved
-            if (isStrategyTab) {
-              facetQ = facetQ.in('status', ['Approved', 'Published', 'Draft']);
-            } else {
-              facetQ = facetQ.eq('status', 'Approved');
-            }
-          }
-          
+            .select('domain,sub_domain,guide_type,function_area,unit,location,status')
+            .eq('status', 'Approved');
           excludedSlugs.forEach(slug => {
             facetQ = facetQ.neq('slug', slug);
           });
@@ -934,95 +924,6 @@ type DesignSystemTab = 'cids' | 'vds' | 'cds';
           // Note: Server-side filtering is also applied, but client-side filtering ensures consistency
           if (isStrategyTab) {
             // Show all strategy guides; server-side query already biases toward Strategy
-            // EXCLUDE: HoV competencies (HoV 1-12) - only show main HoV card (dq-hov)
-            // EXCLUDE: Any other unwanted strategy guides
-            const excludedStrategySlugs = [
-              'dq-competencies-emotional-intelligence',
-              'dq-competencies-growth-mindset',
-              'dq-competencies-purpose',
-              'dq-competencies-perceptive',
-              'dq-competencies-proactive',
-              'dq-competencies-perseverance',
-              'dq-competencies-precision',
-              'dq-competencies-customer',
-              'dq-competencies-learning',
-              'dq-competencies-collaboration',
-              'dq-competencies-responsibility',
-              'dq-competencies-trust',
-              'dq-competencies', // Exclude the competencies overview page
-              'dq-beliefs', // Exclude DQ Beliefs if it exists
-              'dq-strategy-2021-2030', // Exclude DQ Strategy 2021-2030 if it exists
-              'dq-journey', // Exclude DQ Journey
-              'journey', // Exclude any guide with "journey" slug
-            ];
-            
-            // Canonical GHC slugs - only these should be shown
-            const canonicalGHCSlugs = [
-              'dq-ghc',
-              'dq-vision',
-              'dq-hov',
-              'dq-persona',
-              'dq-agile-tms',
-              'dq-agile-sos',
-              'dq-agile-flows',
-              'dq-agile-6xd'
-            ];
-            
-            out = out.filter(it => {
-              const slug = (it.slug || '').toLowerCase();
-              const title = (it.title || '').toLowerCase();
-              
-              // Exclude if slug matches any excluded slug
-              if (excludedStrategySlugs.includes(slug)) return false;
-              
-              // Exclude if title contains unwanted keywords
-              if (title.includes('dq journey') || 
-                  title.includes('dq beliefs') || 
-                  title.includes('strategy 2021') ||
-                  title.includes('strategy 2030')) {
-                return false;
-              }
-              
-              // For GHC guides, only allow canonical slugs to prevent duplicates
-              // Check if this looks like a GHC guide (has GHC-related keywords)
-              const looksLikeGHC = title.includes('ghc') || 
-                                   title.includes('agile tms') || 
-                                   title.includes('agile sos') || 
-                                   title.includes('agile flows') || 
-                                   title.includes('agile 6xd') ||
-                                   title.includes('6xd') ||
-                                   slug.includes('ghc') ||
-                                   slug.includes('agile');
-              
-              // If it looks like a GHC guide but doesn't have a canonical slug, exclude it
-              if (looksLikeGHC && !canonicalGHCSlugs.includes(slug)) {
-                // Exception: allow if it's explicitly not a duplicate (doesn't match canonical titles)
-                const canonicalTitles = [
-                  'ghc overview',
-                  'golden honeycomb',
-                  'dq vision',
-                  'house of values',
-                  'dq persona',
-                  'agile tms',
-                  'agile sos',
-                  'agile flows',
-                  'agile 6xd'
-                ];
-                
-                // If title closely matches a canonical title, it's likely a duplicate
-                const matchesCanonical = canonicalTitles.some(canonical => {
-                  // Remove common prefixes/suffixes for comparison
-                  const cleanTitle = title.replace(/^(ghc|dq)\s+/i, '').replace(/\s+\(.*\)$/i, '').trim();
-                  return cleanTitle.includes(canonical) || canonical.includes(cleanTitle);
-                });
-                
-                if (matchesCanonical) {
-                  return false; // Exclude duplicate
-                }
-              }
-              
-              return true;
-            });
           } else if (isBlueprintTab) {
             // Products tab: Replace all database results with static products
             // Convert static products to guide format immediately
@@ -1048,7 +949,6 @@ type DesignSystemTab = 'cids' | 'vds' | 'cds';
               // Store product metadata for filtering
               productType: product.productType,
               productStage: product.productStage,
-              productClass: product.productClass,
             }));
           } else if (isGuidelinesTab) {
             // Guidelines tab: explicitly exclude Strategy, Blueprint, and Testimonial guides
@@ -1382,7 +1282,20 @@ type DesignSystemTab = 'cids' | 'vds' | 'cds';
               'dq-agile-flows',
               'dq-agile-6xd'
             ];
-            // Note: HoV competencies are excluded from display, so no need to include them in ordering
+            const hovOrder = [
+              'dq-competencies-emotional-intelligence',
+              'dq-competencies-growth-mindset',
+              'dq-competencies-purpose',
+              'dq-competencies-perceptive',
+              'dq-competencies-proactive',
+              'dq-competencies-perseverance',
+              'dq-competencies-precision',
+              'dq-competencies-customer',
+              'dq-competencies-learning',
+              'dq-competencies-collaboration',
+              'dq-competencies-responsibility',
+              'dq-competencies-trust'
+            ];
             const titleOrder = [
               'dq golden honeycomb of competencies',
               'dq vision',
@@ -1391,13 +1304,27 @@ type DesignSystemTab = 'cids' | 'vds' | 'cds';
               'agile tms',
               'agile sos',
               'agile flows',
-              'agile 6xd'
+              'agile 6xd',
+              'emotional intelligence',
+              'growth mindset',
+              'purpose',
+              'perceptive',
+              'proactive',
+              'perseverance',
+              'precision',
+              'customer',
+              'learning',
+              'collaboration',
+              'responsibility',
+              'trust'
             ];
             const orderIndex = (item: any) => {
               const slug = (item.slug || '').toLowerCase();
               const title = (item.title || '').toLowerCase();
               const slugIdx = ghcOrder.indexOf(slug);
               if (slugIdx >= 0) return slugIdx;
+              const hovIdx = hovOrder.indexOf(slug);
+              if (hovIdx >= 0) return ghcOrder.length + hovIdx;
               const titleIdx = titleOrder.findIndex(t => title.includes(t));
               return titleIdx >= 0 ? titleIdx : Number.MAX_SAFE_INTEGER;
             };
@@ -1425,6 +1352,62 @@ type DesignSystemTab = 'cids' | 'vds' | 'cds';
         } finally {
           setLoading(false);
         }
+        return;
+      }
+
+      // DESIGN SYSTEM: use static data from designSystemData.ts
+      if (isDesignSystem) {
+        setLoading(false);
+        setError(null);
+        // Filter items by active tab
+        let filteredDesignSystemItems = getDesignSystemItemsByType(activeDesignSystemTab);
+        
+        // Apply category filters based on active tab
+        // For CI.DS tab, check 'cids' filters
+        // For V.DS tab, check 'vds' filters
+        // For CDS tab, check 'cds' filters
+        const filterKey = activeDesignSystemTab; // 'cids', 'vds', or 'cds'
+        const categoryFilters = filters[filterKey];
+        const categoryArray = Array.isArray(categoryFilters) 
+          ? categoryFilters 
+          : (typeof categoryFilters === 'string' && categoryFilters ? categoryFilters.split(',').filter(Boolean) : []);
+        
+        if (categoryArray.length > 0) {
+          filteredDesignSystemItems = filteredDesignSystemItems.filter(item => 
+            item.category && categoryArray.includes(item.category)
+          );
+        }
+        
+        // Apply location filters
+        const locationFilters = filters['location'];
+        const locationArray = Array.isArray(locationFilters)
+          ? locationFilters
+          : (typeof locationFilters === 'string' && locationFilters ? locationFilters.split(',').filter(Boolean) : []);
+        
+        if (locationArray.length > 0) {
+          filteredDesignSystemItems = filteredDesignSystemItems.filter(item =>
+            item.location && locationArray.includes(item.location)
+          );
+        }
+        
+        // Apply search query
+        const searchQueryValue = queryParams.get('q') || '';
+        if (searchQueryValue) {
+          const query = searchQueryValue.toLowerCase();
+          filteredDesignSystemItems = filteredDesignSystemItems.filter(item => {
+            const searchableText = [
+              item.title,
+              item.description,
+              item.category,
+              item.location
+            ].filter(Boolean).join(' ').toLowerCase();
+            return searchableText.includes(query);
+          });
+        }
+        
+        setItems(filteredDesignSystemItems);
+        setFilteredItems(filteredDesignSystemItems);
+        setTotalCount(filteredDesignSystemItems.length);
         return;
       }
 
@@ -1756,7 +1739,7 @@ type DesignSystemTab = 'cids' | 'vds' | 'cds';
 
     run();
     // Keep deps lean; no need to include functions like isGuides
-  }, [marketplaceType, filters, searchQuery, queryParams, isCourses, isKnowledgeHub, currentPage, pageSize, isServicesCenter, activeServiceTab, activeTab]);
+  }, [marketplaceType, filters, searchQuery, queryParams, isCourses, isKnowledgeHub, currentPage, pageSize, isServicesCenter, activeServiceTab, activeTab, isDesignSystem, activeDesignSystemTab]);
 
   // Handle filter changes
   const handleFilterChange = useCallback((filterType: string, value: string) => {
@@ -2019,16 +2002,13 @@ type DesignSystemTab = 'cids' | 'vds' | 'cds';
 
           const DESIGN_SYSTEM_TAB_DESCRIPTIONS: Record<DesignSystemTab, { description: string; author?: string }> = {
             cids: {
-              description: 'Component Integration Design System - Reusable UI components, patterns, and integration guidelines for building consistent digital experiences.',
-              author: 'Maintained by DQ Design & Engineering Teams'
+              description: 'Explains how DQ creates and delivers high-quality content with structure, clear guidelines, and review standards, ensuring consistency and impact across platforms.'
             },
             vds: {
-              description: 'Visual Design System - Design tokens, typography, color palettes, and visual guidelines for creating cohesive brand experiences.',
-              author: 'Maintained by DQ Design Team'
+              description: 'Guides how DQ creates high-impact video content with storytelling, design, and production standards for consistency and impact.'
             },
             cds: {
-              description: 'Content Design System - Content patterns, writing guidelines, and messaging frameworks for clear and effective communication.',
-              author: 'Maintained by DQ Content & Communications Teams'
+              description: 'Outlines how DQ designs and delivers marketing campaigns by blending strategy, storytelling, and execution for impactful results.'
             }
           };
 
@@ -2063,15 +2043,10 @@ type DesignSystemTab = 'cids' | 'vds' | 'cds';
                 </nav>
                 {/* Tab Description - Integrated with tabs */}
                 {activeDesignSystemTab && DESIGN_SYSTEM_TAB_DESCRIPTIONS[activeDesignSystemTab] && (
-                  <div className="pt-4 pb-4">
+                  <div className="pt-2 pb-2 mt-3 border border-gray-200 rounded-lg bg-white p-3 shadow-sm">
                     <p className="text-sm text-gray-600 leading-relaxed">
                       {DESIGN_SYSTEM_TAB_DESCRIPTIONS[activeDesignSystemTab].description}
                     </p>
-                    {DESIGN_SYSTEM_TAB_DESCRIPTIONS[activeDesignSystemTab].author && (
-                      <p className="text-xs text-gray-500 mt-2">
-                        {DESIGN_SYSTEM_TAB_DESCRIPTIONS[activeDesignSystemTab].author}
-                      </p>
-                    )}
                   </div>
                 )}
               </div>
@@ -2079,16 +2054,16 @@ type DesignSystemTab = 'cids' | 'vds' | 'cds';
           );
         })()}
 
-        {/* Search + Sort - Show for all tabs including Glossary */}
-        {!isDesignSystem && (
+        {/* Search + Sort - Hide for Glossary tab (has its own search) */}
+        {!(isGuides && activeTab === 'glossary') && (
           <div className="mb-6 flex items-center gap-3">
             <div className="flex-1">
               <SearchBar
-                searchQuery={isGuides ? (queryParams.get('q') || '') : searchQuery}
-                placeholder={isGuides || isKnowledgeHub ? "Search in DQ Knowledge Center" : undefined}
-                ariaLabel={isGuides || isKnowledgeHub ? "Search in DQ Knowledge Center" : undefined}
+                searchQuery={(isGuides || isDesignSystem) ? (queryParams.get('q') || '') : searchQuery}
+                placeholder={isDesignSystem ? "Search in Design System" : (isGuides || isKnowledgeHub ? "Search in DQ Knowledge Center" : undefined)}
+                ariaLabel={isDesignSystem ? "Search in Design System" : (isGuides || isKnowledgeHub ? "Search in DQ Knowledge Center" : undefined)}
                 setSearchQuery={(q: string) => {
-                  if (isGuides) {
+                  if (isGuides || isDesignSystem) {
                     const next = new URLSearchParams(queryParams.toString());
                     next.delete('page');
                     if (q) next.set('q', q); else next.delete('q');
@@ -2101,6 +2076,13 @@ type DesignSystemTab = 'cids' | 'vds' | 'cds';
                 }}
               />
             </div>
+          </div>
+        )}
+        {isGuides && activeTab === 'blueprints' && (
+          <div className="mb-4">
+            <span className="inline-flex items-center px-3 py-1 text-xs font-semibold rounded-full border border-blue-200 bg-blue-50 text-blue-700">
+              Product
+            </span>
           </div>
         )}
 
@@ -2152,6 +2134,14 @@ type DesignSystemTab = 'cids' | 'vds' | 'cds';
                 <div className="p-4">
                   {isGuides ? (
                     <GuidesFilters activeTab={activeTab} facets={facets} query={queryParams} onChange={(next) => { next.delete('page'); const qs = next.toString(); window.history.replaceState(null, '', `${window.location.pathname}${qs ? '?' + qs : ''}`); setQueryParams(new URLSearchParams(next.toString())); track('Guides.FilterChanged', { params: Object.fromEntries(next.entries()) }); }} />
+                  ) : isDesignSystem ? (
+                    <FilterSidebar
+                      filters={Object.fromEntries(Object.entries(filters).map(([k, v]) => [k, Array.isArray(v) ? v : (v ? [v] : [])])) as Record<string, string[]>}
+                      filterConfig={filterConfig}
+                      onFilterChange={handleFilterChange}
+                      onResetFilters={resetFilters}
+                      isResponsive={true}
+                    />
                   ) : (
                     <FilterSidebar
                       filters={isCourses ? urlBasedFilters : (Object.fromEntries(Object.entries(filters).map(([k, v]) => [k, Array.isArray(v) ? v : (v ? [v] : [])])) as Record<string, string[]>)}
@@ -2170,6 +2160,22 @@ type DesignSystemTab = 'cids' | 'vds' | 'cds';
           <div className="hidden xl:block xl:w-1/4">
             {isGuides ? (
               <GuidesFilters activeTab={activeTab} facets={facets} query={queryParams} onChange={(next) => { next.delete('page'); const qs = next.toString(); window.history.replaceState(null, '', `${window.location.pathname}${qs ? '?' + qs : ''}`); setQueryParams(new URLSearchParams(next.toString())); track('Guides.FilterChanged', { params: Object.fromEntries(next.entries()) }); }} />
+            ) : isDesignSystem ? (
+              <div className="bg-white rounded-lg shadow p-4 sticky top-24 max-h-[calc(100vh-7rem)] overflow-y-auto filter-sidebar-scroll">
+                <div className="flex justify-between items-center mb-4">
+                  <h2 className="text-lg font-semibold">Filters</h2>
+                  {Object.values(filters).some(f => (Array.isArray(f) ? f.length > 0 : f !== '')) && (
+                    <button onClick={resetFilters} className="text-blue-600 text-sm font-medium">Clear all</button>
+                  )}
+                </div>
+                <FilterSidebar
+                  filters={Object.fromEntries(Object.entries(filters).map(([k, v]) => [k, Array.isArray(v) ? v : (v ? [v] : [])])) as Record<string, string[]>}
+                  filterConfig={filterConfig}
+                  onFilterChange={handleFilterChange}
+                  onResetFilters={resetFilters}
+                  isResponsive={false}
+                />
+              </div>
             ) : (
               <div className="bg-white rounded-lg shadow p-4 sticky top-24 max-h-[calc(100vh-7rem)] overflow-y-auto filter-sidebar-scroll">
                 <div className="flex justify-between items-center mb-4">
@@ -2224,51 +2230,121 @@ type DesignSystemTab = 'cids' | 'vds' | 'cds';
                 onClearFilters={clearKnowledgeHubFilters}
               />
             ) : isDesignSystem ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
-                <div className="bg-white rounded-lg shadow-md p-6 border border-gray-200">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">DQ Stories CI.DS</h3>
-                  <p className="text-gray-600 text-sm mb-4">Component Integration Design System - Explore reusable components and integration patterns.</p>
-                  <p className="text-xs text-gray-500">xDS Design System Marketplace</p>
+              filteredItems.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-6xl mx-auto">
+                  {filteredItems.map((item: any) => (
+                    <DesignSystemCard
+                      key={item.id}
+                      id={item.id}
+                      title={item.title}
+                      description={item.description}
+                      imageUrl={item.imageUrl}
+                      tags={item.tags}
+                      type={item.type}
+                    />
+                  ))}
                 </div>
-                <div className="bg-white rounded-lg shadow-md p-6 border border-gray-200">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">DQ Stories V.DS</h3>
-                  <p className="text-gray-600 text-sm mb-4">Visual Design System - Discover design tokens, typography, and visual guidelines.</p>
-                  <p className="text-xs text-gray-500">xDS Design System Marketplace</p>
+              ) : (
+                <div className="flex flex-col items-center justify-center py-16 px-4">
+                  <div className="text-center max-w-md">
+                    <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                      No {activeDesignSystemTab === 'cids' ? 'CI.DS' : activeDesignSystemTab === 'vds' ? 'V.DS' : 'CDS'} services found
+                    </h3>
+                    <p className="text-gray-600 text-sm">
+                      Service cards will appear here once they are added.
+                    </p>
+                  </div>
                 </div>
-                <div className="bg-white rounded-lg shadow-md p-6 border border-gray-200">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">DQ Stories CDS</h3>
-                  <p className="text-gray-600 text-sm mb-4">Content Design System - Access content patterns and writing guidelines.</p>
-                  <p className="text-xs text-gray-500">xDS Design System Marketplace</p>
-                </div>
-              </div>
+              )
             ) : isGuides ? (
               <>
                 {activeTab === 'faqs' ? (
-                  <div className="flex items-center justify-center py-20">
-                    <div className="bg-gray-100 rounded-lg p-12 text-center max-w-md">
-                      <div className="text-gray-400 mb-4">
-                        <svg className="w-16 h-16 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                      </div>
-                      <h3 className="text-xl font-semibold text-gray-700 mb-2">Coming Soon</h3>
-                      <p className="text-gray-500">FAQs content is currently being prepared and will be available soon.</p>
-                    </div>
-                  </div>
+                  <FAQsPageContent categoryFilter={(queryParams.get('faq_category') || '').split(',').filter(Boolean)[0] || null} />
                 ) : activeTab === '6xd' ? (
                   <SixXDComingSoonCards />
                 ) : activeTab === 'glossary' ? (
-                  <div className="flex items-center justify-center py-20">
-                    <div className="bg-gray-100 rounded-lg p-12 text-center max-w-md">
-                      <div className="text-gray-400 mb-4">
-                        <svg className="w-16 h-16 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  <>
+                    {/* Global Search Bar for Glossary */}
+                    <div className="mb-6">
+                      <div className="relative">
+                        <input
+                          type="text"
+                          value={queryParams.get('q') || ''}
+                          onChange={(e) => {
+                            const next = new URLSearchParams(queryParams.toString());
+                            next.delete('page');
+                            if (e.target.value) {
+                              next.set('q', e.target.value);
+                            } else {
+                              next.delete('q');
+                            }
+                            const qs = next.toString();
+                            if (typeof window !== 'undefined') {
+                              window.history.replaceState(null, '', `${window.location.pathname}${qs ? '?' + qs : ''}`);
+                            }
+                            setQueryParams(new URLSearchParams(next.toString()));
+                          }}
+                          placeholder="Search DQ terms (e.g. DWS, CWS, Agile TMS)"
+                          className="w-full px-4 py-3 pl-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[var(--guidelines-primary)] focus:border-[var(--guidelines-primary)] outline-none"
+                        />
+                        <svg
+                          className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                         </svg>
                       </div>
-                      <h3 className="text-xl font-semibold text-gray-700 mb-2">Coming Soon</h3>
-                      <p className="text-gray-500">Glossary content is currently being prepared and will be available soon.</p>
                     </div>
-                  </div>
+                    {/* Show 6xD Perspective Cards when Agile 6xD is selected */}
+                    {(() => {
+                      const selectedKnowledgeSystems = parseFilterValues(queryParams, 'glossary_knowledge_system');
+                      const has6xD = selectedKnowledgeSystems.includes('6xd');
+                      const selectedPerspectives = parseFilterValues(queryParams, 'glossary_6xd_perspective');
+                      
+                      // Always show cards when 6xD is selected
+                      if (has6xD) {
+                        return (
+                          <>
+                            <SixXDPerspectiveCards
+                              onCardClick={(perspectiveId) => {
+                                // Navigate to perspective detail page
+                                navigate(`/marketplace/guides/6xd-perspective/${perspectiveId}`);
+                                track('Glossary.6xDPerspectiveSelected', { perspective: perspectiveId });
+                              }}
+                            />
+                            {/* Show filtered terms below cards */}
+                            {filteredGlossaryTerms.length > 0 && (
+                              <div className="mt-8">
+                                <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                                  {selectedPerspectives.length > 0 ? 'Terms in this perspective' : 'All 6xD terms'}
+                                </h3>
+                                <GlossaryGrid
+                                  items={filteredGlossaryTerms}
+                                  onClickTerm={(term) => {
+                                    navigate(`/marketplace/guides/glossary/${term.id}`);
+                                  }}
+                                  hideEmptyState={false}
+                                />
+                              </div>
+                            )}
+                          </>
+                        );
+                      }
+                      
+                      // Show regular glossary grid when 6xD is not selected
+                      return (
+                        <GlossaryGrid
+                          items={filteredGlossaryTerms}
+                          onClickTerm={(term) => {
+                            navigate(`/marketplace/guides/glossary/${term.id}`);
+                          }}
+                          hideEmptyState={false}
+                        />
+                      );
+                    })()}
+                  </>
                 ) : activeTab === 'testimonials' ? (
                   <TestimonialsGrid
                     items={filteredItems}

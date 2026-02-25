@@ -49,16 +49,20 @@ function mapNewsToFeatured(item: NewsItem): FeaturedProgram {
   
   let title: string;
   let category: 'News' | 'Insight';
+  let learnMoreHref: string;
   
   if (isBlog) {
     title = item.title;
     category = 'Insight';
+    learnMoreHref = '/marketplace/opportunities?tab=insights';
   } else if (item.type === 'Announcement') {
     title = item.title;
     category = 'News';
+    learnMoreHref = '/marketplace/opportunities?tab=announcements';
   } else {
     title = item.title;
     category = 'News';
+    learnMoreHref = '/marketplace/opportunities?tab=announcements';
   }
   
   return {
@@ -66,7 +70,7 @@ function mapNewsToFeatured(item: NewsItem): FeaturedProgram {
     partnership,
     title,
     description: item.excerpt,
-    learnMoreHref: `/marketplace/news/${item.id}`,
+    learnMoreHref,
     backgroundImage: `url(${bgImage})`,
     category,
   };
@@ -83,7 +87,7 @@ function mapJobToFeatured(item: JobItem): FeaturedProgram {
     partnership,
     title: item.title,
     description: item.description,
-    learnMoreHref: `/marketplace/opportunities/${item.id}`,
+    learnMoreHref: '/marketplace/opportunities?tab=opportunities',
     backgroundImage: `url(${bgImage})`,
     category: 'Jobs',
   };

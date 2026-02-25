@@ -10,6 +10,8 @@ import {
 import {
   fetchAllReviews,
   createReview,
+  fetchAllLearningPaths,
+  fetchLearningPathBySlug,
 } from '../services/lmsService';
 import type { LmsCard, LmsDetail } from '../data/lmsCourseDetails';
 
@@ -47,10 +49,10 @@ export function useLmsCourse(slug: string) {
       const courses = await getLmsCourseDetails();
       console.log('[LMS] useLmsCourse: Total courses available:', courses.length);
       console.log('[LMS] useLmsCourse: Available slugs:', courses.map(c => c.slug));
-      
+
       // Try exact match first
       let found = courses.find(c => c.slug === searchSlug) || null;
-      
+
       // If not found, try case-insensitive match
       if (!found) {
         found = courses.find(c => c.slug.toLowerCase() === searchSlug.toLowerCase()) || null;
@@ -58,14 +60,23 @@ export function useLmsCourse(slug: string) {
           console.log('[LMS] useLmsCourse: Found course with case-insensitive match');
         }
       }
-      
+
+      // If still not found, try learning paths
       if (!found) {
-        console.warn('[LMS] useLmsCourse: Course not found with slug:', searchSlug);
+        console.log('[LMS] useLmsCourse: Course not found, checking learning paths...');
+        found = await fetchLearningPathBySlug(searchSlug);
+        if (found) {
+          console.log('[LMS] useLmsCourse: Found learning path:', { slug: found.slug, title: found.title });
+        }
+      }
+
+      if (!found) {
+        console.warn('[LMS] useLmsCourse: Course or learning path not found with slug:', searchSlug);
         console.warn('[LMS] useLmsCourse: Available slugs:', courses.map(c => ({ slug: c.slug, title: c.title })));
       } else {
-        console.log('[LMS] useLmsCourse: Found course:', { slug: found.slug, title: found.title });
+        console.log('[LMS] useLmsCourse: Found:', { slug: found.slug, title: found.title });
       }
-      
+
       return found;
     },
     enabled: !!slug,
@@ -91,38 +102,38 @@ export function useLmsCoursesFiltered(filters: {
     queryKey: ['lms', 'courses', 'filtered', filters],
     queryFn: async () => {
       const allCourses = await getLmsCourses();
-      
+
       // Apply filters client-side
       let filtered = allCourses;
-      
+
       if (filters.category && filters.category.length > 0) {
         filtered = filtered.filter(c => filters.category!.includes(c.courseCategory));
       }
-      
+
       if (filters.provider && filters.provider.length > 0) {
         filtered = filtered.filter(c => filters.provider!.includes(c.provider));
       }
-      
+
       if (filters.courseType && filters.courseType.length > 0) {
         filtered = filtered.filter(c => c.courseType && filters.courseType!.includes(c.courseType));
       }
-      
+
       if (filters.location && filters.location.length > 0) {
-        filtered = filtered.filter(c => 
+        filtered = filtered.filter(c =>
           c.locations.some(loc => filters.location!.includes(loc))
         );
       }
-      
+
       if (filters.audience && filters.audience.length > 0) {
-        filtered = filtered.filter(c => 
+        filtered = filtered.filter(c =>
           c.audience.some(aud => filters.audience!.includes(aud))
         );
       }
-      
+
       if (filters.sfiaRating && filters.sfiaRating.length > 0) {
         filtered = filtered.filter(c => filters.sfiaRating!.includes(c.levelCode));
       }
-      
+
       if (filters.searchQuery) {
         const query = filters.searchQuery.toLowerCase();
         filtered = filtered.filter(c =>
@@ -131,7 +142,7 @@ export function useLmsCoursesFiltered(filters: {
           c.provider.toLowerCase().includes(query)
         );
       }
-      
+
       return filtered;
     },
     staleTime: 5 * 60 * 1000, // 5 minutes
@@ -191,3 +202,13 @@ export function useCreateReview() {
   });
 }
 
+/**
+ * Hook to fetch all learning paths
+ */
+export function useLmsLearningPaths() {
+  return useQuery<LmsCard[], Error>({
+    queryKey: ['lms', 'learning-paths'],
+    queryFn: fetchAllLearningPaths,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+}

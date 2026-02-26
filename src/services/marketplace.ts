@@ -239,3 +239,57 @@ export const fetchMarketplaceProviders = async (
     throw new Error(`Failed to load providers. Please try again later.`);
   }
 };
+
+/**
+ * Fetches guides from Supabase for the Latest DQ Developments section
+ */
+export const fetchLatestGuides = async (
+  type: 'ghc' | 'guidelines' | 'learning',
+  limit: number = 6
+): Promise<any[]> => {
+  try {
+    const { supabaseClient } = await import('../lib/supabaseClient');
+    
+    const excludedSlugs = ['atp-guidelines', 'agile-working-guidelines', 'client-session-guidelines', 'dbp-support-guidelines', 'dq-products'];
+    
+    let query = supabaseClient
+      .from('guides')
+      .select('id, slug, title, summary, image, guide_type, sub_domain, domain, strategy_type, strategy_framework, guidelines_category, created_at, updated_at')
+      .order('updated_at', { ascending: false });
+    
+    // Exclude removed guidelines
+    excludedSlugs.forEach(slug => {
+      query = query.neq('slug', slug);
+    });
+    
+    // Filter based on type
+    if (type === 'ghc') {
+      // GHC: Strategy guides with strategy_type = 'GHC' or strategy_framework containing 'GHC'
+      query = query
+        .eq('guide_type', 'Strategy')
+        .or('strategy_type.eq.GHC,strategy_framework.ilike.%GHC%');
+    } else if (type === 'guidelines') {
+      // Guidelines: guide_type = 'Guidelines'
+      query = query.eq('guide_type', 'Guidelines');
+    } else if (type === 'learning') {
+      // Learning: Strategy guides related to learning/execution
+      query = query
+        .eq('guide_type', 'Strategy')
+        .or('strategy_type.ilike.%Learning%,strategy_type.ilike.%Execution%,title.ilike.%Learning%,title.ilike.%Execution%');
+    }
+    
+    query = query.limit(limit);
+    
+    const { data, error } = await query;
+    
+    if (error) {
+      console.error(`Error fetching ${type} guides:`, error);
+      return [];
+    }
+    
+    return data || [];
+  } catch (error) {
+    console.error(`Error fetching ${type} guides:`, error);
+    return [];
+  }
+};

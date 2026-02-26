@@ -3,7 +3,7 @@ import {
   levelLabelFromCode,
   levelShortLabelFromCode
 } from '../lms/levels';
-import { supabaseClient } from '../lib/supabaseClient';
+import { lmsSupabaseClient } from '../lib/lmsSupabaseClient';
 
 const allowedLocations = new Set<string>(LOCATION_ALLOW as readonly string[]);
 
@@ -172,9 +172,14 @@ type DBLesson = {
  */
 async function fetchCourses(): Promise<DBCourse[]> {
   try {
+    if (!lmsSupabaseClient) {
+      console.warn('[LMS] LMS Supabase client not initialized');
+      return [];
+    }
+
     console.log('[LMS] Fetching courses from Supabase (lms_courses table)...');
     
-    const { data, error } = await supabaseClient
+    const { data, error } = await lmsSupabaseClient
       .from('lms_courses')
       .select('*')
       .order('title');
@@ -205,7 +210,7 @@ async function fetchCourses(): Promise<DBCourse[]> {
 async function fetchCurriculumItems(courseIds: string[]): Promise<DBCurriculumItem[]> {
   if (courseIds.length === 0) return [];
 
-  const { data, error } = await supabaseClient
+  const { data, error } = await lmsSupabaseClient
     .from('lms_curriculum_items')
     .select('*')
     .in('course_id', courseIds)
@@ -225,7 +230,7 @@ async function fetchCurriculumItems(courseIds: string[]): Promise<DBCurriculumIt
 async function fetchTopics(curriculumItemIds: string[]): Promise<DBTopic[]> {
   if (curriculumItemIds.length === 0) return [];
 
-  const { data, error } = await supabaseClient
+  const { data, error } = await lmsSupabaseClient
     .from('lms_topics')
     .select('*')
     .in('curriculum_item_id', curriculumItemIds)
@@ -247,7 +252,7 @@ async function fetchLessons(topicIds: string[], curriculumItemIds: string[]): Pr
 
   // Fetch lessons for topics
   if (topicIds.length > 0) {
-    const { data, error } = await supabaseClient
+    const { data, error } = await lmsSupabaseClient
       .from('lms_lessons')
       .select('*')
       .in('topic_id', topicIds)
@@ -265,7 +270,7 @@ async function fetchLessons(topicIds: string[], curriculumItemIds: string[]): Pr
 
   // Fetch lessons for curriculum items
   if (curriculumItemIds.length > 0) {
-    const { data, error } = await supabaseClient
+    const { data, error } = await lmsSupabaseClient
       .from('lms_lessons')
       .select('*')
       .in('curriculum_item_id', curriculumItemIds)

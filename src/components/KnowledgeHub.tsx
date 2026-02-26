@@ -248,7 +248,7 @@ const KnowledgeHubContent = () => {
             const { data: lmsData, error: lmsError } = await lmsClient
               .from('lms_courses')
               .select('*')
-              .in('status', ['Published', 'archived']) // Include both statuses
+              .in('status', ['Published', 'published', 'archived']) // Include all statuses
               .order('updated_at', { ascending: false })
               .limit(50);
 
@@ -364,7 +364,7 @@ const KnowledgeHubContent = () => {
     const newsSource = mediaCenterNews.length > 0 ? mediaCenterNews : newsItems;
     
     console.log('🔍 getLearningData - Total items:', newsSource.length);
-    console.log('🔍 Sample items:', newsSource.slice(0, 3).map(i => ({ title: i.title, type: i.type, tags: i.tags })));
+    console.log('🔍 Sample items:', newsSource.slice(0, 3).map(i => ({ title: i.title, type: i.type, tags: i.tags, category: i.category })));
     
     const filtered = newsSource.filter((item) => {
         // Check for Thought Leadership items (blogs/articles about learning)
@@ -373,8 +373,8 @@ const KnowledgeHubContent = () => {
           const excerpt = item.excerpt.toLowerCase();
           const tags = (item.tags || []).join(' ').toLowerCase();
           
-          // Look for learning-related keywords
-          const learningKeywords = ['leadership', 'execution', 'learning', 'course', 'training', 'skill', 'growth', 'development'];
+          // Look for learning-related keywords (including GHC)
+          const learningKeywords = ['leadership', 'execution', 'learning', 'course', 'training', 'skill', 'growth', 'development', 'ghc', 'competenc', 'honeycomb'];
           const hasKeyword = learningKeywords.some(keyword => 
             title.includes(keyword) || excerpt.includes(keyword) || tags.includes(keyword)
           );
@@ -388,18 +388,18 @@ const KnowledgeHubContent = () => {
         // Check tags array for learning-related content
         if (item.tags && Array.isArray(item.tags)) {
           const tagString = item.tags.join(' ').toLowerCase();
-          const learningTags = ['learning', 'course', 'training', 'education', 'skill', 'development'];
+          const learningTags = ['learning', 'course', 'training', 'education', 'skill', 'development', 'ghc'];
           if (learningTags.some(tag => tagString.includes(tag))) {
             console.log('✅ Learning match (tags):', item.title);
             return true;
           }
         }
         
-        // Check category fields as fallback
+        // Check category fields as fallback (including GHC)
         const category = (item.department || item.newsType || item.category || "").toLowerCase();
-        const hasCategory = category.includes('learning') || category.includes('course') || category.includes('training');
+        const hasCategory = category.includes('learning') || category.includes('course') || category.includes('training') || category.includes('ghc');
         if (hasCategory) {
-          console.log('✅ Learning match (category):', item.title);
+          console.log('✅ Learning match (category):', item.title, '- Category:', category);
           return true;
         }
         

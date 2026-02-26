@@ -362,8 +362,11 @@ const KnowledgeHubContent = () => {
   // Get Learning data
   const getLearningData = () => {
     const newsSource = mediaCenterNews.length > 0 ? mediaCenterNews : newsItems;
-    return newsSource
-      .filter((item) => {
+    
+    console.log('🔍 getLearningData - Total items:', newsSource.length);
+    console.log('🔍 Sample items:', newsSource.slice(0, 3).map(i => ({ title: i.title, type: i.type, tags: i.tags })));
+    
+    const filtered = newsSource.filter((item) => {
         // Check for Thought Leadership items (blogs/articles about learning)
         if (item.type === 'Thought Leadership') {
           const title = item.title.toLowerCase();
@@ -372,22 +375,40 @@ const KnowledgeHubContent = () => {
           
           // Look for learning-related keywords
           const learningKeywords = ['leadership', 'execution', 'learning', 'course', 'training', 'skill', 'growth', 'development'];
-          return learningKeywords.some(keyword => 
+          const hasKeyword = learningKeywords.some(keyword => 
             title.includes(keyword) || excerpt.includes(keyword) || tags.includes(keyword)
           );
+          
+          if (hasKeyword) {
+            console.log('✅ Learning match (keyword):', item.title);
+            return true;
+          }
         }
         
         // Check tags array for learning-related content
         if (item.tags && Array.isArray(item.tags)) {
           const tagString = item.tags.join(' ').toLowerCase();
           const learningTags = ['learning', 'course', 'training', 'education', 'skill', 'development'];
-          if (learningTags.some(tag => tagString.includes(tag))) return true;
+          if (learningTags.some(tag => tagString.includes(tag))) {
+            console.log('✅ Learning match (tags):', item.title);
+            return true;
+          }
         }
         
         // Check category fields as fallback
         const category = (item.department || item.newsType || item.category || "").toLowerCase();
-        return category.includes('learning') || category.includes('course') || category.includes('training');
-      })
+        const hasCategory = category.includes('learning') || category.includes('course') || category.includes('training');
+        if (hasCategory) {
+          console.log('✅ Learning match (category):', item.title);
+          return true;
+        }
+        
+        return false;
+      });
+    
+    console.log('🔍 Filtered learning items:', filtered.length);
+    
+    return filtered
       .map((item) => ({
         id: item.id,
         title: item.title,

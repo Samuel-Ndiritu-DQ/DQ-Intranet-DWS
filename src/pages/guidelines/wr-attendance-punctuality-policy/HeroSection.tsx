@@ -9,7 +9,7 @@ interface HeroSectionProps {
 
 export function HeroSection({ title = 'DQ Working Room Attendance & Punctuality Policy', date = 'December 19, 2025', author = 'Human Resources (HRA Lead) • Digital Qatalyst', tag = 'Policy' }: HeroSectionProps) {
   return (
-    <div className="relative w-full h-[500px] overflow-hidden">
+    <div className="relative w-full h-[325px] overflow-hidden">
       <div 
         className="absolute inset-0 bg-cover bg-center"
         style={{
@@ -33,7 +33,7 @@ export function HeroSection({ title = 'DQ Working Room Attendance & Punctuality 
             </div>
           )}
 
-          <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-8 leading-tight font-inter">
+          <h1 className="text-[40px] font-bold mb-8 leading-tight font-inter">
             {title}
           </h1>
 

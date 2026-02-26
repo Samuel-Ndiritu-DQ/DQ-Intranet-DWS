@@ -2,7 +2,7 @@ import React from 'react'
 
 export function HeroSection() {
   return (
-    <div className="relative w-full h-[500px] overflow-hidden">
+    <div className="relative w-full h-[325px] overflow-hidden">
       <div 
         className="absolute inset-0 bg-cover bg-center"
         style={{
@@ -22,7 +22,7 @@ export function HeroSection() {
             December 16, 2025
           </div>
 
-          <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-8 leading-tight font-inter">
+          <h1 className="text-[40px] font-bold mb-8 leading-tight font-inter">
             DQ Deals | BD Guidelines
           </h1>
 

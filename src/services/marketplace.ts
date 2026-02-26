@@ -15,11 +15,18 @@ export const fetchMarketplaceItems = async (
   try {
     // Get the marketplace config to access query and mapping functions
     const config = getMarketplaceConfig(marketplaceType);
+
     // Get the appropriate query for this marketplace type
     const query =
       MARKETPLACE_QUERIES[marketplaceType as keyof typeof MARKETPLACE_QUERIES]
         ?.getItems;
+
     if (!query) {
+      // Fall back to config-defined mock items if no query is available
+      if (config.mockData?.items) {
+        console.log(`No query defined for ${marketplaceType}, using mock data from config`);
+        return config.mockData.items;
+      }
       throw new Error(
         `No query defined for marketplace type: ${marketplaceType}`
       );
@@ -50,6 +57,22 @@ export const fetchMarketplaceItems = async (
     return data.items || [];
   } catch (error) {
     console.error(`Error fetching ${marketplaceType} items:`, error);
+
+    // Final fallback to config-defined mock data or specific mock constants
+    const config = getMarketplaceConfig(marketplaceType);
+    if (config.mockData?.items) {
+      return config.mockData.items;
+    }
+
+    if (marketplaceType === 'non-financial') {
+      try {
+        const { mockNonFinancialServices } = await import('../utils/mockMarketplaceData');
+        return mockNonFinancialServices;
+      } catch (mockError) {
+        // Ignore fallback error
+      }
+    }
+
     throw new Error(
       `Failed to load ${marketplaceType} items. Please try again later.`
     );

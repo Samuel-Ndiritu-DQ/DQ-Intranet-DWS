@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { FadeInUpOnScroll } from "./AnimationUtils";
 import { NewsCard } from "./CardComponents";
 import { knowledgeHubSupabase } from '@/services/knowledgeHubClient';
+import { createClient } from '@supabase/supabase-js';
 import type { NewsItem as MediaCenterNewsItem } from '@/data/media/news';
 
 interface NewsItem {
@@ -200,50 +201,86 @@ const KnowledgeHubContent = () => {
       setIsLoading(true);
       setError(null);
       try {
-        // Check if Knowledge Hub client is available
-        if (!knowledgeHubSupabase) {
-          console.warn('Knowledge Hub Supabase not configured, using fallback data');
-          setMediaCenterNews([]);
-          setLoadFallback(true);
-          setIsLoading(false);
-          return;
+        let allContent: MediaCenterNewsItem[] = [];
+
+        // Fetch from Knowledge Hub (Guidelines)
+        if (knowledgeHubSupabase) {
+          try {
+            const { data: khData, error: khError } = await knowledgeHubSupabase
+              .from('v_media_all')
+              .select('*')
+              .eq('status', 'Approved')
+              .order('date', { ascending: false })
+              .limit(50);
+
+            if (!khError && khData) {
+              const transformedKH = khData.map((item: any) => ({
+                id: item.id,
+                slug: item.slug,
+                title: item.title,
+                excerpt: item.description || '',
+                date: item.date,
+                image: item.image_url,
+                tags: item.tags || [],
+                type: item.type || 'Guidelines',
+                category: item.category || 'Guidelines',
+                newsType: item.news_type,
+                focusArea: item.focus_area,
+                department: item.category,
+                newsSource: item.source || item.author_name || 'DQ',
+                byline: item.author_name,
+                author: item.author_name,
+              }));
+              allContent = [...allContent, ...transformedKH];
+            }
+          } catch (err) {
+            console.warn('Knowledge Hub fetch failed:', err);
+          }
         }
 
-        // Fetch from Knowledge Hub Supabase v_media_all view
-        const { data, error: fetchError } = await knowledgeHubSupabase
-          .from('v_media_all')
-          .select('*')
-          .eq('status', 'Approved')
-          .order('date', { ascending: false })
-          .limit(100);
+        // Fetch from LMS (Learning courses)
+        try {
+          const lmsUrl = import.meta.env.VITE_LMS_SUPABASE_URL;
+          const lmsKey = import.meta.env.VITE_LMS_SUPABASE_ANON_KEY;
+          
+          if (lmsUrl && lmsKey) {
+            const lmsClient = createClient(lmsUrl, lmsKey);
+            const { data: lmsData, error: lmsError } = await lmsClient
+              .from('lms_courses')
+              .select('*')
+              .in('status', ['Published', 'archived']) // Include both statuses
+              .order('updated_at', { ascending: false })
+              .limit(50);
 
-        if (fetchError) {
-          throw fetchError;
+            if (!lmsError && lmsData) {
+              const transformedLMS = lmsData.map((course: any) => ({
+                id: course.id,
+                slug: course.slug,
+                title: course.title,
+                excerpt: course.excerpt || course.description || '',
+                date: course.updated_at,
+                image: course.image_url,
+                tags: ['Learning', 'Course', course.category].filter(Boolean),
+                type: 'Thought Leadership',
+                category: course.category || 'Learning',
+                newsType: 'Course',
+                focusArea: 'Learning',
+                department: course.department || 'Learning',
+                newsSource: course.provider || 'DQ Learning',
+                byline: course.provider,
+                author: course.provider,
+              }));
+              allContent = [...allContent, ...transformedLMS];
+            }
+          }
+        } catch (err) {
+          console.warn('LMS fetch failed:', err);
         }
 
         if (!isMounted) return;
 
-        // Transform Supabase data to match MediaCenterNewsItem format
-        const transformedData: MediaCenterNewsItem[] = (data || []).map((item: any) => ({
-          id: item.id,
-          slug: item.slug,
-          title: item.title,
-          excerpt: item.description || '',
-          date: item.date,
-          image: item.image_url,
-          tags: item.tags || [],
-          type: item.type,
-          category: item.category,
-          newsType: item.news_type,
-          focusArea: item.focus_area,
-          department: item.category,
-          newsSource: item.source,
-          byline: item.source,
-          author: item.source,
-        }));
-
-        setMediaCenterNews(transformedData);
-        setLoadFallback(transformedData.length === 0);
+        setMediaCenterNews(allContent);
+        setLoadFallback(allContent.length === 0);
       } catch (err) {
         if (!isMounted) return;
         console.error("Error loading Media Center data:", err);

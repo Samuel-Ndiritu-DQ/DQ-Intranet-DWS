@@ -11,30 +11,27 @@ SELECT
   id,
   slug,
   title,
-  excerpt as description,
+  summary as description,
   body as content,
-  image as image_url,
-  tags,
+  hero_image_url as image_url,
+  ARRAY[]::text[] as tags, -- Empty array since tags column doesn't exist
   guide_type as type,
   domain as category,
   status,
-  created_at as date,
-  updated_at,
-  last_updated_at,
+  last_updated_at as date,
+  last_updated_at as updated_at,
   -- Additional fields for compatibility
   slug as source,
   domain as focus_area,
-  guide_type as news_type
+  guide_type as news_type,
+  author_name,
+  author_org
 FROM public.guides
 WHERE status = 'Approved';
 
 -- Grant access to anonymous users
 GRANT SELECT ON public.v_media_all TO anon;
 GRANT SELECT ON public.v_media_all TO authenticated;
-
--- Create indexes on the underlying table for better performance
-CREATE INDEX IF NOT EXISTS guides_tags_idx ON public.guides USING GIN (tags);
-CREATE INDEX IF NOT EXISTS guides_created_at_idx ON public.guides (created_at DESC);
 
 -- Success message
 DO $$

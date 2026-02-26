@@ -93,20 +93,6 @@ function mapJobToFeatured(item: JobItem): FeaturedProgram {
   };
 }
 
-const fallbackPrograms: FeaturedProgram[] = [
-  {
-    id: 'fallback-1',
-    partnership: 'Digital Qatalyst',
-    title: 'Welcome to the Digital Workspace',
-    description:
-      'Explore onboarding, services, media, and knowledge resources designed to help every associate start fast and deliver with confidence.',
-    learnMoreHref: '/marketplace/guides?tab=guidelines',
-    backgroundImage:
-      'linear-gradient(90deg, rgba(251, 83, 53, 0.6) 0%, rgba(26, 46, 110, 0.6) 50%, rgba(3, 15, 53, 0.6) 100%), url(/images/honeycomb.png)',
-    category: 'News',
-  },
-];
-
 export const FeaturedNationalProgram: React.FC = () => {
   const [activeIndex, setActiveIndex] = useState(0);
   const [programs, setPrograms] = useState<FeaturedProgram[]>([]);
@@ -153,11 +139,15 @@ export const FeaturedNationalProgram: React.FC = () => {
         // Combine and prioritize: mix news and jobs for variety
         const combined = [...latestNews, ...latestJobs].slice(0, 8);
 
-        setPrograms(combined.length > 0 ? combined : fallbackPrograms);
-        setActiveIndex(0);
+        // Only set programs if we have data from the database
+        if (combined.length > 0) {
+          setPrograms(combined);
+          setActiveIndex(0);
+        }
       } catch (error) {
         console.error('Failed to load featured updates from media center', error);
-        setPrograms(fallbackPrograms);
+        // Don't show fallback - just leave empty if there's an error
+        setPrograms([]);
       }
     }
 
@@ -170,19 +160,22 @@ export const FeaturedNationalProgram: React.FC = () => {
 
   return (
     <div className="w-full py-8 px-4">
-      <FadeInUpOnScroll className="text-center mb-10">
-        <h2 className="text-3xl font-bold text-gray-900 mb-3 clamp-1">
-          Latest Updates
-        </h2>
-        <div>
-          <p className="text-base sm:text-lg text-gray-600 mx-auto text-balance leading-tight whitespace-normal sm:whitespace-nowrap max-w-full sm:max-w-4xl">
-            Catch the latest DQ news, insights, and job opportunities curated for quick scanning, with one click to dive deeper.
-          </p>
-        </div>
-      </FadeInUpOnScroll>
+      {/* Only show section if we have programs to display */}
+      {programs.length > 0 && (
+        <>
+          <FadeInUpOnScroll className="text-center mb-10">
+            <h2 className="text-3xl font-bold text-gray-900 mb-3 clamp-1">
+              Latest Updates
+            </h2>
+            <div>
+              <p className="text-base sm:text-lg text-gray-600 mx-auto text-balance leading-tight whitespace-normal sm:whitespace-nowrap max-w-full sm:max-w-4xl">
+                Catch the latest DQ news, insights, and job opportunities curated for quick scanning, with one click to dive deeper.
+              </p>
+            </div>
+          </FadeInUpOnScroll>
 
-      <div className="relative rounded-3xl overflow-hidden shadow-xl w-full max-w-[1506px] mx-auto">
-        {activeProgram && (
+          <div className="relative rounded-3xl overflow-hidden shadow-xl w-full max-w-[1506px] mx-auto">
+            {activeProgram && (
         <div
           key={activeProgram.id}
           className="h-[360px] p-10 flex flex-col justify-between relative bg-cover bg-center transition-all duration-500"
@@ -255,6 +248,8 @@ export const FeaturedNationalProgram: React.FC = () => {
           }
         }
       `}</style>
+        </>
+      )}
     </div>
   );
 };

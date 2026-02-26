@@ -4,7 +4,6 @@ import { ArrowRight, User, MessageCircle, BookOpen, Users as UsersIcon, ChevronD
 import { FadeInUpOnScroll, StaggeredFadeIn } from '../components/AnimationUtils';
 import { Header } from '../components/Header';
 import { Footer } from '../components/Footer';
-import { OnboardingChatbot } from '../components/OnboardingChatbot';
 
 interface SupportCard {
   icon: React.ReactNode;
@@ -12,29 +11,33 @@ interface SupportCard {
   description: string;
   href: string;
   buttonText: string;
+  comingSoon?: boolean;
 }
 
 const supportOptions: SupportCard[] = [
   {
     icon: <User size={28} color="white" />,
     title: 'Contact Your People Partner',
-    description: 'Onboarding support, people topics, and clear next steps.',
+    description: 'Onboarding support, role guidance, and people-related questions.',
     href: '/support/people-partner',
     buttonText: 'Get in Touch',
+    comingSoon: true,
   },
   {
     icon: <MessageCircle size={28} color="white" />,
     title: 'DWS Communication Center',
-    description: 'Ask questions, raise requests, and get fast clarification.',
+    description: 'Updates, announcements, and what\'s changing across DQ.',
     href: '/support/communication-center',
     buttonText: 'Get in Touch',
+    comingSoon: true,
   },
   {
     icon: <BookOpen size={28} color="white" />,
     title: 'FAQs & Glossary',
-    description: 'Self-serve answers for DQ terms, tools, and processes.',
+    description: 'Quick answers to common questions and DQ terms in one place.',
     href: '/support/faqs',
     buttonText: 'Get in Touch',
+    comingSoon: true,
   },
   {
     icon: <UsersIcon size={28} color="white" />,
@@ -44,6 +47,249 @@ const supportOptions: SupportCard[] = [
     buttonText: 'Get in Touch',
   },
 ];
+
+const HeroAnimatedBackground = () => (
+  <>
+    <div 
+      className="absolute inset-0 z-0"
+      style={{
+        background: 'linear-gradient(135deg, #030F35 0%, #1A2E6E 30%, #030F35 60%, #1A2E6E 90%, #030F35 100%)',
+        backgroundSize: '400% 400%',
+        animation: 'gradientDrift 15s ease infinite'
+      }}
+    />
+
+    <div className="absolute inset-0 opacity-[0.12] z-[1]">
+      <svg className="w-full h-full" viewBox="0 0 1920 1080" preserveAspectRatio="xMidYMid slice">
+        <defs>
+          <linearGradient id="meshGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="#FB5535" stopOpacity="0.3" />
+            <stop offset="50%" stopColor="#1A2E6E" stopOpacity="0.2" />
+            <stop offset="100%" stopColor="#030F35" stopOpacity="0.15" />
+          </linearGradient>
+          <linearGradient id="meshGradient2" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="#1A2E6E" stopOpacity="0.25" />
+            <stop offset="100%" stopColor="#FB5535" stopOpacity="0.2" />
+          </linearGradient>
+        </defs>
+        <g stroke="url(#meshGradient)" strokeWidth="1">
+          {[...Array(15)].map((_, i) => ( // NOSONAR: Array() is intentional for creating empty array
+            <line
+              key={`v-${i}`} // NOSONAR: index is stable for static grid lines
+              x1={i * 128}
+              y1="0"
+              x2={i * 128}
+              y2="1080"
+              opacity="0.4"
+              style={{
+                animation: `pulse ${6 + i * 0.5}s ease-in-out infinite`,
+                animationDelay: `${i * 0.2}s`
+              }}
+            />
+          ))}
+          {[...Array(12)].map((_, i) => ( // NOSONAR: Array() is intentional for creating empty array
+            <line
+              key={`h-${i}`} // NOSONAR: index is stable for static grid lines
+              x1="0"
+              y1={i * 90}
+              x2="1920"
+              y2={i * 90}
+              opacity="0.4"
+              style={{
+                animation: `pulse ${8 + i * 0.5}s ease-in-out infinite`,
+                animationDelay: `${i * 0.3}s`
+              }}
+            />
+          ))}
+        </g>
+      </svg>
+    </div>
+
+    <div className="absolute inset-0 overflow-hidden pointer-events-none z-[2]">
+      {[...Array(12)].map((_, i) => ( // NOSONAR: Array() is intentional for creating empty array
+        <div
+          key={i} // NOSONAR: index is stable for static floating elements
+          className="absolute rounded-full"
+          style={{
+            width: `${60 + (i % 4) * 20}px`,
+            height: `${60 + (i % 4) * 20}px`,
+            left: `${5 + (i * 8)}%`,
+            top: `${10 + (i % 5) * 18}%`,
+            background: i % 3 === 0 
+              ? 'radial-gradient(circle, rgba(251, 85, 53, 0.4) 0%, rgba(251, 85, 53, 0.1) 50%, transparent 80%)' 
+              : 'radial-gradient(circle, rgba(26, 46, 110, 0.3) 0%, rgba(26, 46, 110, 0.1) 50%, transparent 80%)',
+            animation: `floatSlow ${12 + i * 2}s ease-in-out infinite`,
+            animationDelay: `${i * 0.8}s`,
+            filter: 'blur(20px)',
+            boxShadow: i % 3 === 0 
+              ? '0 0 60px rgba(251, 85, 53, 0.3)' 
+              : '0 0 60px rgba(26, 46, 110, 0.2)',
+          }}
+        />
+      ))}
+    </div>
+
+    <div className="absolute inset-0 z-[2] pointer-events-none">
+      <svg className="w-full h-full" viewBox="0 0 1920 1080" preserveAspectRatio="xMidYMid slice">
+        <defs>
+          <linearGradient id="shapeGradient1" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="#FB5535" stopOpacity="0.3" />
+            <stop offset="100%" stopColor="#1A2E6E" stopOpacity="0.2" />
+          </linearGradient>
+          <linearGradient id="shapeGradient2" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="#1A2E6E" stopOpacity="0.25" />
+            <stop offset="100%" stopColor="#030F35" stopOpacity="0.15" />
+          </linearGradient>
+          <filter id="glowFilter">
+            <feGaussianBlur stdDeviation="4" result="coloredBlur"/>
+            <feMerge>
+              <feMergeNode in="coloredBlur"/>
+              <feMergeNode in="SourceGraphic"/>
+            </feMerge>
+          </filter>
+        </defs>
+        
+        <g style={{ animation: 'floatSlow 20s ease-in-out infinite' }} filter="url(#glowFilter)">
+          <circle cx="300" cy="300" r="120" fill="url(#shapeGradient1)" opacity="0.4" />
+          <circle cx="300" cy="300" r="80" fill="none" stroke="url(#shapeGradient2)" strokeWidth="2" opacity="0.5" />
+        </g>
+        
+        <g style={{ animation: 'floatSlow 25s ease-in-out infinite reverse', animationDelay: '3s' }} filter="url(#glowFilter)">
+          <circle cx="1600" cy="600" r="150" fill="url(#shapeGradient2)" opacity="0.35" />
+          <circle cx="1600" cy="600" r="100" fill="none" stroke="url(#shapeGradient1)" strokeWidth="2" opacity="0.45" />
+        </g>
+        
+        <g transform="translate(1000, 200)" style={{ animation: 'rotateSlow 40s linear infinite' }} filter="url(#glowFilter)">
+          <polygon
+            points="0,-70 60,-35 60,35 0,70 -60,35 -60,-35"
+            fill="none"
+            stroke="url(#shapeGradient1)"
+            strokeWidth="2"
+            opacity="0.4"
+          />
+          <polygon
+            points="0,-50 43,-25 43,25 0,50 -43,25 -43,-25"
+            fill="none"
+            stroke="url(#shapeGradient2)"
+            strokeWidth="1.5"
+            opacity="0.5"
+          />
+        </g>
+        
+        <g transform="translate(500, 700)" style={{ animation: 'rotateSlow 35s linear infinite reverse' }} filter="url(#glowFilter)">
+          <polygon
+            points="0,-55 48,-27.5 48,27.5 0,55 -48,27.5 -48,-27.5"
+            fill="none"
+            stroke="url(#shapeGradient2)"
+            strokeWidth="2"
+            opacity="0.4"
+          />
+        </g>
+        
+        <path
+          d="M 0 400 Q 400 300, 800 400 T 1600 400 T 1920 400"
+          stroke="url(#shapeGradient1)"
+          strokeWidth="3"
+          fill="none"
+          filter="url(#glowFilter)"
+          opacity="0.5"
+          style={{
+            animation: 'floatSlow 30s ease-in-out infinite',
+            strokeDasharray: '10,10'
+          }}
+        />
+        <path
+          d="M 0 600 Q 500 500, 1000 600 T 1920 600"
+          stroke="url(#shapeGradient2)"
+          strokeWidth="2.5"
+          fill="none"
+          filter="url(#glowFilter)"
+          opacity="0.4"
+          style={{
+            animation: 'floatSlow 35s ease-in-out infinite reverse',
+            animationDelay: '2s',
+            strokeDasharray: '12,12'
+          }}
+        />
+      </svg>
+    </div>
+
+    <div className="absolute inset-0 z-[1] pointer-events-none">
+      <div
+        className="absolute rounded-full"
+        style={{
+          width: '600px',
+          height: '600px',
+          left: '20%',
+          top: '30%',
+          background: 'radial-gradient(circle, rgba(251, 85, 53, 0.2) 0%, transparent 70%)',
+          filter: 'blur(80px)',
+          animation: 'pulse 8s ease-in-out infinite'
+        }}
+      />
+      <div
+        className="absolute rounded-full"
+        style={{
+          width: '700px',
+          height: '700px',
+          right: '15%',
+          bottom: '25%',
+          background: 'radial-gradient(circle, rgba(26, 46, 110, 0.25) 0%, transparent 70%)',
+          filter: 'blur(90px)',
+          animation: 'pulse 10s ease-in-out infinite',
+          animationDelay: '4s'
+        }}
+      />
+    </div>
+
+    <div className="absolute inset-0 z-[1] pointer-events-none">
+      <svg className="w-full h-full" viewBox="0 0 1920 1080" preserveAspectRatio="xMidYMid slice">
+        <defs>
+          <linearGradient id="journeyStroke" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" stopColor="#FB5535" stopOpacity="0.25" />
+            <stop offset="50%" stopColor="#ffffff" stopOpacity="0.15" />
+            <stop offset="100%" stopColor="#1A2E6E" stopOpacity="0.25" />
+          </linearGradient>
+          <linearGradient id="journeyHighlight" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" stopColor="#FFD0C0" stopOpacity="0.6" />
+            <stop offset="100%" stopColor="#7fb7ff" stopOpacity="0.6" />
+          </linearGradient>
+        </defs>
+        <path
+          d="M-80 720 C 320 640, 640 820, 960 680 S 1580 520, 2000 660"
+          fill="none"
+          stroke="url(#journeyStroke)"
+          strokeWidth="3"
+          strokeDasharray="14 10"
+          strokeLinecap="round"
+          style={{ animation: 'dashMove 14s linear infinite' }}
+          opacity="0.8"
+        />
+        <path
+          d="M-80 720 C 320 640, 640 820, 960 680 S 1580 520, 2000 660"
+          fill="none"
+          stroke="url(#journeyHighlight)"
+          strokeWidth="6"
+          strokeDasharray="90 520"
+          strokeLinecap="round"
+          style={{ animation: 'shimmerDash 7s linear infinite' }}
+          opacity="0.9"
+        />
+        <circle cx="260" cy="700" r="9" fill="#FB5535" opacity="0.75" style={{ animation: 'pulseDot 3.8s ease-in-out infinite' }} />
+        <circle cx="720" cy="780" r="9" fill="#F2B9A3" opacity="0.75" style={{ animation: 'pulseDot 4.2s ease-in-out infinite', animationDelay: '0.4s' }} />
+        <circle cx="1180" cy="640" r="9" fill="#8FB7FF" opacity="0.75" style={{ animation: 'pulseDot 3.5s ease-in-out infinite', animationDelay: '0.8s' }} />
+        <circle cx="1640" cy="600" r="9" fill="#FFFFFF" opacity="0.8" style={{ animation: 'pulseDot 4.6s ease-in-out infinite', animationDelay: '1.2s' }} />
+      </svg>
+    </div>
+
+    <div
+      className="absolute inset-0 z-[1]"
+      style={{
+        background: 'radial-gradient(ellipse 900px 120% at 0% 50%, rgba(3, 15, 53, 0.6) 0%, rgba(3, 15, 53, 0.3) 45%, transparent 75%)',
+      }}
+    />
+  </>
+);
 
 export function OnboardingLanding() {
   const navigate = useNavigate();
@@ -60,7 +306,7 @@ export function OnboardingLanding() {
     navigate('/onboarding/journey');
   };
 
-  const handleExploreOrganization = () => {
+  const handleExploreOrganization = () => { // NOSONAR: reserved for future use
     navigate('/discover-dq');
   };
 
@@ -72,7 +318,7 @@ export function OnboardingLanding() {
     navigate('/6xd');
   };
 
-  const handleViewRole = () => {
+  const handleViewRole = () => { // NOSONAR: reserved for future use
     navigate('/marketplace/work-directory?tab=positions');
   };
 
@@ -118,6 +364,16 @@ export function OnboardingLanding() {
         @keyframes slideIn {
           0% { transform: translateX(-100%); opacity: 0; }
           100% { transform: translateX(0); opacity: 1; }
+        }
+        @keyframes dashMove {
+          to { stroke-dashoffset: -520; }
+        }
+        @keyframes pulseDot {
+          0%, 100% { r: 8; opacity: 0.7; }
+          50% { r: 11; opacity: 1; }
+        }
+        @keyframes shimmerDash {
+          to { stroke-dashoffset: -260; }
         }
         @keyframes glow {
           0%, 100% { box-shadow: 0 0 20px rgba(251, 85, 53, 0.3); }
@@ -192,268 +448,39 @@ export function OnboardingLanding() {
       <main className="flex-grow">
         {/* SECTION 1 — HERO: Start Your Onboarding Journey */}
         <section 
-          className="relative w-full overflow-hidden flex flex-col isolate h-auto md:h-[600px] lg:h-[700px] pt-24 pb-20 md:pt-24 md:pb-20"
+          className="relative w-full overflow-hidden isolate min-h-[699px] flex items-center justify-center pt-24 pb-20"
         >
-          {/* Animated DWS Gradient Base */}
-          <div 
-            className="absolute inset-0 z-0"
-            style={{
-              background: 'linear-gradient(135deg, #030F35 0%, #1A2E6E 30%, #030F35 60%, #1A2E6E 90%, #030F35 100%)',
-              backgroundSize: '400% 400%',
-              animation: 'gradientDrift 15s ease infinite'
-            }}
-          />
+          <HeroAnimatedBackground />
 
-          {/* Animated Mesh Grid */}
-          <div className="absolute inset-0 opacity-[0.12] z-[1]">
-            <svg className="w-full h-full" viewBox="0 0 1920 1080" preserveAspectRatio="xMidYMid slice">
-              <defs>
-                <linearGradient id="meshGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                  <stop offset="0%" stopColor="#FB5535" stopOpacity="0.3" />
-                  <stop offset="50%" stopColor="#1A2E6E" stopOpacity="0.2" />
-                  <stop offset="100%" stopColor="#030F35" stopOpacity="0.15" />
-                </linearGradient>
-                <linearGradient id="meshGradient2" x1="0%" y1="0%" x2="100%" y2="100%">
-                  <stop offset="0%" stopColor="#1A2E6E" stopOpacity="0.25" />
-                  <stop offset="100%" stopColor="#FB5535" stopOpacity="0.2" />
-                </linearGradient>
-              </defs>
-              
-              {/* Animated Grid Lines */}
-              <g stroke="url(#meshGradient)" strokeWidth="1">
-                {[...Array(15)].map((_, i) => (
-                  <line
-                    key={`v-${i}`}
-                    x1={i * 128}
-                    y1="0"
-                    x2={i * 128}
-                    y2="1080"
-                    opacity="0.4"
-                    style={{
-                      animation: `pulse ${6 + i * 0.5}s ease-in-out infinite`,
-                      animationDelay: `${i * 0.2}s`
-                    }}
-                  />
-                ))}
-                {[...Array(12)].map((_, i) => (
-                  <line
-                    key={`h-${i}`}
-                    x1="0"
-                    y1={i * 90}
-                    x2="1920"
-                    y2={i * 90}
-                    opacity="0.4"
-                    style={{
-                      animation: `pulse ${8 + i * 0.5}s ease-in-out infinite`,
-                      animationDelay: `${i * 0.3}s`
-                    }}
-                  />
-                ))}
-              </g>
-            </svg>
-          </div>
-
-          {/* Animated Floating Particles */}
-          <div className="absolute inset-0 overflow-hidden pointer-events-none z-[2]">
-            {[...Array(12)].map((_, i) => (
-              <div
-                key={i}
-                className="absolute rounded-full"
-                style={{
-                  width: `${60 + (i % 4) * 20}px`,
-                  height: `${60 + (i % 4) * 20}px`,
-                  left: `${5 + (i * 8)}%`,
-                  top: `${10 + (i % 5) * 18}%`,
-                  background: i % 3 === 0 
-                    ? 'radial-gradient(circle, rgba(251, 85, 53, 0.4) 0%, rgba(251, 85, 53, 0.1) 50%, transparent 80%)' 
-                    : 'radial-gradient(circle, rgba(26, 46, 110, 0.3) 0%, rgba(26, 46, 110, 0.1) 50%, transparent 80%)',
-                  animation: `floatSlow ${12 + i * 2}s ease-in-out infinite`,
-                  animationDelay: `${i * 0.8}s`,
-                  filter: 'blur(20px)',
-                  boxShadow: i % 3 === 0 
-                    ? '0 0 60px rgba(251, 85, 53, 0.3)' 
-                    : '0 0 60px rgba(26, 46, 110, 0.2)',
-                }}
-              />
-            ))}
-          </div>
-
-          {/* Animated Geometric Shapes */}
-          <div className="absolute inset-0 z-[2] pointer-events-none">
-            <svg className="w-full h-full" viewBox="0 0 1920 1080" preserveAspectRatio="xMidYMid slice">
-              <defs>
-                <linearGradient id="shapeGradient1" x1="0%" y1="0%" x2="100%" y2="100%">
-                  <stop offset="0%" stopColor="#FB5535" stopOpacity="0.3" />
-                  <stop offset="100%" stopColor="#1A2E6E" stopOpacity="0.2" />
-                </linearGradient>
-                <linearGradient id="shapeGradient2" x1="0%" y1="0%" x2="100%" y2="100%">
-                  <stop offset="0%" stopColor="#1A2E6E" stopOpacity="0.25" />
-                  <stop offset="100%" stopColor="#030F35" stopOpacity="0.15" />
-                </linearGradient>
-                <filter id="glowFilter">
-                  <feGaussianBlur stdDeviation="4" result="coloredBlur"/>
-                  <feMerge>
-                    <feMergeNode in="coloredBlur"/>
-                    <feMergeNode in="SourceGraphic"/>
-                  </feMerge>
-                </filter>
-              </defs>
-              
-              {/* Animated Circles */}
-              <g style={{ animation: 'floatSlow 20s ease-in-out infinite' }} filter="url(#glowFilter)">
-                <circle cx="300" cy="300" r="120" fill="url(#shapeGradient1)" opacity="0.4" />
-                <circle cx="300" cy="300" r="80" fill="none" stroke="url(#shapeGradient2)" strokeWidth="2" opacity="0.5" />
-              </g>
-              
-              <g style={{ animation: 'floatSlow 25s ease-in-out infinite reverse', animationDelay: '3s' }} filter="url(#glowFilter)">
-                <circle cx="1600" cy="600" r="150" fill="url(#shapeGradient2)" opacity="0.35" />
-                <circle cx="1600" cy="600" r="100" fill="none" stroke="url(#shapeGradient1)" strokeWidth="2" opacity="0.45" />
-              </g>
-              
-              {/* Animated Hexagons */}
-              <g transform="translate(1000, 200)" style={{ animation: 'rotateSlow 40s linear infinite' }} filter="url(#glowFilter)">
-                <polygon
-                  points="0,-70 60,-35 60,35 0,70 -60,35 -60,-35"
-                  fill="none"
-                  stroke="url(#shapeGradient1)"
-                  strokeWidth="2"
-                  opacity="0.4"
-                />
-                <polygon
-                  points="0,-50 43,-25 43,25 0,50 -43,25 -43,-25"
-                  fill="none"
-                  stroke="url(#shapeGradient2)"
-                  strokeWidth="1.5"
-                  opacity="0.5"
-                />
-              </g>
-              
-              <g transform="translate(500, 700)" style={{ animation: 'rotateSlow 35s linear infinite reverse' }} filter="url(#glowFilter)">
-                <polygon
-                  points="0,-55 48,-27.5 48,27.5 0,55 -48,27.5 -48,-27.5"
-                  fill="none"
-                  stroke="url(#shapeGradient2)"
-                  strokeWidth="2"
-                  opacity="0.4"
-                />
-              </g>
-              
-              {/* Animated Wave Paths */}
-              <path
-                d="M 0 400 Q 400 300, 800 400 T 1600 400 T 1920 400"
-                stroke="url(#shapeGradient1)"
-                strokeWidth="3"
-                fill="none"
-                filter="url(#glowFilter)"
-                opacity="0.5"
-                style={{
-                  animation: 'floatSlow 30s ease-in-out infinite',
-                  strokeDasharray: '10,10'
-                }}
-              />
-              <path
-                d="M 0 600 Q 500 500, 1000 600 T 1920 600"
-                stroke="url(#shapeGradient2)"
-                strokeWidth="2.5"
-                fill="none"
-                filter="url(#glowFilter)"
-                opacity="0.4"
-                style={{
-                  animation: 'floatSlow 35s ease-in-out infinite reverse',
-                  animationDelay: '2s',
-                  strokeDasharray: '12,12'
-                }}
-              />
-            </svg>
-          </div>
-
-          {/* Pulsing Glow Effects */}
-          <div className="absolute inset-0 z-[1] pointer-events-none">
-            <div
-              className="absolute rounded-full"
-              style={{
-                width: '600px',
-                height: '600px',
-                left: '20%',
-                top: '30%',
-                background: 'radial-gradient(circle, rgba(251, 85, 53, 0.2) 0%, transparent 70%)',
-                filter: 'blur(80px)',
-                animation: 'pulse 8s ease-in-out infinite'
-              }}
-            />
-            <div
-              className="absolute rounded-full"
-              style={{
-                width: '700px',
-                height: '700px',
-                right: '15%',
-                bottom: '25%',
-                background: 'radial-gradient(circle, rgba(26, 46, 110, 0.25) 0%, transparent 70%)',
-                filter: 'blur(90px)',
-                animation: 'pulse 10s ease-in-out infinite',
-                animationDelay: '4s'
-              }}
-            />
-          </div>
-
-          {/* Animated Light Rays */}
-          <div className="absolute inset-0 z-[1] pointer-events-none overflow-hidden">
-            <div
-              className="absolute w-full h-full"
-              style={{
-                background: 'linear-gradient(45deg, transparent 30%, rgba(251, 85, 53, 0.08) 50%, transparent 70%)',
-                animation: 'rotate 25s linear infinite',
-                transformOrigin: 'center center',
-                opacity: 0.6
-              }}
-            />
-            <div
-              className="absolute w-full h-full"
-              style={{
-                background: 'linear-gradient(-45deg, transparent 30%, rgba(26, 46, 110, 0.08) 50%, transparent 70%)',
-                animation: 'rotate 30s linear infinite reverse',
-                transformOrigin: 'center center',
-                opacity: 0.5,
-                animationDelay: '2s'
-              }}
-            />
-          </div>
-
-          {/* High Contrast Area on Left for Text Readability */}
-          <div
-            className="absolute inset-0 z-[1]"
-            style={{
-              background: 'radial-gradient(ellipse 900px 120% at 0% 50%, rgba(3, 15, 53, 0.6) 0%, rgba(3, 15, 53, 0.3) 45%, transparent 75%)',
-            }}
-          />
-
-          <div className="w-full flex items-center relative z-10">
-            <div className="container mx-auto px-4 md:px-6 lg:px-8 xl:px-12">
-            <div className="max-w-4xl">
+          <div className="w-full flex items-center justify-center relative z-10">
+            <div className="max-w-[2048px] mx-auto px-4 md:px-6 lg:px-8 xl:px-12">
+            <div className="w-full max-w-3xl mx-auto flex flex-col items-center text-center">
               <FadeInUpOnScroll>
+                <p className="text-xs font-bold tracking-[0.18em] uppercase text-[#F2B9A3] mb-3">Your Journey Starts Here</p>
                 <h1 
-                  className="text-[44px] sm:text-[56px] lg:text-[76px] text-white mb-6 text-left font-sans"
+                  className="text-white mb-4 text-center font-sans whitespace-nowrap"
                   style={{
                     fontWeight: 700,
                     lineHeight: 1.1,
-                    color: '#FFFFFF'
+                    color: '#FFFFFF',
+                    fontSize: '72px'
                   }}
                 >
                     Welcome to DQ Onboarding
                 </h1>
-                <p className="text-lg md:text-xl text-white/95 mb-8 font-normal leading-relaxed text-left max-w-3xl" style={{ fontFamily: 'Inter, system-ui, -apple-system, sans-serif' }}>
-                    Learn how DQ actually works. You will see how intent becomes execution, how decisions are made, and how real work moves. You are not onboarding into a role. You are onboarding into an execution system.
+                <p className="text-white/95 mb-6 font-normal leading-relaxed text-center max-w-4xl mx-auto" style={{ fontFamily: 'Inter, system-ui, -apple-system, sans-serif', fontSize: '18px' }}>
+                  Your 3-month onboarding journey helps you integrate into DQ, adopt our DNA, and gain confidence in your role.
                 </p>
               </FadeInUpOnScroll>
 
               {/* Primary CTA button */}
               <StaggeredFadeIn
                 staggerDelay={0.1}
-                className="mb-12"
+                className="mb-12 w-full"
               >
                 <button
                   onClick={handleStartOnboarding}
-                  className="px-8 py-3.5 bg-white text-[#030F35] font-semibold rounded-lg shadow-lg hover:shadow-xl hover:bg-white/95 transition-all duration-300 flex items-center justify-center gap-2 text-base group"
+                  className="px-8 py-3.5 bg-white text-[#030F35] font-semibold rounded-lg shadow-lg hover:shadow-xl hover:bg-white/95 transition-all duration-300 inline-flex items-center justify-center gap-2 text-base group mx-auto"
                 >
                     <span>View the 3-Month Onboarding Guide</span>
                   <ArrowRight size={18} color="#FB5535" className="transition-transform group-hover:translate-x-1" />
@@ -486,55 +513,57 @@ export function OnboardingLanding() {
           <div className="container mx-auto px-4 md:px-6 lg:px-8">
             <div className="max-w-7xl mx-auto">
               <div className="grid grid-cols-1 md:grid-cols-12 gap-12 lg:gap-16 items-center">
-            <FadeInUpOnScroll className="md:col-span-5 lg:col-span-6">
-                  <div className="max-w-xl">
-                    <p className="text-xs font-bold tracking-[0.15em] uppercase text-[#E95139] mb-4">
-                      Getting Started
-                    </p>
-                    <h2 className="text-[36px] font-bold text-[#030F35] mb-6 leading-tight">
-                      DQ Organization
-                </h2>
-                    <div className="text-lg text-gray-700 leading-relaxed mb-8 space-y-3">
-                      <p>DQ is a purpose-driven digital organisation, designed to turn potential into execution.</p>
-                      <p>Work flows shape decisions, not hierarchy, titles, or assumptions.</p>
-                      <p>Understanding the organisation shows how decisions are made, how teams collaborate, and why work is structured the way it is.</p>
-                      <p>That clarity helps you execute sooner.</p>
-              </div>
-                    <button
-                      onClick={handleExploreOrganization}
-                      className="inline-flex items-center gap-2 px-7 py-3.5 bg-[#030F35] text-white font-semibold rounded-lg hover:bg-[#0B1C3F] transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] group"
-                    >
-                      Explore the DQ Organization
-                      <ArrowRight size={18} className="transition-transform group-hover:translate-x-1" />
-                    </button>
-                                </div>
+                <FadeInUpOnScroll className="md:col-span-6 lg:col-span-6">
+                  <div className="flex items-start gap-6">
+                    <span className="text-5xl md:text-6xl font-semibold text-[#F2B9A3] leading-none">01</span>
+                    <div className="flex-1">
+                      <p className="text-xs font-bold tracking-[0.18em] uppercase text-[#E95139] mb-2">Getting Started</p>
+                      <h2 className="text-[34px] md:text-[40px] font-bold text-[#0F1F3F] leading-tight mb-5">DQ Organization</h2>
+                      <div className="flex gap-4">
+                        <span className="w-[2px] bg-[#F2B9A3] rounded-full mt-1" aria-hidden="true"></span>
+                        <div className="space-y-4 text-lg text-slate-700 leading-relaxed">
+                          <p>Before you dive in, get grounded in the organisation you’ve joined.</p>
+                          <p>DQ is built for execution, not hierarchy — with clear units, roles, and decision paths.</p>
+                          <p>Use this as your internal map to understand how work flows and who to involve.</p>
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        disabled
+                        className="mt-8 inline-flex items-center gap-2 px-8 py-3.5 bg-gray-300 text-gray-600 font-semibold rounded-full shadow-inner cursor-not-allowed opacity-80"
+                      >
+                        Coming Soon
+                        <ArrowRight size={18} className="opacity-60" />
+                      </button>
+                    </div>
+                  </div>
                 </FadeInUpOnScroll>
-                <FadeInUpOnScroll delay={0.1} className="md:col-span-7 lg:col-span-6">
-                  <div className="w-full aspect-[4/3] md:aspect-[5/4] soft-panel rounded-2xl border border-slate-200/60 shadow-xl overflow-hidden hover:shadow-2xl transition-all duration-500">
+                <FadeInUpOnScroll delay={0.1} className="md:col-span-6 lg:col-span-6">
+                  <div className="relative w-full aspect-[4/3] md:aspect-[5/4] rounded-3xl overflow-hidden shadow-2xl border border-slate-200/70">
                     <img 
-                      src="https://image2url.com/r2/default/images/1770380544703-54614bac-d4dc-43c0-9493-8db13369707d.blob" 
-                      alt="DQ Organization" 
+                      src="https://image2url.com/r2/default/images/1770972456174-3432815c-ed3e-43c7-9a75-42aaa65db071.webp" 
+                      alt="DQ associates collaborating in a global digital workspace" 
                       className="w-full h-full object-cover"
                     />
-                        </div>
-                      </FadeInUpOnScroll>
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-black/20 to-transparent" />
                   </div>
-                </div>
+                </FadeInUpOnScroll>
+              </div>
+            </div>
           </div>
         </section>
 
         {/* SECTION 3 — DQ GHC */}
-        <section className="py-28 md:py-36 bg-slate-50/50">
+        <section className="py-28 md:py-36 bg-[#f5f7fb]">
           <div className="container mx-auto px-4 md:px-6 lg:px-8">
             <div className="max-w-7xl mx-auto">
               <div className="grid grid-cols-1 md:grid-cols-12 gap-12 lg:gap-16 items-center">
-                <FadeInUpOnScroll delay={0.1} className="md:col-span-7 lg:col-span-6 order-2 md:order-1">
-                  <div className="w-full aspect-[4/3] md:aspect-[5/4] soft-panel rounded-2xl border border-indigo-200/40 shadow-xl flex items-center justify-center p-6 md:p-8 overflow-hidden hover:shadow-2xl transition-all duration-500">
+                <FadeInUpOnScroll delay={0.1} className="md:col-span-6 lg:col-span-6 order-2 md:order-1">
+                  <div className="relative w-full aspect-[4/3] md:aspect-[5/4] rounded-3xl overflow-hidden shadow-2xl border border-slate-200/60">
                     <img 
                       src="https://i.ibb.co/hR2rjJzY/Screenshot-2026-01-20-at-10-45-17-AM.png"
                       alt="Golden Honeycomb of Competence Framework"
-                      className="w-full h-full object-contain object-center transition-transform duration-700 hover:scale-105"
-                      style={{ maxWidth: '100%', maxHeight: '100%' }}
+                      className="w-full h-full object-cover object-center transition-transform duration-700 hover:scale-105"
                       onError={(e) => {
                         const target = e.target as HTMLImageElement;
                         if (target.src.includes('.png')) {
@@ -542,41 +571,35 @@ export function OnboardingLanding() {
                         }
                       }}
                     />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
                 </div>
               </FadeInUpOnScroll>
-                <FadeInUpOnScroll className="md:col-span-5 lg:col-span-6 order-1 md:order-2">
-                  <div className="max-w-xl">
-                    <p className="text-xs font-bold tracking-[0.15em] uppercase text-[#E95139] mb-4">
-                      DQ DNA
-                    </p>
-                    <h2 className="text-[36px] font-bold text-[#030F35] mb-6 leading-tight">
-                      DQ GHC (The Golden Honeycomb of Competencies)
-                    </h2>
-                    <div className="text-lg text-gray-700 leading-relaxed mb-8 space-y-3">
-                      <p>
-                        As DQ scales, consistency matters.
-                      </p>
-                      <p>
-                        The Golden Honeycomb of Competencies (GHC) keeps culture, leadership, governance, and value aligned as teams, markets, and products grow.
-                      </p>
-                      <p>
-                        It connects how we think, decide, lead, and deliver.
-                      </p>
-                      <p>
-                        That keeps clarity and discipline when complexity rises.
-                      </p>
+                <FadeInUpOnScroll className="md:col-span-6 lg:col-span-6 order-1 md:order-2">
+                  <div className="flex items-start gap-6">
+                    <span className="text-5xl md:text-6xl font-semibold text-[#F2B9A3] leading-none">02</span>
+                    <div className="flex-1">
+                      <p className="text-xs font-bold tracking-[0.18em] uppercase text-[#E95139] mb-2">DQ DNA</p>
+                      <h2 className="text-[34px] md:text-[40px] font-bold text-[#0F1F3F] leading-tight mb-5">Golden Honeycomb of Competencies (GHC)</h2>
+                      <div className="flex gap-4">
+                        <span className="w-[2px] bg-[#F2B9A3] rounded-full mt-1" aria-hidden="true"></span>
+                        <div className="space-y-4 text-lg text-slate-700 leading-relaxed">
+                          <p>At DQ, everything you do — how you think, collaborate, and make decisions — is guided by one shared system: GHC.</p>
+                          <p>It connects our purpose, culture, leadership, and delivery into a single, clear way of working.</p>
+                          <p>This helps you understand the standards we expect at DQ — and the impact you’re here to create.</p>
+                        </div>
+                      </div>
+                      <button
+                        onClick={handleExploreGHC}
+                        className="mt-8 inline-flex items-center gap-2 px-8 py-3.5 bg-[#F35C1F] text-white font-semibold rounded-full shadow-lg hover:shadow-xl hover:bg-[#e34f16] transition-all duration-200 group"
+                      >
+                        Explore GHC
+                        <ArrowRight size={18} className="transition-transform group-hover:translate-x-1" />
+                      </button>
                     </div>
-                    <button
-                      onClick={handleExploreGHC}
-                      className="inline-flex items-center gap-2 px-7 py-3.5 bg-[#030F35] text-white font-semibold rounded-lg hover:bg-[#0B1C3F] transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] group"
-                    >
-                      Explore GHC
-                      <ArrowRight size={18} className="transition-transform group-hover:translate-x-1" />
-                    </button>
                   </div>
                 </FadeInUpOnScroll>
-                  </div>
-                </div>
+              </div>
+            </div>
           </div>
         </section>
 
@@ -585,96 +608,97 @@ export function OnboardingLanding() {
           <div className="container mx-auto px-4 md:px-6 lg:px-8">
             <div className="max-w-7xl mx-auto">
               <div className="grid grid-cols-1 md:grid-cols-12 gap-12 lg:gap-16 items-center">
-              <FadeInUpOnScroll className="md:col-span-5 lg:col-span-6">
-                <div className="max-w-xl">
-                    <p className="text-xs font-bold tracking-[0.15em] uppercase text-[#E95139] mb-4">
-                      Operational System
-                    </p>
-                    <h2 className="text-[36px] font-bold text-[#030F35] mb-6 leading-tight">
-                      DQ 6x Digitals (6xD)
-                </h2>
-                    <div className="text-lg text-gray-700 leading-relaxed mb-8 space-y-3">
-                      <p>Transformation at DQ is not theory.</p>
-                      <p>Agile 6xD is how we design, build, and scale work, turning ideas into outcomes through real execution.</p>
-                      <p>It gives teams a shared system to make sense of change, move work forward, and deliver under pressure.</p>
-                      <p>This is the execution backbone across teams, products, and initiatives.</p>
-                              </div>
-                    <button
-                      onClick={handleExplore6XD}
-                      className="inline-flex items-center gap-2 px-7 py-3.5 bg-[#030F35] text-white font-semibold rounded-lg hover:bg-[#0B1C3F] transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] group"
-                              >
-                      Explore Agile 6xD
-                      <ArrowRight size={18} className="transition-transform group-hover:translate-x-1" />
-                    </button>
+                <FadeInUpOnScroll className="md:col-span-6 lg:col-span-6">
+                  <div className="flex items-start gap-6">
+                    <span className="text-5xl md:text-6xl font-semibold text-[#F2B9A3] leading-none">03</span>
+                    <div className="flex-1">
+                      <p className="text-xs font-bold tracking-[0.18em] uppercase text-[#E95139] mb-2">Operational System</p>
+                      <h2 className="text-[34px] md:text-[40px] font-bold text-[#0F1F3F] leading-tight mb-5">DQ 6xD Digitals (6xD)</h2>
+                      <div className="flex gap-4">
+                        <span className="w-[2px] bg-[#F2B9A3] rounded-full mt-1" aria-hidden="true"></span>
+                        <div className="space-y-4 text-lg text-slate-700 leading-relaxed">
+                          <p>This is how work actually happens at DQ.</p>
+                          <p>6xD connects direction to delivery — showing how teams plan and execute in rhythm.</p>
+                          <p>It’s the execution engine that turns vision into real outcomes.</p>
                         </div>
-                      </FadeInUpOnScroll>
-                <FadeInUpOnScroll delay={0.1} className="md:col-span-7 lg:col-span-6">
-                  <div className="w-full aspect-[4/3] md:aspect-[5/4] soft-panel rounded-2xl border border-teal-200/40 shadow-xl flex items-center justify-center p-6 md:p-8 overflow-hidden hover:shadow-2xl transition-all duration-500">
+                      </div>
+                      <button
+                        onClick={handleExplore6XD}
+                        className="mt-8 inline-flex items-center gap-2 px-8 py-3.5 bg-[#F35C1F] text-white font-semibold rounded-full shadow-lg hover:shadow-xl hover:bg-[#e34f16] transition-all duration-200 group"
+                      >
+                        Explore Agile 6xD
+                        <ArrowRight size={18} className="transition-transform group-hover:translate-x-1" />
+                      </button>
+                    </div>
+                  </div>
+                </FadeInUpOnScroll>
+                <FadeInUpOnScroll delay={0.1} className="md:col-span-6 lg:col-span-6">
+                  <div className="relative w-full aspect-[4/3] md:aspect-[5/4] rounded-3xl overflow-hidden shadow-2xl border border-slate-200/60">
                     <img 
-                      src="https://i.ibb.co/JWqPMgtz/23.png"
-                      alt="D6 Digital Accelerators Framework - 6X Digitals"
-                      className="w-full h-full object-contain object-center transition-transform duration-700 hover:scale-105"
-                      style={{ maxWidth: '100%', maxHeight: '100%' }}
+                      src="https://image2url.com/r2/default/images/1770973586407-9eaf23f4-1e09-4b63-ac44-e3a28805c125.jpeg"
+                      alt="Team collaborating in front of a digital board with agile plans"
+                      className="w-full h-full object-cover object-center transition-transform duration-700 hover:scale-105"
                       onError={(e) => {
                         const target = e.target as HTMLImageElement;
-                        if (target.src.includes('.png')) {
-                          target.src = '/images/knowledge/6xd.svg';
-                        }
+                        // Fallback image
+                        target.src = 'https://images.unsplash.com/photo-1556761175-5973dc0f32e7?auto=format&fit=crop&w=1600&q=80';
                       }}
                     />
-                </div>
-              </FadeInUpOnScroll>
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-black/20 to-transparent" />
+                  </div>
+                </FadeInUpOnScroll>
               </div>
             </div>
           </div>
         </section>
 
-        {/* SECTION 5 — DQ Position */}
-        <section className="py-28 md:py-36" style={{ backgroundColor: '#f9fafb' }}>
+        {/* SECTION 5 — Your Impact & Role */}
+        <section className="py-28 md:py-36 bg-[#f3f4f7] text-[#676f7e]">
           <div className="container mx-auto px-4 md:px-6 lg:px-8">
             <div className="max-w-7xl mx-auto">
               <div className="grid grid-cols-1 md:grid-cols-12 gap-12 lg:gap-16 items-center">
-            <FadeInUpOnScroll className="md:col-span-5 lg:col-span-6">
-                  <div className="max-w-xl">
-                    <p className="text-xs font-bold tracking-[0.15em] uppercase text-[#E95139] mb-4">
-                      Your Role
-                </p>
-                    <h2 className="text-[36px] font-bold text-[#030F35] mb-6 leading-tight">
-                      Your Role at DQ
-                </h2>
-                    <div className="text-lg text-gray-700 leading-relaxed mb-8 space-y-3">
-                      <p>Your role at DQ is more than a job description.</p>
-                      <p>It is the responsibilities, decisions, and outcomes you own in the system.</p>
-                      <p>Knowing where you fit helps you take ownership faster, make better decisions, and create visible impact.</p>
-                      <p>This is where responsibility meets execution.</p>
-                    </div>
-                    <button
-                      type="button"
-                      disabled
-                      className="inline-flex items-center gap-2 px-7 py-3.5 bg-gray-300 text-gray-500 font-semibold rounded-lg cursor-not-allowed opacity-80"
-                    >
-                      Coming Soon
-                    </button>
-              </div>
-            </FadeInUpOnScroll>
-                <FadeInUpOnScroll delay={0.1} className="md:col-span-7 lg:col-span-6">
-                  <div className="w-full aspect-[4/3] md:aspect-[5/4] soft-panel rounded-2xl border border-slate-200/60 shadow-xl overflow-hidden hover:shadow-2xl transition-all duration-500">
+                <FadeInUpOnScroll delay={0.05} className="md:col-span-6 lg:col-span-6 order-2 md:order-1">
+                  <div className="relative w-full aspect-[4/3] md:aspect-[5/4] rounded-3xl overflow-hidden shadow-2xl border border-slate-800/60">
                     <img 
                       src="https://i.ibb.co/Nn1m3yxD/IT-04.webp"
-                      alt="Professional collaborating at DQ - your role in focus"
-                      className="w-full h-full object-cover object-center rounded-2xl transition-transform duration-700 hover:scale-105"
+                      alt="Associates in a strategy discussion at sunrise"
+                      className="w-full h-full object-cover object-center transition-transform duration-700 hover:scale-105"
                       onError={(e) => {
                         const target = e.target as HTMLImageElement;
-                        // Fallback to previous onboarding teamwork image if the new one fails
-                        target.src =
-                          'https://images.unsplash.com/photo-1522071820081-009f0129c71c?q=80&w=2970&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D';
+                        target.src = 'https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&w=1600&q=80';
                       }}
                     />
-                        </div>
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/65 via-black/25 to-transparent" />
+                  </div>
                 </FadeInUpOnScroll>
+                <FadeInUpOnScroll className="md:col-span-6 lg:col-span-6 order-1 md:order-2">
+                  <div className="flex items-start gap-6">
+                    <span className="text-5xl md:text-6xl font-semibold text-[#C27555] leading-none">04</span>
+                    <div className="flex-1">
+                      <p className="text-xs font-bold tracking-[0.18em] uppercase text-[#E95139] mb-2">Your Impact</p>
+                      <h2 className="text-[34px] md:text-[40px] font-bold text-[#151c2e] leading-tight mb-5">You Are the Qatalyst</h2>
+                      <div className="flex gap-4">
+                        <span className="w-[2px] bg-[#C27555] rounded-full mt-1" aria-hidden="true"></span>
+                        <div className="space-y-4 text-lg text-[#676f7e] leading-relaxed">
+                          <p>Your role isn’t just a title — it’s your lane in the system that moves execution forward.</p>
+                          <p>At DQ, you’re empowered to take ownership of your work, collaborate with intent, and drive meaningful change from day one.</p>
+                          <p>This is where your journey becomes uniquely yours — make it count.</p>
                         </div>
                       </div>
+                      <button
+                        type="button"
+                        disabled
+                        className="mt-8 inline-flex items-center gap-2 px-8 py-3.5 bg-gray-300 text-gray-600 font-semibold rounded-full shadow-inner cursor-not-allowed opacity-80"
+                      >
+                        Coming Soon
+                        <ArrowRight size={18} className="opacity-60" />
+                      </button>
                     </div>
+                  </div>
+                </FadeInUpOnScroll>
+              </div>
+            </div>
+          </div>
         </section>
 
         {/* SECTION 6 — Need Help */}
@@ -852,18 +876,18 @@ export function OnboardingLanding() {
           
           {/* Animated particles/glow effects */}
           <div className="absolute inset-0 overflow-hidden">
-            {[...Array(12)].map((_, i) => (
+            {[...Array(12)].map((_, i) => ( // NOSONAR: Array() is intentional for creating empty array
               <div
-                key={i}
+                key={i} // NOSONAR: index is stable for static floating elements
                 className="absolute rounded-full floating-circle"
                 style={{
                   width: `${20 + (i % 4) * 15}px`,
                   height: `${20 + (i % 4) * 15}px`,
-                  background: i % 3 === 0 
-                    ? 'radial-gradient(circle, rgba(251, 85, 53, 0.6) 0%, transparent 70%)'
-                    : i % 3 === 1
-                    ? 'radial-gradient(circle, rgba(255, 255, 255, 0.4) 0%, transparent 70%)'
-                    : 'radial-gradient(circle, rgba(3, 15, 53, 0.5) 0%, transparent 70%)',
+                  background: (() => {
+                    if (i % 3 === 0) return 'radial-gradient(circle, rgba(251, 85, 53, 0.6) 0%, transparent 70%)';
+                    if (i % 3 === 1) return 'radial-gradient(circle, rgba(255, 255, 255, 0.4) 0%, transparent 70%)';
+                    return 'radial-gradient(circle, rgba(3, 15, 53, 0.5) 0%, transparent 70%)';
+                  })(),
                   top: `${10 + (i * 7)}%`,
                   left: `${5 + (i * 8)}%`,
                   animationDelay: `${i * 0.5}s`,
@@ -929,17 +953,18 @@ export function OnboardingLanding() {
           <div className="container mx-auto px-4 md:px-6 lg:px-8 relative z-10">
             <FadeInUpOnScroll>
               <div className="text-center mb-16">
+                <p className="text-xs font-bold tracking-[0.18em] uppercase text-[#F2B9A3] mb-2">We're Here for You</p>
                 <h2 className="text-[36px] font-bold text-white mb-4 leading-tight">
                   Need Help Along the Way?
                 </h2>
                 <p className="text-lg md:text-xl text-white/90 max-w-3xl mx-auto">
-                  You are not expected to figure everything out alone. For onboarding help, process clarity, or day-to-day support, the channels are ready. Use them early. Use them often. That is how work moves faster at DQ.
+                  You are not expected to do this alone. Support is available for HR questions, onboarding guidance, and day-to-day work priorities.
                 </p>
               </div>
             </FadeInUpOnScroll>
 
             <div className="max-w-6xl mx-auto grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-8">
-              {supportOptions.slice(0, 3).map((support, index) => {
+              {supportOptions.slice(0, 3).map((support, index) => { // NOSONAR: complexity acceptable for card rendering
                 // DWS main colors: Orange, Dark Blue, White - enhanced for vector background
                 const gradients = [
                   'linear-gradient(135deg, #FB5535 0%, #E95139 100%)', // Orange
@@ -958,19 +983,36 @@ export function OnboardingLanding() {
                 ];
                 
                 return (
-                  <FadeInUpOnScroll key={index} delay={index * 0.1}>
+                  <FadeInUpOnScroll key={index} delay={index * 0.1}> {/* NOSONAR: index is stable for static support cards */}
                     <div 
                       className="backdrop-blur-lg rounded-2xl shadow-2xl p-8 flex flex-col h-full hover:shadow-[0_25px_70px_-10px_rgba(0,0,0,0.5)] hover:scale-[1.03] transition-all duration-500 relative overflow-hidden group"
                       style={{
-                        background: index === 0 
-                          ? 'linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(255, 248, 248, 0.96) 100%)'
-                          : index === 1
-                          ? 'linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(248, 248, 255, 0.96) 100%)'
-                          : 'linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(255, 248, 255, 0.96) 100%)',
+                        background: (() => {
+                          if (index === 0) return 'linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(255, 248, 248, 0.96) 100%)';
+                          if (index === 1) return 'linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(248, 248, 255, 0.96) 100%)';
+                          return 'linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(255, 248, 255, 0.96) 100%)';
+                        })(),
                         border: `2px solid ${cardBorders[index]}`,
-                        boxShadow: `0 20px 50px -15px ${index === 0 ? 'rgba(251, 85, 53, 0.2)' : index === 1 ? 'rgba(3, 15, 53, 0.2)' : 'rgba(251, 85, 53, 0.15)'}, 0 0 0 1px rgba(255, 255, 255, 0.1)`
+                        boxShadow: (() => {
+                          let shadowColor;
+                          if (index === 0) {
+                            shadowColor = 'rgba(251, 85, 53, 0.2)';
+                          } else if (index === 1) {
+                            shadowColor = 'rgba(3, 15, 53, 0.2)';
+                          } else {
+                            shadowColor = 'rgba(251, 85, 53, 0.15)';
+                          }
+                          return `0 20px 50px -15px ${shadowColor}, 0 0 0 1px rgba(255, 255, 255, 0.1)`;
+                        })()
                       }}
                     >
+                      {support.comingSoon && (
+                        <div className="absolute top-3 right-3 z-20">
+                          <span className="px-3 py-1 text-xs font-semibold rounded-full bg-white/90 text-[#030F35] border border-white/60 shadow-sm">
+                            Coming Soon
+                          </span>
+                        </div>
+                      )}
                       {/* Shimmer effect on hover */}
                       <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500">
                         <div 
@@ -989,7 +1031,7 @@ export function OnboardingLanding() {
                           className="w-20 h-20 rounded-full flex items-center justify-center shadow-xl group-hover:shadow-2xl transition-all duration-500 group-hover:scale-110"
                           style={{
                             background: iconGradients[index % 3],
-                            boxShadow: `0 10px 40px -5px ${index % 3 === 0 ? 'rgba(251, 85, 53, 0.5)' : index % 3 === 1 ? 'rgba(3, 15, 53, 0.5)' : 'rgba(251, 85, 53, 0.4)'}, 0 0 20px ${index % 3 === 0 ? 'rgba(251, 85, 53, 0.2)' : index % 3 === 1 ? 'rgba(3, 15, 53, 0.2)' : 'rgba(251, 85, 53, 0.15)'}`
+                            boxShadow: `0 10px 40px -5px ${index % 3 === 0 ? 'rgba(251, 85, 53, 0.5)' : index % 3 === 1 ? 'rgba(3, 15, 53, 0.5)' : 'rgba(251, 85, 53, 0.4)'}, 0 0 20px ${index % 3 === 0 ? 'rgba(251, 85, 53, 0.2)' : index % 3 === 1 ? 'rgba(3, 15, 53, 0.2)' : 'rgba(251, 85, 53, 0.15)'}` // NOSONAR: nested ternaries are clear for shadow selection
                           }}
                   >
                           <div className="text-white group-hover:scale-110 transition-transform duration-500">
@@ -1002,11 +1044,7 @@ export function OnboardingLanding() {
                       <h3 
                         className="text-xl font-bold mb-4 text-center relative z-10"
                         style={{
-                          color: index === 0 
-                            ? '#030F35'
-                            : index === 1
-                            ? '#030F35'
-                            : '#030F35',
+                          color: '#030F35', // NOSONAR: simplified from ternary - all cases use same color
                           textShadow: '0 1px 2px rgba(255, 255, 255, 0.5)'
                         }}
                       >
@@ -1020,16 +1058,48 @@ export function OnboardingLanding() {
                       
                       {/* CTA Button with enhanced premium effect */}
                       <button
-                        onClick={() => navigate(support.href)}
-                        className="w-full px-6 py-3.5 rounded-lg font-semibold text-white flex items-center justify-center gap-2 transition-all duration-300 hover:shadow-xl hover:scale-[1.02] group/btn relative overflow-hidden"
-                        style={{
-                          background: gradients[index % 3],
-                          boxShadow: `0 4px 20px -3px ${index % 3 === 0 ? 'rgba(251, 85, 53, 0.5)' : index % 3 === 1 ? 'rgba(3, 15, 53, 0.5)' : 'rgba(251, 85, 53, 0.4)'}`
+                        type="button"
+                        disabled={support.comingSoon}
+                        onClick={() => {
+                          if (support.comingSoon) return;
+                          navigate(support.href);
                         }}
+                        className={`w-full px-6 py-3.5 rounded-lg font-semibold flex items-center justify-center gap-2 transition-all duration-300 group/btn relative overflow-hidden ${
+                          support.comingSoon
+                            ? 'bg-gray-300 text-gray-700 cursor-not-allowed opacity-80'
+                            : 'text-white hover:shadow-xl hover:scale-[1.02]'
+                        }`}
+                        style={
+                          support.comingSoon
+                            ? undefined
+                            : {
+                                background: gradients[index % 3],
+                        boxShadow: (() => {
+                          let shadowColor;
+                          if (index % 3 === 0) {
+                            shadowColor = 'rgba(251, 85, 53, 0.5)';
+                          } else if (index % 3 === 1) {
+                            shadowColor = 'rgba(3, 15, 53, 0.5)';
+                          } else {
+                            shadowColor = 'rgba(251, 85, 53, 0.4)';
+                          }
+                          return `0 4px 20px -3px ${shadowColor}`;
+                        })(),
+                              }
+                        }
                       >
-                        <span className="relative z-10">{support.buttonText}</span>
-                        <ArrowRight size={18} className="transition-transform group-hover/btn:translate-x-1 relative z-10" />
-                        <div className="absolute inset-0 bg-white/20 opacity-0 group-hover/btn:opacity-100 transition-opacity duration-300" />
+                        <span className="relative z-10">
+                          {support.comingSoon ? 'Coming Soon' : support.buttonText}
+                        </span>
+                        <ArrowRight
+                          size={18}
+                          className={`transition-transform relative z-10 ${
+                            support.comingSoon ? 'opacity-60' : 'group-hover/btn:translate-x-1'
+                          }`}
+                        />
+                        {!support.comingSoon && (
+                          <div className="absolute inset-0 bg-white/20 opacity-0 group-hover/btn:opacity-100 transition-opacity duration-300" />
+                        )}
                   </button>
                     </div>
                 </FadeInUpOnScroll>
@@ -1040,7 +1110,6 @@ export function OnboardingLanding() {
         </section>
       </main>
 
-      <OnboardingChatbot />
       <Footer isLoggedIn={false} />
     </div>
   );

@@ -37,8 +37,22 @@ const container = document.getElementById("root");
 if (container) {
   const root = createRoot(container);
 
-  // Show blank screen while initializing - no content until authenticated
-  root.render(<div style={{ display: 'none' }} />);
+  // Check if authentication is enabled
+  const authEnabled = import.meta.env.VITE_ENABLE_AUTH !== 'false';
+
+  // If authentication is disabled, render app directly
+  if (!authEnabled) {
+    console.log('Authentication disabled - rendering app without MSAL');
+    root.render(
+      <QueryClientProvider client={queryClient}>
+        <ApolloProvider client={client}>
+          <AppRouter />
+        </ApolloProvider>
+      </QueryClientProvider>
+    );
+  } else {
+    // Show blank screen while initializing - no content until authenticated
+    root.render(<div style={{ display: 'none' }} />);
 
   // Guard to prevent infinite redirect loops
   const REDIRECT_GUARD_KEY = 'msal_redirect_guard';

@@ -50,6 +50,18 @@ export const fetchMarketplaceItems = async (
     return data.items || [];
   } catch (error) {
     console.error(`Error fetching ${marketplaceType} items:`, error);
+    
+    // Fall back to mock data for specific marketplace types
+    if (marketplaceType === 'non-financial') {
+      try {
+        const { mockNonFinancialServices } = await import('../utils/mockMarketplaceData');
+        console.log(`Using mock data for ${marketplaceType}`);
+        return mockNonFinancialServices;
+      } catch (mockError) {
+        console.error(`Error loading mock data for ${marketplaceType}:`, mockError);
+      }
+    }
+    
     throw new Error(
       `Failed to load ${marketplaceType} items. Please try again later.`
     );

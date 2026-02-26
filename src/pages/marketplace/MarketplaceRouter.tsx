@@ -14,11 +14,13 @@ import JobDetailPage from './JobDetailPage';
 import JobApplicationPage from './JobApplicationPage';
 const GrowthAreasPage = React.lazy(() => import('../GrowthAreasPage'));
 const GuideDetailPage = React.lazy(() => import('../guides/GuideDetailPage'));
+const GuideDetailsPage = React.lazy(() => import('../guides/GuideDetailsPage'));
 const GlossaryPage = React.lazy(() => import('../guides/GlossaryPage'));
 const GlossaryTermDetailPage = React.lazy(() => import('../guides/GlossaryTermDetailPage'));
 const SixXDPerspectiveDetailPage = React.lazy(() => import('../guides/SixXDPerspectiveDetailPage'));
 const FAQsPage = React.lazy(() => import('../guides/FAQsPage'));
 const TestimonialsDetailPage = React.lazy(() => import('../guides/TestimonialsDetailPage'));
+const AssociateTestimonialsDetailPage = React.lazy(() => import('../guides/AssociateTestimonialsDetailPage'));
 const ProductDetailPage = React.lazy(() => import('../products/ProductDetailPage'));
 // Promo cards for courses marketplace
 const coursePromoCards = [{
@@ -147,7 +149,9 @@ export const MarketplaceRouter: React.FC = () => {
       <Route path="/guides/6xd-perspective/:perspectiveId" element={<React.Suspense fallback={<div className="p-6 text-center">Loading...</div>}><SixXDPerspectiveDetailPage /></React.Suspense>} />
       <Route path="/guides/faqs" element={<React.Suspense fallback={<div className="p-6 text-center">Loading...</div>}><FAQsPage /></React.Suspense>} />
       <Route path="/guides/testimonials" element={<React.Suspense fallback={<div className="p-6 text-center">Loading...</div>}><TestimonialsDetailPage /></React.Suspense>} />
+      <Route path="/guides/associate-testimonials" element={<React.Suspense fallback={<div className="p-6 text-center">Loading...</div>}><AssociateTestimonialsDetailPage /></React.Suspense>} />
       <Route path="/guides/:itemId" element={<React.Suspense fallback={<div className="p-6 text-center">Loading...</div>}><GuideDetailPage /></React.Suspense>} />
+      <Route path="/guides/:itemId/details" element={<React.Suspense fallback={<div className="p-6 text-center">Loading...</div>}><GuideDetailsPage /></React.Suspense>} />
       
       {/* Products Detail Pages */}
       <Route path="/products/:slug" element={<React.Suspense fallback={<div className="p-6 text-center">Loading...</div>}><ProductDetailPage /></React.Suspense>} />

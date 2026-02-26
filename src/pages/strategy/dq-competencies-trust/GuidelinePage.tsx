@@ -151,6 +151,7 @@ function GuidelinePage() {
         title={guide.title}
         subtitle="DQ Leadership • Digital Qatalyst"
         imageUrl={guide.hero_image_url || undefined}
+        badge="Strategy Framework"
       />
 
       <main className="flex-1">
@@ -199,7 +200,7 @@ function GuidelinePage() {
                   </svg>
                 </Link>
                 <Link
-                  to="/marketplace/guides/dq-ghc"
+                  to={`/marketplace/guides/${currentSlug}/details`}
                   className="inline-flex items-center gap-2 px-6 py-3 text-sm font-bold text-white rounded-lg transition-colors"
                   style={{ 
                     backgroundColor: '#030E31'
@@ -211,7 +212,7 @@ function GuidelinePage() {
                     e.currentTarget.style.backgroundColor = '#030E31'
                   }}
                 >
-                  <span>View Full GHC Framework</span>
+                  <span>View Details</span>
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                   </svg>
@@ -233,3 +234,6 @@ function GuidelinePage() {
 }
 
 export default GuidelinePage
+
+
+

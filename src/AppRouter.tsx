@@ -1,3 +1,4 @@
+import React from "react";
 import { BrowserRouter, Routes, Route, Navigate, useParams } from "react-router-dom";
 import { AuthProvider } from "./components/Header";
 import { MarketplaceRouter } from "./pages/marketplace/MarketplaceRouter";
@@ -25,6 +26,7 @@ import SixXDProductsLanding from "./pages/6XDProductsLanding";
 import NotFound from "./pages/NotFound";
 import AdminGuidesList from "./pages/admin/guides/AdminGuidesList";
 import GuideEditor from "./pages/admin/guides/GuideEditor";
+const GHCInspectorPage = React.lazy(() => import("./pages/admin/ghc-inspector/GHCInspectorPage"));
 import { ApolloClient, InMemoryCache, HttpLink } from "@apollo/client";
 import { ApolloProvider } from "@apollo/client/react";
 import EventsPage from "./pages/events/EventsPage";
@@ -85,6 +87,7 @@ export function AppRouter() {
             <Route path="/admin/guides" element={<AdminGuidesList />} />
             <Route path="/admin/guides/new" element={<GuideEditor />} />
             <Route path="/admin/guides/:id" element={<GuideEditor />} />
+            <Route path="/admin/ghc-inspector" element={<React.Suspense fallback={<div className="p-6 text-center">Loading...</div>}><GHCInspectorPage /></React.Suspense>} />
           {/* Canonical and compatibility routes for Guides marketplace */}
           <Route path="/guides" element={<Navigate to="/marketplace/guides" replace />} />
           <Route path="/knowledge-hub" element={<Navigate to="/marketplace/guides" replace />} />

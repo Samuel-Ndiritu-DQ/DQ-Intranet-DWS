@@ -29,7 +29,7 @@ function GuidelinePage() {
                 <div className="flex items-center">
                   <ChevronRightIcon size={16} className="text-gray-400" />
                   <Link to="/marketplace/guides?tab=strategy" className="ml-1 text-gray-600 hover:text-gray-900 md:ml-2">
-                    Strategy
+                    GHC
                   </Link>
                 </div>
               </li>

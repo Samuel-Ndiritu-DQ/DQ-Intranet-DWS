@@ -101,13 +101,13 @@ const getLessonTypeLabel = (type: string) => {
   }
 };
 
-type TabType = 'highlights' | 'outcomes' | 'details' | 'curriculum' | 'faq';
+type TabType = 'overview' | 'story' | 'course' | 'faq';
 
 export const LmsCourseDetailPage: React.FC = () => {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState<TabType>('highlights');
+  const [activeTab, setActiveTab] = useState<TabType>('overview');
   // State for expanded sections in curriculum
   const [expandedCourses, setExpandedCourses] = useState<Set<string>>(new Set());
   const [expandedTopics, setExpandedTopics] = useState<Set<string>>(new Set());
@@ -127,7 +127,7 @@ export const LmsCourseDetailPage: React.FC = () => {
       setIsNavigating(true);
       setExpandedCourses(new Set());
       setExpandedTopics(new Set());
-      setActiveTab('highlights');
+      setActiveTab('overview');
       setRenderError(null);
       prevSlugRef.current = slug;
     } else if (prevSlugRef.current === undefined) {
@@ -325,11 +325,9 @@ export const LmsCourseDetailPage: React.FC = () => {
 
   const isTrack = course?.courseType === 'Course (Bundles)';
   const tabs = [
-    { id: 'highlights' as TabType, label: isTrack ? 'Track Highlights' : 'Course Highlights' },
-    { id: 'outcomes' as TabType, label: 'Learning Outcomes' },
-    { id: 'details' as TabType, label: isTrack ? 'Track Details' : 'Course Details' },
-    { id: 'curriculum' as TabType, label: isTrack ? 'Track Curriculum' : 'Course Curriculum' },
-    ...(isTrack && course?.faq && Array.isArray(course.faq) && course.faq.length > 0 ? [{ id: 'faq' as TabType, label: 'FAQ' }] : []),
+    { id: 'overview' as TabType, label: 'Overview - Short Summary' },
+    { id: 'story' as TabType, label: 'Explore Story Book' },
+    { id: 'course' as TabType, label: 'Course - Learning Center' },
   ];
 
   return (
@@ -465,7 +463,7 @@ export const LmsCourseDetailPage: React.FC = () => {
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
             <div className="lg:col-span-8">
               {/* Track/Course Highlights Tab */}
-              {activeTab === 'highlights' && (
+              {activeTab === 'overview' && (
                 <section className="space-y-6">
                 <div className="grid md:grid-cols-2 gap-4">
                     {highlights.map((highlight) => (
@@ -479,6 +477,31 @@ export const LmsCourseDetailPage: React.FC = () => {
                   ))}
                 </div>
               </section>
+              )}
+
+              {/* Explore Story Book Tab */}
+              {activeTab === 'story' && (
+                <section className="space-y-6">
+                  <div className="bg-blue-50 border border-blue-100 rounded-lg p-6">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-3">Explore the Story Book</h3>
+                    <p className="text-gray-700 mb-4">
+                      Dive into the narrative behind this courseâ€”the mission, journey, and why it matters to DQ.
+                    </p>
+                    <a
+                      href={course?.storyBookUrl || course?.url || '#'}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex items-center px-4 py-2 rounded-md text-white bg-blue-700 hover:bg-blue-800 transition-colors"
+                      style={{ backgroundColor: '#030F35' }}
+                    >
+                      Open Story Book
+                      <ExternalLink size={16} className="ml-2" />
+                    </a>
+                    {!course?.storyBookUrl && !course?.url && (
+                      <p className="text-xs text-gray-500 mt-2">Story book link not provided yet.</p>
+                    )}
+                  </div>
+                </section>
               )}
 
               {/* Learning Outcomes Tab */}
@@ -603,7 +626,7 @@ export const LmsCourseDetailPage: React.FC = () => {
               )}
 
               {/* Curriculum Tab */}
-              {activeTab === 'curriculum' && (
+              {activeTab === 'course' && (
                 <section className="space-y-4">
                   {curriculum && curriculum.length > 0 && (
                     <div className="flex items-center justify-start mb-2">

@@ -136,21 +136,29 @@ const MarkdownRenderer: React.FC<{ body: string }> = ({ body }) => {
         rehypeStripListIcons as any
       ] as any}
       components={{
+        p: ({ node, ...props }) => (
+          <p className="mb-3 text-gray-700 leading-relaxed" {...(props as any)}>
+            {props.children}
+          </p>
+        ),
+        h1: ({ node, ...props }) => (
+          <h1 className="text-3xl font-bold text-gray-900 mt-6 mb-4 pl-5 relative" {...(props as any)}>
+            <span className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-[#1A2E6E] via-[#1A2E6E]/60 to-transparent rounded-full"></span>
+            {props.children}
+          </h1>
+        ),
         h2: ({ node, ...props }) => (
-          <h2 className="text-xl font-bold text-gray-900 mt-6 mb-4 pl-4 relative border-0 border-l-0 [&_*]:border-0" {...(props as any)}>
-            <span className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-[#1A2E6E] via-[#1A2E6E]/80 to-transparent"></span>
+          <h2 className="text-2xl font-bold text-gray-900 mt-6 mb-3" {...(props as any)}>
             {props.children}
           </h2>
         ),
         h3: ({ node, ...props }) => (
-          <h3 className="text-lg font-bold text-gray-900 mt-6 mb-4 pl-4 relative border-0 border-l-0 [&_*]:border-0" {...(props as any)}>
-            <span className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-[#1A2E6E] via-[#1A2E6E]/80 to-transparent"></span>
+          <h3 className="text-xl font-semibold text-gray-900 mt-5 mb-2.5" {...(props as any)}>
             {props.children}
           </h3>
         ),
         h4: ({ node, ...props }) => (
-          <h4 className="text-base font-bold text-gray-900 mt-4 mb-3 pl-4 relative border-0 border-l-0 [&_*]:border-0" {...(props as any)}>
-            <span className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-[#1A2E6E] via-[#1A2E6E]/80 to-transparent"></span>
+          <h4 className="text-lg font-semibold text-gray-900 mt-4 mb-2" {...(props as any)}>
             {props.children}
           </h4>
         ),
@@ -159,13 +167,13 @@ const MarkdownRenderer: React.FC<{ body: string }> = ({ body }) => {
           <img loading="lazy" decoding="async" style={{ maxWidth: '100%', height: 'auto' }} {...(props as any)} />
         ),
         ul: ({ node, ...props }) => (
-          <ul className="list-disc pl-6 space-y-1" {...(props as any)} />
+          <ul className="list-disc pl-6 space-y-1.5 mb-3 mt-2" {...(props as any)} />
         ),
         ol: ({ node, ...props }) => (
-          <ol className="list-decimal pl-6 space-y-1" {...(props as any)} />
+          <ol className="list-decimal pl-6 space-y-1.5 mb-3 mt-2" {...(props as any)} />
         ),
         li: ({ node, ...props }) => (
-          <li className="ml-1" {...(props as any)} />
+          <li className="ml-1 text-gray-700 leading-relaxed" {...(props as any)} />
         ),
         table: ({ node, ...props }) => (
           <div className="overflow-x-auto my-8">

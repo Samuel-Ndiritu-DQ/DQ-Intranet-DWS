@@ -243,14 +243,17 @@ function GlossarySideNav({ term }: { term: GlossaryTerm }) {
 
 // Hero Section for Glossary
 function GlossaryHeroSection({ term, levelColor }: { term: GlossaryTerm; levelColor: string }) {
-  const imageUrl = term.imageUrl || 'https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=1920';
+  const imageUrl = term.imageUrl || '/images/guidelines-content.PNG';
+  
+  // Force refresh by adding timestamp
+  const timestampedImageUrl = imageUrl.includes('?') ? imageUrl : `${imageUrl}?t=${Date.now()}`;
   
   return (
     <div className="relative w-full h-[500px] overflow-hidden">
       {/* Background Image with Dark Navy Overlay */}
       <div 
         className="absolute inset-0 bg-cover bg-center"
-        style={{ backgroundImage: `url(${imageUrl})` }}
+        style={{ backgroundImage: `url(${timestampedImageUrl})` }}
       >
         <div className="absolute inset-0 bg-[#030E31] bg-opacity-80"></div>
       </div>

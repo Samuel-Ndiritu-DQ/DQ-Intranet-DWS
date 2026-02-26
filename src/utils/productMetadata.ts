@@ -7,113 +7,83 @@ export interface ProductMetadata {
 
 // Product metadata mapping - maps product titles to their metadata
 export const PRODUCT_METADATA: Record<string, ProductMetadata> = {
-  'Digital Workspace System': {
-    productType: 'Platform',
-    productStage: 'Live',
-    description: 'A unified digital workspace platform that centralizes tools, knowledge, services, and collaboration to enable productivity, execution, and visibility across DQ.',
-    imageUrl: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?q=80&w=2970&auto=format&fit=crop&ixlib=rb-4.0.3'
-  },
-  'DWS': {
-    productType: 'Platform',
-    productStage: 'Live',
-    description: 'A unified digital workspace platform that centralizes tools, knowledge, services, and collaboration to enable productivity, execution, and visibility across DQ.',
-    imageUrl: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?q=80&w=2970&auto=format&fit=crop&ixlib=rb-4.0.3'
-  },
-  'Digital Workspace System (DWS)': {
-    productType: 'Platform',
-    productStage: 'Live',
-    description: 'A unified digital workspace platform that centralizes tools, knowledge, services, and collaboration to enable productivity, execution, and visibility across DQ.',
-    imageUrl: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?q=80&w=2970&auto=format&fit=crop&ixlib=rb-4.0.3'
-  },
-  'Digital Transformation Management Academy': {
-    productType: 'Academy',
-    productStage: 'Live',
-    description: 'A structured learning academy designed to reskill digital workers and leaders using DQ\'s 6xD frameworks and real-world transformation practices.',
-    imageUrl: 'https://images.unsplash.com/photo-1522202176988-66273c2fd55f?q=80&w=2970&auto=format&fit=crop&ixlib=rb-4.0.3'
-  },
-  'DTMA': {
-    productType: 'Academy',
-    productStage: 'Live',
-    description: 'A structured learning academy designed to reskill digital workers and leaders using DQ\'s 6xD frameworks and real-world transformation practices.',
-    imageUrl: 'https://images.unsplash.com/photo-1522202176988-66273c2fd55f?q=80&w=2970&auto=format&fit=crop&ixlib=rb-4.0.3'
-  },
-  'Digital Transformation Management Academy (DTMA)': {
-    productType: 'Academy',
-    productStage: 'Live',
-    description: 'A structured learning academy designed to reskill digital workers and leaders using DQ\'s 6xD frameworks and real-world transformation practices.',
-    imageUrl: 'https://images.unsplash.com/photo-1522202176988-66273c2fd55f?q=80&w=2970&auto=format&fit=crop&ixlib=rb-4.0.3'
-  },
-  'Digital Business Platforms': {
-    productType: 'Tooling',
+  'TMaaS': {
+    productType: 'TMaaS',
     productStage: 'MVP',
-    description: 'AI-enabled functional assists that support planning, execution, and decision-making across digital business platforms and transformation initiatives.',
-    imageUrl: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=2970&auto=format&fit=crop&ixlib=rb-4.0.3'
+    description: 'A managed service offering that provides continuous transformation leadership, governance, and execution support using DQ platforms and expertise.',
+    imageUrl: '/images/tmaas.jpg'
   },
-  'DBP Assists': {
-    productType: 'Tooling',
+  'TMaaS - Transformation Management as a Service': {
+    productType: 'TMaaS',
     productStage: 'MVP',
-    description: 'AI-enabled functional assists that support planning, execution, and decision-making across digital business platforms and transformation initiatives.',
-    imageUrl: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=2970&auto=format&fit=crop&ixlib=rb-4.0.3'
-  },
-  'Digital Business Platforms (DBP Assists)': {
-    productType: 'Tooling',
-    productStage: 'MVP',
-    description: 'AI-enabled functional assists that support planning, execution, and decision-making across digital business platforms and transformation initiatives.',
-    imageUrl: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=2970&auto=format&fit=crop&ixlib=rb-4.0.3'
-  },
-  'Digital Transformation Management Platform': {
-    productType: 'Platform',
-    productStage: 'Scaling',
-    description: 'An enterprise platform that governs, tracks, and controls digital transformation initiatives through lifecycle management, analytics, and best-practice frameworks.',
-    imageUrl: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=2970&auto=format&fit=crop&ixlib=rb-4.0.3'
+    description: 'A managed service offering that provides continuous transformation leadership, governance, and execution support using DQ platforms and expertise.',
+    imageUrl: '/images/tmaas.jpg'
   },
   'DTMP': {
-    productType: 'Platform',
-    productStage: 'Scaling',
-    description: 'An enterprise platform that governs, tracks, and controls digital transformation initiatives through lifecycle management, analytics, and best-practice frameworks.',
-    imageUrl: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=2970&auto=format&fit=crop&ixlib=rb-4.0.3'
+    productType: 'DTMP',
+    productStage: 'MVP',
+    description: 'A centralized platform that unifies transformation data, processes, and analytics under one governed system.',
+    imageUrl: '/images/DTMP.jpg'
   },
   'Digital Transformation Management Platform (DTMP)': {
-    productType: 'Platform',
-    productStage: 'Scaling',
-    description: 'An enterprise platform that governs, tracks, and controls digital transformation initiatives through lifecycle management, analytics, and best-practice frameworks.',
-    imageUrl: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=2970&auto=format&fit=crop&ixlib=rb-4.0.3'
+    productType: 'DTMP',
+    productStage: 'MVP',
+    description: 'A centralized platform that unifies transformation data, processes, and analytics under one governed system.',
+    imageUrl: '/images/DTMP.jpg'
+  },
+  'DTO4T - Digital Twin of Organization for Transformation': {
+    productType: 'DTO4T',
+    productStage: 'Pilot',
+    description: 'An AI-driven digital twin that accelerates transformation through simulated journeys and blueprinting.',
+    imageUrl: '/images/DTO4T.jpg'
   },
   'DTO4T': {
-    productType: 'Framework',
-    productStage: 'Live',
-    description: 'A comprehensive operating framework that defines how organizations design, drive, govern, and scale digital transformation with consistency and control.',
-    imageUrl: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=2970&auto=format&fit=crop&ixlib=rb-4.0.3'
+    productType: 'DTO4T',
+    productStage: 'Pilot',
+    description: 'An AI-driven digital twin that accelerates transformation through simulated journeys and blueprinting.',
+    imageUrl: '/images/DTO4T.jpg'
   },
-  'Digital Transformation Operating Framework': {
-    productType: 'Framework',
+  'DTMA - Digital Transformation Management Academy': {
+    productType: 'DTMA',
     productStage: 'Live',
-    description: 'A comprehensive operating framework that defines how organizations design, drive, govern, and scale digital transformation with consistency and control.',
-    imageUrl: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=2970&auto=format&fit=crop&ixlib=rb-4.0.3'
+    description: 'An academy that upskills teams with tailored training, certifications, and AI-enabled learning paths.',
+    imageUrl: '/images/DTMA.jpg'
   },
-  'DTO4T – Digital Transformation Operating Framework': {
-    productType: 'Framework',
+  'DTMA': {
+    productType: 'DTMA',
     productStage: 'Live',
-    description: 'A comprehensive operating framework that defines how organizations design, drive, govern, and scale digital transformation with consistency and control.',
-    imageUrl: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=2970&auto=format&fit=crop&ixlib=rb-4.0.3'
+    description: 'An academy that upskills teams with tailored training, certifications, and AI-enabled learning paths.',
+    imageUrl: '/images/DTMA.jpg'
   },
-  'TMaaS': {
-    productType: 'Enablement Product',
-    productStage: 'Live',
-    description: 'A managed service offering that provides continuous transformation leadership, governance, and execution support using DQ platforms and expertise.',
-    imageUrl: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=2970&auto=format&fit=crop&ixlib=rb-4.0.3'
+  'D2GPRC - Data-Driven Governance, Performance, Risk, and Compliance': {
+    productType: 'D2GPRC',
+    productStage: 'Pilot',
+    description: 'A data and AI-led governance product that unifies performance, risk, and compliance oversight.',
+    imageUrl: '/images/guidelines-content.PNG'
+  },
+  'D2GPRC': {
+    productType: 'D2GPRC',
+    productStage: 'Pilot',
+    description: 'A data and AI-led governance product that unifies performance, risk, and compliance oversight.',
+    imageUrl: '/images/guidelines-content.PNG'
   },
   'Transformation Management as a Service': {
-    productType: 'Enablement Product',
-    productStage: 'Live',
+    productType: 'TMaaS',
+    productStage: 'MVP',
     description: 'A managed service offering that provides continuous transformation leadership, governance, and execution support using DQ platforms and expertise.',
-    imageUrl: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=2970&auto=format&fit=crop&ixlib=rb-4.0.3'
+    imageUrl: '/images/tmaas.jpg'
   },
-  'TMaaS – Transformation Management as a Service': {
-    productType: 'Enablement Product',
-    productStage: 'Live',
-    description: 'A managed service offering that provides continuous transformation leadership, governance, and execution support using DQ platforms and expertise.',
-    imageUrl: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=2970&auto=format&fit=crop&ixlib=rb-4.0.3'
+  'DTMB': {
+    productType: 'DTMB',
+    productStage: 'Preview',
+    description: 'Boost kits, playbooks, and reference material for digital transformation management.',
+    imageUrl: '/images/DTMB.jpg'
+  },
+  'DTMI': {
+    productType: 'DTMI',
+    productStage: 'Preview',
+    description: 'A Digital Transformation Management initiative. Detailed description to follow.',
+    imageUrl: '/images/DTMI.jpg'
   }
 }
 
@@ -139,26 +109,24 @@ export function getProductMetadata(title: string | null | undefined): ProductMet
     }
   }
   
-  // Partial match for common variations
-  if (lowerTitle.includes('digital workspace') || lowerTitle.includes('dws')) {
-    return PRODUCT_METADATA['Digital Workspace System (DWS)']
+  // Partial matches for common product names
+  if (lowerTitle.includes('dtmp') || lowerTitle.includes('transformation management platform')) {
+    return PRODUCT_METADATA['DTMP']
   }
-  if (lowerTitle.includes('dtma') || (lowerTitle.includes('transformation management academy'))) {
-    return PRODUCT_METADATA['Digital Transformation Management Academy (DTMA)']
+  if (lowerTitle.includes('dto4t') || lowerTitle.includes('digital twin of organization')) {
+    return PRODUCT_METADATA['DTO4T']
   }
-  if (lowerTitle.includes('dbp') && (lowerTitle.includes('assist') || lowerTitle.includes('tool'))) {
-    return PRODUCT_METADATA['Digital Business Platforms (DBP Assists)']
+  if (lowerTitle.includes('dtma') || lowerTitle.includes('transformation management academy')) {
+    return PRODUCT_METADATA['DTMA']
   }
-  if (lowerTitle.includes('dtmp') || (lowerTitle.includes('transformation management platform') && !lowerTitle.includes('academy'))) {
-    return PRODUCT_METADATA['Digital Transformation Management Platform (DTMP)']
+  if (lowerTitle.includes('d2gprc') || lowerTitle.includes('governance, performance, risk') || lowerTitle.includes('governance performance risk')) {
+    return PRODUCT_METADATA['D2GPRC']
   }
-  if (lowerTitle.includes('dto4t') || (lowerTitle.includes('transformation operating framework'))) {
-    return PRODUCT_METADATA['DTO4T – Digital Transformation Operating Framework']
-  }
+  
+  // Partial match for TMaaS variations
   if (lowerTitle.includes('tmaas') || (lowerTitle.includes('transformation management as a service'))) {
-    return PRODUCT_METADATA['TMaaS – Transformation Management as a Service']
+    return PRODUCT_METADATA['TMaaS - Transformation Management as a Service']
   }
   
   return null
 }
-

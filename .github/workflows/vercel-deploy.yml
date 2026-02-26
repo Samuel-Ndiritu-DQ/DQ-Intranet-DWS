@@ -13,6 +13,9 @@ on:
       - "release"
       - "feat/**"
       - "Stage**"
+      - "samuel-knowledge-center"
+      - "**-knowledge-center"
+      - "**-knowledge-**"
   pull_request:
     branches:
       - main

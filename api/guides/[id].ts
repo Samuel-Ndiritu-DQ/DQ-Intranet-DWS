@@ -70,12 +70,31 @@ export default async function handler(req: AnyRequest, res: AnyResponse) {
         documentUrl: row.document_url ?? row.documentUrl ?? null,
         body: includeBody ? (row.body ?? null) : null,
       } as any
-      // Fetch sub-content (still supported)
-      const [{ data: steps }, { data: attachments }, { data: templates }] = await Promise.all([
-        supabaseAdmin.from('guide_steps').select('id,position,title,body').eq('guide_id', guide.id).order('position', { ascending: true }),
-        supabaseAdmin.from('guide_attachments').select('id,kind,title,url,size').eq('guide_id', guide.id),
-        supabaseAdmin.from('guide_templates').select('id,title,url,size').eq('guide_id', guide.id),
-      ])
+      // Fetch sub-content (still supported) - handle errors gracefully
+      let steps: any[] = []
+      let attachments: any[] = []
+      let templates: any[] = []
+      
+      try {
+        const [stepsResult, attachmentsResult, templatesResult] = await Promise.allSettled([
+          supabaseAdmin.from('guide_steps').select('id,position,title,body').eq('guide_id', guide.id).order('position', { ascending: true }),
+          supabaseAdmin.from('guide_attachments').select('id,kind,title,url,size').eq('guide_id', guide.id),
+          supabaseAdmin.from('guide_templates').select('id,title,url,size').eq('guide_id', guide.id),
+        ])
+        
+        if (stepsResult.status === 'fulfilled' && !stepsResult.value.error) {
+          steps = stepsResult.value.data || []
+        }
+        if (attachmentsResult.status === 'fulfilled' && !attachmentsResult.value.error) {
+          attachments = attachmentsResult.value.data || []
+        }
+        if (templatesResult.status === 'fulfilled' && !templatesResult.value.error) {
+          templates = templatesResult.value.data || []
+        }
+      } catch (err) {
+        // If related tables don't exist or have errors, continue without them
+        console.warn('api/guides/[id] warning: Error fetching sub-content:', err)
+      }
       const out = {
         ...guide,
         steps: (steps || []).map(s => ({ id: s.id, position: s.position, title: s.title, content: s.body })),

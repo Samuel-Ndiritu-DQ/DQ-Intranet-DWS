@@ -1,9 +1,9 @@
-import { LOCATION_ALLOW, LEVELS, LevelCode } from '@/lms/config';
+import { LOCATION_ALLOW, LEVELS, LevelCode } from '../lms/config';
 import {
   levelLabelFromCode,
   levelShortLabelFromCode
-} from '@/lms/levels';
-import { supabaseClient } from '@/lib/supabaseClient';
+} from '../lms/levels';
+import { supabaseClient } from '../lib/supabaseClient';
 
 const allowedLocations = new Set<string>(LOCATION_ALLOW as readonly string[]);
 

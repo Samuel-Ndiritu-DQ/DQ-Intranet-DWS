@@ -1,9 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { ArrowRight } from 'lucide-react';
 import { FadeInUpOnScroll } from './AnimationUtils';
-import { fetchAllNews, fetchAllJobs } from '@/services/mediaCenterService';
-import type { NewsItem } from '@/data/media/news';
-import type { JobItem } from '@/data/media/jobs';
+import { knowledgeHubSupabase } from '@/services/knowledgeHubClient';
 
 interface FeaturedProgram {
   id: string;
@@ -14,84 +12,22 @@ interface FeaturedProgram {
   applyNowHref?: string;
   backgroundImage?: string;
   category: 'News' | 'Insight' | 'Jobs';
+  ctaLabel?: string;
 }
 
-function isPodcast(item: NewsItem): boolean {
-  if (item.format === 'Podcast') {
-    return true;
-  }
-
-  if (item.tags?.some((tag) => tag.toLowerCase().includes('podcast'))) {
-    return true;
-  }
-
-  return false;
-}
-
-function isEvent(item: NewsItem): boolean {
-  if (item.newsType === 'Upcoming Events') {
-    return true;
-  }
-
-  if (item.tags?.some((tag) => tag.toLowerCase().includes('event'))) {
-    return true;
-  }
-
-  return false;
-}
-
-function mapNewsToFeatured(item: NewsItem): FeaturedProgram {
-  const isBlog = item.type === 'Thought Leadership' && !isPodcast(item);
-  const partnership = item.byline || item.author || 'DQ Communications';
-  
-  // Use the actual image from the news item
-  const bgImage = item.image || '/images/honeycomb.png';
-  
-  let title: string;
-  let category: 'News' | 'Insight';
-  let learnMoreHref: string;
-  
-  if (isBlog) {
-    title = item.title;
-    category = 'Insight';
-    learnMoreHref = '/marketplace/opportunities?tab=insights';
-  } else if (item.type === 'Announcement') {
-    title = item.title;
-    category = 'News';
-    learnMoreHref = '/marketplace/opportunities?tab=announcements';
-  } else {
-    title = item.title;
-    category = 'News';
-    learnMoreHref = '/marketplace/opportunities?tab=announcements';
-  }
-  
-  return {
-    id: `news-${item.id}`,
-    partnership,
-    title,
-    description: item.excerpt,
-    learnMoreHref,
-    backgroundImage: `url(${bgImage})`,
-    category,
-  };
-}
-
-function mapJobToFeatured(item: JobItem): FeaturedProgram {
-  const partnership = item.department || 'DQ Careers';
-  
-  // Use the actual image from the job item
-  const bgImage = item.image || '/images/honeycomb.png';
-  
-  return {
-    id: `job-${item.id}`,
-    partnership,
-    title: item.title,
-    description: item.description,
-    learnMoreHref: '/marketplace/opportunities?tab=opportunities',
-    backgroundImage: `url(${bgImage})`,
-    category: 'Jobs',
-  };
-}
+const fallbackPrograms: FeaturedProgram[] = [
+  {
+    id: 'fallback-1',
+    partnership: 'Digital Qatalyst',
+    title: 'Welcome to the Digital Workspace',
+    description:
+      'Explore onboarding, services, media, and knowledge resources designed to help every associate start fast and deliver with confidence.',
+    learnMoreHref: '/marketplace/guides?tab=guidelines',
+    backgroundImage:
+      'linear-gradient(90deg, rgba(251, 83, 53, 0.6) 0%, rgba(26, 46, 110, 0.6) 50%, rgba(3, 15, 53, 0.6) 100%), url(/images/honeycomb.png)',
+    category: 'News',
+  },
+];
 
 export const FeaturedNationalProgram: React.FC = () => {
   const [activeIndex, setActiveIndex] = useState(0);
@@ -109,45 +45,76 @@ export const FeaturedNationalProgram: React.FC = () => {
     return () => clearInterval(interval);
   }, [programs]);
 
-  // Load latest items from DQ Media Center (news, blogs, jobs)
+  // Load latest items from Knowledge Hub Supabase
   useEffect(() => {
     let isMounted = true;
 
     async function loadFeatured() {
       try {
-        const [newsItems, jobItems] = await Promise.all([
-          fetchAllNews(),
-          fetchAllJobs(),
-        ]);
+        if (!knowledgeHubSupabase) {
+          console.warn('Knowledge Hub Supabase client not available');
+          setPrograms(fallbackPrograms);
+          return;
+        }
+
+        // Fetch latest news/announcements from Knowledge Hub
+        const { data: khData, error: khError } = await knowledgeHubSupabase
+          .from('v_media_all')
+          .select('*')
+          .eq('status', 'Approved')
+          .order('date', { ascending: false })
+          .limit(10);
 
         if (!isMounted) return;
 
-        const allNews = newsItems ?? [];
-        const allJobs = jobItems ?? [];
-
-        // Latest articles/blogs/news (excluding events and podcasts)
-        const latestNews = allNews
-          .filter((item) => !isPodcast(item) && !isEvent(item))
-          .slice(0, 5)
-          .map(mapNewsToFeatured);
-
-        // Latest jobs
-        const latestJobs = allJobs
-          .slice(0, 3)
-          .map(mapJobToFeatured);
-
-        // Combine and prioritize: mix news and jobs for variety
-        const combined = [...latestNews, ...latestJobs].slice(0, 8);
-
-        // Only set programs if we have data from the database
-        if (combined.length > 0) {
-          setPrograms(combined);
-          setActiveIndex(0);
+        if (khError || !khData || khData.length === 0) {
+          console.warn('Failed to load from Knowledge Hub:', khError);
+          setPrograms(fallbackPrograms);
+          return;
         }
+
+        // Transform Knowledge Hub data to FeaturedProgram format
+        const transformedPrograms: FeaturedProgram[] = khData
+          .filter(item => {
+            // Exclude guidelines and blueprints - only show news/announcements
+            const itemType = (item.type || '').toLowerCase();
+            return itemType !== 'guideline' && itemType !== 'guidelines' && itemType !== 'blueprint';
+          })
+          .slice(0, 8)
+          .map((item: any) => {
+            const itemType = (item.type || '').toLowerCase();
+            
+            // Determine category and CTA based on type
+            let category: 'News' | 'Insight' | 'Jobs';
+            let ctaLabel: string;
+            
+            if (itemType === 'thought leadership' || itemType === 'blog') {
+              category = 'Insight';
+              ctaLabel = 'READ INSIGHT';
+            } else {
+              category = 'News';
+              ctaLabel = 'READ STORY';
+            }
+
+            return {
+              id: item.id,
+              partnership: item.source || item.author_name || 'DQ Communications',
+              title: item.title,
+              description: item.description || item.summary || '',
+              learnMoreHref: '/marketplace/guides',
+              backgroundImage: item.image_url ? `url(${item.image_url})` : undefined,
+              category,
+              ctaLabel,
+            };
+          });
+
+        setPrograms(transformedPrograms.length > 0 ? transformedPrograms : fallbackPrograms);
+        setActiveIndex(0);
       } catch (error) {
-        console.error('Failed to load featured updates from media center', error);
-        // Don't show fallback - just leave empty if there's an error
-        setPrograms([]);
+        console.error('Failed to load featured updates from Knowledge Hub', error);
+        if (isMounted) {
+          setPrograms(fallbackPrograms);
+        }
       }
     }
 
@@ -160,22 +127,19 @@ export const FeaturedNationalProgram: React.FC = () => {
 
   return (
     <div className="w-full py-8 px-4">
-      {/* Only show section if we have programs to display */}
-      {programs.length > 0 && (
-        <>
-          <FadeInUpOnScroll className="text-center mb-10">
-            <h2 className="text-3xl font-bold text-gray-900 mb-3 clamp-1">
-              Latest Updates
-            </h2>
-            <div>
-              <p className="text-base sm:text-lg text-gray-600 mx-auto text-balance leading-tight whitespace-normal sm:whitespace-nowrap max-w-full sm:max-w-4xl">
-                Catch the latest DQ news, insights, and job opportunities curated for quick scanning, with one click to dive deeper.
-              </p>
-            </div>
-          </FadeInUpOnScroll>
+      <FadeInUpOnScroll className="text-center mb-10">
+        <h2 className="text-3xl font-bold text-gray-900 mb-3 clamp-1">
+          Latest Updates
+        </h2>
+        <div>
+          <p className="text-base sm:text-lg text-gray-600 mx-auto text-balance leading-tight whitespace-normal sm:whitespace-nowrap max-w-full sm:max-w-4xl">
+            Catch the latest DQ news, insights, and job opportunities curated for quick scanning, with one click to dive deeper.
+          </p>
+        </div>
+      </FadeInUpOnScroll>
 
-          <div className="relative rounded-3xl overflow-hidden shadow-xl w-full max-w-[1506px] mx-auto">
-            {activeProgram && (
+      <div className="relative rounded-3xl overflow-hidden shadow-xl w-full max-w-[1506px] mx-auto">
+        {activeProgram && (
         <div
           key={activeProgram.id}
           className="h-[360px] p-10 flex flex-col justify-between relative bg-cover bg-center transition-all duration-500"
@@ -208,9 +172,13 @@ export const FeaturedNationalProgram: React.FC = () => {
               href={activeProgram.learnMoreHref}
               className="px-6 py-3 bg-white text-[#0F1D4A] font-semibold rounded-lg hover:bg-gray-100 transition-colors flex items-center gap-2 shadow-lg"
             >
-              {activeProgram.category === 'Jobs' && 'VIEW OPPORTUNITY'}
-              {activeProgram.category === 'News' && 'READ STORY'}
-              {activeProgram.category === 'Insight' && 'READ INSIGHT'}
+              {activeProgram.ctaLabel || (
+                <>
+                  {activeProgram.category === 'Jobs' && 'VIEW OPPORTUNITY'}
+                  {activeProgram.category === 'News' && 'READ STORY'}
+                  {activeProgram.category === 'Insight' && 'READ INSIGHT'}
+                </>
+              )}
               <ArrowRight size={18} />
             </a>
           </div>
@@ -248,8 +216,6 @@ export const FeaturedNationalProgram: React.FC = () => {
           }
         }
       `}</style>
-        </>
-      )}
     </div>
   );
 };

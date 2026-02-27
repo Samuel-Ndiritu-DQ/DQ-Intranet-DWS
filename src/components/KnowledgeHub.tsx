@@ -1,25 +1,20 @@
 import React, { useEffect, useState } from "react";
-import { Newspaper, Loader, AlertCircle, Radio } from "lucide-react";
+import { Loader, AlertCircle, Radio } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { FadeInUpOnScroll } from "./AnimationUtils";
 import { NewsCard } from "./CardComponents";
-import { fetchLatestGuides } from '@/services/marketplace';
-import { getGuideImageUrl } from '@/utils/guideImageMap';
+import { knowledgeHubSupabase } from '@/services/knowledgeHubClient';
+import { createClient } from '@supabase/supabase-js';
+import type { NewsItem as MediaCenterNewsItem } from '@/data/media/news';
 
-interface GuideItem {
+interface NewsItem {
   id: string;
-  slug: string;
   title: string;
-  summary: string;
-  image?: string;
-  guide_type: string;
-  sub_domain?: string;
-  domain?: string;
-  strategy_type?: string;
-  strategy_framework?: string;
-  guidelines_category?: string;
-  created_at: string;
-  updated_at: string;
+  excerpt: string;
+  date: string;
+  category: string;
+  imageUrl: string;
+  source?: string;
 }
 
 // Mock data for fallback - keep the existing data
@@ -95,7 +90,7 @@ const newsItems: NewsItem[] = [
 // Event and Resource mock data removed (unused) to satisfy noUnusedLocals.
 
 // Define interface for tab items
-type TabId = "ghc" | "guidelines" | "learning";
+type TabId = "guidelines" | "learning";
 
 interface TabItem {
   id: TabId;
@@ -168,20 +163,14 @@ const ErrorMessage = ({ message }) => (
 // KnowledgeHub Content Component
 const KnowledgeHubContent = () => {
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState<TabId>("ghc");
+  const [activeTab, setActiveTab] = useState<TabId>("guidelines");
   const [isTabChanging, setIsTabChanging] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<{ message: string } | null>(null);
-  const [ghcGuides, setGhcGuides] = useState<GuideItem[]>([]);
-  const [guidelinesGuides, setGuidelinesGuides] = useState<GuideItem[]>([]);
-  const [learningGuides, setLearningGuides] = useState<GuideItem[]>([]);
+  const [mediaCenterNews, setMediaCenterNews] = useState<MediaCenterNewsItem[]>([]);
+  const [loadFallback, setLoadFallback] = useState(false);
 
   const tabs: TabItem[] = [
-    {
-      id: "ghc",
-      label: "GHC",
-      icon: <Newspaper size={16} className="#030F35-600" />,
-    },
     {
       id: "guidelines",
       label: "Guidelines",
@@ -204,53 +193,196 @@ const KnowledgeHubContent = () => {
     }, 300);
   };
 
-  // Fetch latest guides for all tabs
+  // Fetch latest media center items once, reuse for display
   useEffect(() => {
     let isMounted = true;
 
-    async function loadGuidesData() {
+    async function loadMediaCenterData() {
       setIsLoading(true);
       setError(null);
       try {
-        const [ghc, guidelines, learning] = await Promise.all([
-          fetchLatestGuides('ghc', 6),
-          fetchLatestGuides('guidelines', 6),
-          fetchLatestGuides('learning', 6)
-        ]);
-        
+        let allContent: MediaCenterNewsItem[] = [];
+
+        // Fetch from Knowledge Hub (Guidelines)
+        if (knowledgeHubSupabase) {
+          try {
+            const { data: khData, error: khError } = await knowledgeHubSupabase
+              .from('v_media_all')
+              .select('*')
+              .eq('status', 'Approved') // Only fetch approved items (excludes archived)
+              .order('date', { ascending: false })
+              .limit(50);
+
+            if (!khError && khData) {
+              console.log('📊 Knowledge Hub raw data:', khData.length, 'items');
+              console.log('📊 Sample items:', khData.slice(0, 3).map(i => ({ title: i.title, type: i.type, category: i.category })));
+              
+              const transformedKH = khData.map((item: any) => ({
+                id: item.id,
+                slug: item.slug,
+                title: item.title,
+                excerpt: item.description || '',
+                date: item.date,
+                image: item.image_url,
+                tags: item.tags || [],
+                type: item.type, // Keep original type, don't default to 'Guidelines'
+                category: item.category || 'Guidelines',
+                newsType: item.news_type,
+                focusArea: item.focus_area,
+                department: item.category,
+                newsSource: item.source || item.author_name || 'DQ',
+                byline: item.author_name,
+                author: item.author_name,
+              }));
+              
+              console.log('📊 Transformed KH data:', transformedKH.length, 'items');
+              console.log('📊 Types in data:', [...new Set(transformedKH.map(i => i.type))]);
+              
+              allContent = [...allContent, ...transformedKH];
+            }
+          } catch (err) {
+            console.warn('Knowledge Hub fetch failed:', err);
+          }
+        }
+
+        // Fetch from LMS (Learning courses)
+        try {
+          const lmsUrl = import.meta.env.VITE_LMS_SUPABASE_URL;
+          const lmsKey = import.meta.env.VITE_LMS_SUPABASE_ANON_KEY;
+          
+          if (lmsUrl && lmsKey) {
+            const lmsClient = createClient(lmsUrl, lmsKey);
+            const { data: lmsData, error: lmsError } = await lmsClient
+              .from('lms_courses')
+              .select('*')
+              .eq('status', 'published') // Only show published courses (excludes archived)
+              .order('updated_at', { ascending: false })
+              .limit(50);
+
+            if (!lmsError && lmsData) {
+              const transformedLMS = lmsData.map((course: any) => ({
+                id: course.id,
+                slug: course.slug,
+                title: course.title,
+                excerpt: course.excerpt || course.description || '',
+                date: course.updated_at,
+                image: course.image_url,
+                tags: ['Learning', 'Course', course.category].filter(Boolean),
+                type: 'Thought Leadership',
+                category: course.category || 'Learning',
+                newsType: 'Course',
+                focusArea: 'Learning',
+                department: course.department || 'Learning',
+                newsSource: course.provider || 'DQ Learning',
+                byline: course.provider,
+                author: course.provider,
+              }));
+              allContent = [...allContent, ...transformedLMS];
+            }
+          }
+        } catch (err) {
+          console.warn('LMS fetch failed:', err);
+        }
+
         if (!isMounted) return;
-        
-        setGhcGuides(ghc);
-        setGuidelinesGuides(guidelines);
-        setLearningGuides(learning);
+
+        setMediaCenterNews(allContent);
+        setLoadFallback(allContent.length === 0);
       } catch (err) {
         if (!isMounted) return;
-        console.error("Error loading guides data:", err);
+        console.error("Error loading Media Center data:", err);
         setError({
-          message: "Unable to load latest guides. Please try again later.",
+          message: "Unable to load latest media items. Showing fallback content.",
         });
+        setMediaCenterNews([]);
+        setLoadFallback(true);
       } finally {
         if (isMounted) setIsLoading(false);
       }
     }
 
-    loadGuidesData();
+    loadMediaCenterData();
     return () => {
       isMounted = false;
     };
   }, []);
 
-  // Map guide data to card format
-  const mapGuideToCard = (guide: GuideItem) => ({
-    id: guide.id,
-    title: guide.title,
-    excerpt: guide.summary || '',
-    date: new Date(guide.updated_at).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }),
-    category: guide.guide_type || '',
-    tags: [guide.guide_type, guide.sub_domain, guide.domain].filter(Boolean) as string[],
-    source: guide.domain || 'DQ',
-    imageUrl: guide.image || getGuideImageUrl(guide.slug),
-  });
+  // Get Guidelines data (only active guidelines, exclude archived)
+  const getGuidelinesData = () => {
+    const newsSource = mediaCenterNews.length > 0 ? mediaCenterNews : newsItems;
+    
+    console.log('🔍 getGuidelinesData - Total items:', newsSource.length);
+    
+    const filtered = newsSource.filter((item) => {
+        // Only show items with type: 'Guideline' (case-insensitive)
+        const itemType = (item.type || '').toLowerCase();
+        const isGuideline = itemType === 'guideline' || itemType === 'guidelines';
+        
+        if (!isGuideline) return false;
+        
+        // Exclude archived guidelines (for now, exclude "DQ LEAVE GUIDELINES" by slug)
+        // TODO: Update database to set status='Archived' for leave guidelines
+        const isArchived = item.slug === 'dq-leave-guidelines';
+        
+        if (!isArchived) {
+          console.log('✅ Active guideline:', item.title);
+        }
+        
+        return !isArchived;
+      });
+    
+    console.log('🔍 Filtered guidelines:', filtered.length);
+    
+    return filtered
+      .map((item) => ({
+        id: item.id,
+        title: item.title,
+        excerpt: item.excerpt,
+        date: item.date,
+        category: "Guidelines",
+        tags: item.tags || ["Guidelines"],
+        source: item.newsSource || item.byline || item.author || "DQ Guidelines",
+        imageUrl: item.image || undefined,
+      }))
+      .slice(0, 6);
+  };
+
+  // Get Learning data (courses from LMS)
+  const getLearningData = () => {
+    const newsSource = mediaCenterNews.length > 0 ? mediaCenterNews : newsItems;
+    
+    // Filter for items that came from LMS (type: 'Thought Leadership' with newsType: 'Course')
+    // Since we're already filtering at DB level for status='published', we just need to identify LMS items
+    const filtered = newsSource.filter((item) => {
+        // LMS courses are marked with type: 'Thought Leadership' and newsType: 'Course'
+        if (item.type === 'Thought Leadership' && item.newsType === 'Course') {
+          return true;
+        }
+        
+        // Fallback: check tags for 'Course'
+        if (item.tags && Array.isArray(item.tags)) {
+          const tagString = item.tags.join(' ').toLowerCase();
+          if (tagString.includes('course')) {
+            return true;
+          }
+        }
+        
+        return false;
+      });
+    
+    return filtered
+      .map((item) => ({
+        id: item.id,
+        title: item.title,
+        excerpt: item.excerpt,
+        date: item.date,
+        category: item.category || "Learning",
+        tags: item.tags || [item.category || "Learning"],
+        source: item.newsSource || item.byline || item.author || "DQ Learning",
+        imageUrl: item.image || undefined,
+      }))
+      .slice(0, 6);
+  };
 
 
   return (
@@ -282,54 +414,6 @@ const KnowledgeHubContent = () => {
           {/* Error banner (content still shown below if fallback available) */}
           {error && !isLoading && <ErrorMessage message={error.message} />}
 
-          {/* GHC Tab */}
-          {activeTab === "ghc" && !isLoading && (
-            <section
-              id="kh-panel-ghc"
-              aria-label="GHC content"
-              aria-live="polite"
-            >
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {ghcGuides.length === 0 ? (
-                  <div className="col-span-full text-center text-gray-600">
-                    No GHC guides available right now.
-                  </div>
-                ) : (
-                  ghcGuides.map((guide, index) => {
-                    const cardData = mapGuideToCard(guide);
-                    return (
-                      <div
-                        key={guide.id}
-                        className="animate-fade-in-up"
-                        style={{
-                          animationDelay: `${index * 0.1}s`,
-                        }}
-                      >
-                        <NewsCard
-                          content={{
-                            title: cardData.title,
-                            description: cardData.excerpt,
-                            imageUrl: cardData.imageUrl,
-                            tags: cardData.tags,
-                            date: cardData.date,
-                            source: cardData.source,
-                          }}
-                          ctaLabel="Explore GHC"
-                          onQuickView={() => {
-                            navigate(`/marketplace/guides/${guide.slug}`);
-                          }}
-                          onReadMore={() => {
-                            navigate(`/marketplace/guides/${guide.slug}`);
-                          }}
-                        />
-                      </div>
-                    );
-                  })
-                )}
-              </div>
-            </section>
-          )}
-
           {/* Guidelines Tab */}
           {activeTab === "guidelines" && !isLoading && (
             <section
@@ -337,42 +421,44 @@ const KnowledgeHubContent = () => {
               aria-label="Guidelines content"
               aria-live="polite"
             >
+              {loadFallback && (
+                <div className="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
+                  Showing cached guidelines while live data is unavailable.
+                </div>
+              )}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {guidelinesGuides.length === 0 ? (
+                {getGuidelinesData().length === 0 ? (
                   <div className="col-span-full text-center text-gray-600">
                     No guidelines available right now.
                   </div>
                 ) : (
-                  guidelinesGuides.map((guide, index) => {
-                    const cardData = mapGuideToCard(guide);
-                    return (
-                      <div
-                        key={guide.id}
-                        className="animate-fade-in-up"
-                        style={{
-                          animationDelay: `${index * 0.1}s`,
+                  getGuidelinesData().map((item, index) => (
+                    <div
+                      key={item.id}
+                      className="animate-fade-in-up"
+                      style={{
+                        animationDelay: `${index * 0.1}s`,
+                      }}
+                    >
+                      <NewsCard
+                        content={{
+                          title: item.title,
+                          description: item.excerpt,
+                          imageUrl: item.imageUrl,
+                          tags: item.tags ?? [item.category],
+                          date: item.date,
+                          source: item.source,
                         }}
-                      >
-                        <NewsCard
-                          content={{
-                            title: cardData.title,
-                            description: cardData.excerpt,
-                            imageUrl: cardData.imageUrl,
-                            tags: cardData.tags,
-                            date: cardData.date,
-                            source: cardData.source,
-                          }}
-                          ctaLabel="Open Guideline"
-                          onQuickView={() => {
-                            navigate(`/marketplace/guides/${guide.slug}`);
-                          }}
-                          onReadMore={() => {
-                            navigate(`/marketplace/guides/${guide.slug}`);
-                          }}
-                        />
-                      </div>
-                    );
-                  })
+                        ctaLabel="Open Guideline"
+                        onQuickView={() => {
+                          navigate(`/guides`);
+                        }}
+                        onReadMore={() => {
+                          navigate(`/guides`);
+                        }}
+                      />
+                    </div>
+                  ))
                 )}
               </div>
             </section>
@@ -385,42 +471,44 @@ const KnowledgeHubContent = () => {
               aria-label="Learning content"
               aria-live="polite"
             >
+              {loadFallback && (
+                <div className="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
+                  Showing cached learning content while live data is unavailable.
+                </div>
+              )}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {learningGuides.length === 0 ? (
+                {getLearningData().length === 0 ? (
                   <div className="col-span-full text-center text-gray-600">
                     No learning content available right now.
                   </div>
                 ) : (
-                  learningGuides.map((guide, index) => {
-                    const cardData = mapGuideToCard(guide);
-                    return (
-                      <div
-                        key={guide.id}
-                        className="animate-fade-in-up"
-                        style={{
-                          animationDelay: `${index * 0.1}s`,
+                  getLearningData().map((item, index) => (
+                    <div
+                      key={item.id}
+                      className="animate-fade-in-up"
+                      style={{
+                        animationDelay: `${index * 0.1}s`,
+                      }}
+                    >
+                      <NewsCard
+                        content={{
+                          title: item.title,
+                          description: item.excerpt,
+                          imageUrl: item.imageUrl,
+                          tags: item.tags ?? [item.category],
+                          date: item.date,
+                          source: item.source,
                         }}
-                      >
-                        <NewsCard
-                          content={{
-                            title: cardData.title,
-                            description: cardData.excerpt,
-                            imageUrl: cardData.imageUrl,
-                            tags: cardData.tags,
-                            date: cardData.date,
-                            source: cardData.source,
-                          }}
-                          ctaLabel="View Guide"
-                          onQuickView={() => {
-                            navigate(`/marketplace/guides/${guide.slug}`);
-                          }}
-                          onReadMore={() => {
-                            navigate(`/marketplace/guides/${guide.slug}`);
-                          }}
-                        />
-                      </div>
-                    );
-                  })
+                        ctaLabel="Start Course"
+                        onQuickView={() => {
+                          navigate(`/lms`);
+                        }}
+                        onReadMore={() => {
+                          navigate(`/lms`);
+                        }}
+                      />
+                    </div>
+                  ))
                 )}
               </div>
             </section>

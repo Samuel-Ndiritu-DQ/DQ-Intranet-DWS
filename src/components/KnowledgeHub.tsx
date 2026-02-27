@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Newspaper, Loader, AlertCircle, Radio } from "lucide-react";
+import { Loader, AlertCircle, Radio } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { FadeInUpOnScroll } from "./AnimationUtils";
 import { NewsCard } from "./CardComponents";
@@ -209,11 +209,14 @@ const KnowledgeHubContent = () => {
             const { data: khData, error: khError } = await knowledgeHubSupabase
               .from('v_media_all')
               .select('*')
-              .eq('status', 'Approved')
+              .eq('status', 'Approved') // Only fetch approved items (excludes archived)
               .order('date', { ascending: false })
               .limit(50);
 
             if (!khError && khData) {
+              console.log('📊 Knowledge Hub raw data:', khData.length, 'items');
+              console.log('📊 Sample items:', khData.slice(0, 3).map(i => ({ title: i.title, type: i.type, category: i.category })));
+              
               const transformedKH = khData.map((item: any) => ({
                 id: item.id,
                 slug: item.slug,
@@ -222,7 +225,7 @@ const KnowledgeHubContent = () => {
                 date: item.date,
                 image: item.image_url,
                 tags: item.tags || [],
-                type: item.type || 'Guidelines',
+                type: item.type, // Keep original type, don't default to 'Guidelines'
                 category: item.category || 'Guidelines',
                 newsType: item.news_type,
                 focusArea: item.focus_area,
@@ -231,6 +234,10 @@ const KnowledgeHubContent = () => {
                 byline: item.author_name,
                 author: item.author_name,
               }));
+              
+              console.log('📊 Transformed KH data:', transformedKH.length, 'items');
+              console.log('📊 Types in data:', [...new Set(transformedKH.map(i => i.type))]);
+              
               allContent = [...allContent, ...transformedKH];
             }
           } catch (err) {
@@ -248,7 +255,7 @@ const KnowledgeHubContent = () => {
             const { data: lmsData, error: lmsError } = await lmsClient
               .from('lms_courses')
               .select('*')
-              .in('status', ['Published', 'published', 'archived']) // Include all statuses
+              .eq('status', 'published') // Only show published courses (excludes archived)
               .order('updated_at', { ascending: false })
               .limit(50);
 
@@ -300,113 +307,31 @@ const KnowledgeHubContent = () => {
     };
   }, []);
 
-  // Get GHC data
-  const getGhcData = () => {
-    const newsSource = mediaCenterNews.length > 0 ? mediaCenterNews : newsItems;
-    return newsSource
-      .filter((item) => {
-        // Check focusArea field for GHC
-        if (item.focusArea === 'GHC') return true;
-        
-        // Also check category fields as fallback
-        const category = (item.department || item.newsType || item.category || "").toLowerCase();
-        return category.includes('ghc') || category.includes('governance') || category.includes('agile');
-      })
-      .map((item) => ({
-        id: item.id,
-        title: item.title,
-        excerpt: item.excerpt,
-        date: item.date,
-        category: item.focusArea || item.department || item.newsType || item.category || "GHC",
-        tags: [item.focusArea || item.department || item.newsType || item.category || "GHC"],
-        source: item.newsSource || item.byline || item.author || "DQ GHC",
-        imageUrl: item.image || undefined,
-      }))
-      .slice(0, 6);
-  };
-
-  // Get Guidelines data
+  // Get Guidelines data (only active guidelines, exclude archived)
   const getGuidelinesData = () => {
     const newsSource = mediaCenterNews.length > 0 ? mediaCenterNews : newsItems;
-    return newsSource
-      .filter((item) => {
-        // Check type field for Guidelines
-        if (item.type === 'Guidelines') return true;
-        
-        // Also check newsType for Policy Update
-        if (item.newsType === 'Policy Update') return true;
-        
-        // Check tags array for guideline-related content
-        if (item.tags && Array.isArray(item.tags)) {
-          const tagString = item.tags.join(' ').toLowerCase();
-          if (tagString.includes('guideline') || tagString.includes('policy')) return true;
-        }
-        
-        // Check category fields as fallback
-        const category = (item.department || item.newsType || item.category || "").toLowerCase();
-        return category.includes('guideline') || category.includes('policy');
-      })
-      .map((item) => ({
-        id: item.id,
-        title: item.title,
-        excerpt: item.excerpt,
-        date: item.date,
-        category: item.type === 'Guidelines' ? 'Guidelines' : (item.newsType || item.department || item.category || "Guidelines"),
-        tags: item.tags || [item.type === 'Guidelines' ? 'Guidelines' : (item.newsType || item.department || item.category || "Guidelines")],
-        source: item.newsSource || item.byline || item.author || "DQ Guidelines",
-        imageUrl: item.image || undefined,
-      }))
-      .slice(0, 6);
-  };
-
-  // Get Learning data
-  const getLearningData = () => {
-    const newsSource = mediaCenterNews.length > 0 ? mediaCenterNews : newsItems;
     
-    console.log('🔍 getLearningData - Total items:', newsSource.length);
-    console.log('🔍 Sample items:', newsSource.slice(0, 3).map(i => ({ title: i.title, type: i.type, tags: i.tags, category: i.category })));
+    console.log('🔍 getGuidelinesData - Total items:', newsSource.length);
     
     const filtered = newsSource.filter((item) => {
-        // Check for Thought Leadership items (blogs/articles about learning)
-        if (item.type === 'Thought Leadership') {
-          const title = item.title.toLowerCase();
-          const excerpt = item.excerpt.toLowerCase();
-          const tags = (item.tags || []).join(' ').toLowerCase();
-          
-          // Look for learning-related keywords (including GHC)
-          const learningKeywords = ['leadership', 'execution', 'learning', 'course', 'training', 'skill', 'growth', 'development', 'ghc', 'competenc', 'honeycomb'];
-          const hasKeyword = learningKeywords.some(keyword => 
-            title.includes(keyword) || excerpt.includes(keyword) || tags.includes(keyword)
-          );
-          
-          if (hasKeyword) {
-            console.log('✅ Learning match (keyword):', item.title);
-            return true;
-          }
+        // Only show items with type: 'Guideline' (case-insensitive)
+        const itemType = (item.type || '').toLowerCase();
+        const isGuideline = itemType === 'guideline' || itemType === 'guidelines';
+        
+        if (!isGuideline) return false;
+        
+        // Exclude archived guidelines (for now, exclude "DQ LEAVE GUIDELINES" by slug)
+        // TODO: Update database to set status='Archived' for leave guidelines
+        const isArchived = item.slug === 'dq-leave-guidelines';
+        
+        if (!isArchived) {
+          console.log('✅ Active guideline:', item.title);
         }
         
-        // Check tags array for learning-related content
-        if (item.tags && Array.isArray(item.tags)) {
-          const tagString = item.tags.join(' ').toLowerCase();
-          const learningTags = ['learning', 'course', 'training', 'education', 'skill', 'development', 'ghc'];
-          if (learningTags.some(tag => tagString.includes(tag))) {
-            console.log('✅ Learning match (tags):', item.title);
-            return true;
-          }
-        }
-        
-        // Check category fields as fallback (including GHC)
-        const category = (item.department || item.newsType || item.category || "").toLowerCase();
-        const hasCategory = category.includes('learning') || category.includes('course') || category.includes('training') || category.includes('ghc');
-        if (hasCategory) {
-          console.log('✅ Learning match (category):', item.title, '- Category:', category);
-          return true;
-        }
-        
-        return false;
+        return !isArchived;
       });
     
-    console.log('🔍 Filtered learning items:', filtered.length);
+    console.log('🔍 Filtered guidelines:', filtered.length);
     
     return filtered
       .map((item) => ({
@@ -414,8 +339,45 @@ const KnowledgeHubContent = () => {
         title: item.title,
         excerpt: item.excerpt,
         date: item.date,
-        category: item.department || item.newsType || item.category || "Learning",
-        tags: item.tags || [item.department || item.newsType || item.category || "Learning"],
+        category: "Guidelines",
+        tags: item.tags || ["Guidelines"],
+        source: item.newsSource || item.byline || item.author || "DQ Guidelines",
+        imageUrl: item.image || undefined,
+      }))
+      .slice(0, 6);
+  };
+
+  // Get Learning data (courses from LMS)
+  const getLearningData = () => {
+    const newsSource = mediaCenterNews.length > 0 ? mediaCenterNews : newsItems;
+    
+    // Filter for items that came from LMS (type: 'Thought Leadership' with newsType: 'Course')
+    // Since we're already filtering at DB level for status='published', we just need to identify LMS items
+    const filtered = newsSource.filter((item) => {
+        // LMS courses are marked with type: 'Thought Leadership' and newsType: 'Course'
+        if (item.type === 'Thought Leadership' && item.newsType === 'Course') {
+          return true;
+        }
+        
+        // Fallback: check tags for 'Course'
+        if (item.tags && Array.isArray(item.tags)) {
+          const tagString = item.tags.join(' ').toLowerCase();
+          if (tagString.includes('course')) {
+            return true;
+          }
+        }
+        
+        return false;
+      });
+    
+    return filtered
+      .map((item) => ({
+        id: item.id,
+        title: item.title,
+        excerpt: item.excerpt,
+        date: item.date,
+        category: item.category || "Learning",
+        tags: item.tags || [item.category || "Learning"],
         source: item.newsSource || item.byline || item.author || "DQ Learning",
         imageUrl: item.image || undefined,
       }))

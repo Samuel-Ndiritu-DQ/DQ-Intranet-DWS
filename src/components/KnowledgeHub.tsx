@@ -3,17 +3,27 @@ import { Loader, AlertCircle, Radio } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { FadeInUpOnScroll } from "./AnimationUtils";
 import { NewsCard } from "./CardComponents";
+import { knowledgeHubSupabase } from '@/services/knowledgeHubClient';
 import { createClient } from '@supabase/supabase-js';
-import type { NewsItem as MediaCenterNewsItem } from '@/data/media/news';
 
 interface NewsItem {
   id: string;
+  slug?: string;
   title: string;
   excerpt: string;
   date: string;
   category: string;
-  imageUrl: string;
+  imageUrl?: string;
+  image?: string;
   source?: string;
+  tags?: string[];
+  type?: string;
+  newsType?: string;
+  focusArea?: string;
+  department?: string;
+  newsSource?: string;
+  byline?: string;
+  author?: string;
 }
 
 // Mock data for fallback - keep the existing data
@@ -166,7 +176,7 @@ const KnowledgeHubContent = () => {
   const [isTabChanging, setIsTabChanging] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<{ message: string } | null>(null);
-  const [mediaCenterNews, setMediaCenterNews] = useState<MediaCenterNewsItem[]>([]);
+  const [mediaCenterNews, setMediaCenterNews] = useState<NewsItem[]>([]);
   const [loadFallback, setLoadFallback] = useState(false);
 
   const tabs: TabItem[] = [
@@ -200,7 +210,7 @@ const KnowledgeHubContent = () => {
       setIsLoading(true);
       setError(null);
       try {
-        let allContent: MediaCenterNewsItem[] = [];
+        let allContent: NewsItem[] = [];
 
         // Fetch from Knowledge Hub (Guidelines)
         if (knowledgeHubSupabase) {
@@ -216,7 +226,7 @@ const KnowledgeHubContent = () => {
               console.log('📊 Knowledge Hub raw data:', khData.length, 'items');
               console.log('📊 Sample items:', khData.slice(0, 3).map(i => ({ title: i.title, type: i.type, category: i.category })));
               
-              const transformedKH = khData.map((item: any) => ({
+              const transformedKH: NewsItem[] = khData.map((item: any) => ({
                 id: item.id,
                 slug: item.slug,
                 title: item.title,
@@ -259,7 +269,7 @@ const KnowledgeHubContent = () => {
               .limit(50);
 
             if (!lmsError && lmsData) {
-              const transformedLMS = lmsData.map((course: any) => ({
+              const transformedLMS: NewsItem[] = lmsData.map((course: any) => ({
                 id: course.id,
                 slug: course.slug,
                 title: course.title,
@@ -392,7 +402,7 @@ const KnowledgeHubContent = () => {
             Latest DQ Developments
           </h2>
           <p className="text-base sm:text-lg text-gray-600 mx-auto clamp-2 leading-relaxed max-w-4xl">
-            Explore the latest GHC courses and guidelines designed to boost your skills and accelerate your DQ journey.
+            Explore the latest GHC courses and guidelines to accelerate your journey at DQ.
           </p>
         </FadeInUpOnScroll>
         {/* Segmented Tabs */}

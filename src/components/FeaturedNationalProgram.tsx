@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { ArrowRight } from 'lucide-react';
 import { FadeInUpOnScroll } from './AnimationUtils';
-import { knowledgeHubSupabase } from '@/services/knowledgeHubClient';
+import { fetchAllNews } from '@/services/mediaCenterService';
+import type { NewsItem } from '@/data/media/news';
 
 interface FeaturedProgram {
   id: string;
@@ -45,43 +46,34 @@ export const FeaturedNationalProgram: React.FC = () => {
     return () => clearInterval(interval);
   }, [programs]);
 
-  // Load latest items from Knowledge Hub Supabase
+  // Load latest items from DQ Media Center
   useEffect(() => {
     let isMounted = true;
 
     async function loadFeatured() {
       try {
-        if (!knowledgeHubSupabase) {
-          console.warn('Knowledge Hub Supabase client not available');
-          setPrograms(fallbackPrograms);
-          return;
-        }
-
-        // Fetch latest news/announcements from Knowledge Hub
-        const { data: khData, error: khError } = await knowledgeHubSupabase
-          .from('v_media_all')
-          .select('*')
-          .eq('status', 'Approved')
-          .order('date', { ascending: false })
-          .limit(10);
+        // Fetch latest news and blogs from Media Center
+        const newsData = await fetchAllNews();
 
         if (!isMounted) return;
 
-        if (khError || !khData || khData.length === 0) {
-          console.warn('Failed to load from Knowledge Hub:', khError);
+        if (!newsData || newsData.length === 0) {
+          console.warn('No news data available from Media Center');
           setPrograms(fallbackPrograms);
           return;
         }
 
-        // Transform Knowledge Hub data to FeaturedProgram format
-        const transformedPrograms: FeaturedProgram[] = khData
-          .filter(item => {
-            // Exclude guidelines and blueprints - only show news/announcements
+        // Transform Media Center news data to FeaturedProgram format
+        const transformedPrograms: FeaturedProgram[] = newsData
+          .filter((item: NewsItem) => {
+            // Include announcements, blogs, and thought leadership
             const itemType = (item.type || '').toLowerCase();
-            return itemType !== 'guideline' && itemType !== 'guidelines' && itemType !== 'blueprint';
+            return itemType === 'announcement' || 
+                   itemType === 'blog' || 
+                   itemType === 'thought leadership';
           })
           .slice(0, 8)
-          .map((item: any) => {
+          .map((item: NewsItem) => {
             const itemType = (item.type || '').toLowerCase();
             
             // Determine category and CTA based on type
@@ -98,11 +90,11 @@ export const FeaturedNationalProgram: React.FC = () => {
 
             return {
               id: item.id,
-              partnership: item.source || item.author_name || 'DQ Communications',
+              partnership: item.author || item.newsSource || 'DQ Communications',
               title: item.title,
-              description: item.description || item.summary || '',
-              learnMoreHref: '/marketplace/guides',
-              backgroundImage: item.image_url ? `url(${item.image_url})` : undefined,
+              description: item.excerpt || '',
+              learnMoreHref: `/media-center/news/${item.id}`,
+              backgroundImage: item.image ? `url(${item.image})` : undefined,
               category,
               ctaLabel,
             };
@@ -111,7 +103,7 @@ export const FeaturedNationalProgram: React.FC = () => {
         setPrograms(transformedPrograms.length > 0 ? transformedPrograms : fallbackPrograms);
         setActiveIndex(0);
       } catch (error) {
-        console.error('Failed to load featured updates from Knowledge Hub', error);
+        console.error('Failed to load featured updates from Media Center', error);
         if (isMounted) {
           setPrograms(fallbackPrograms);
         }

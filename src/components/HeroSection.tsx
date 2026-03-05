@@ -259,30 +259,6 @@ const HeroSection: React.FC<HeroSectionProps> = ({ "data-id": dataId }) => {
           </Link>
         </StaggeredFadeIn>
       </div>
-      {/* Scroll indicator with animation */}
-      <button
-        type="button"
-        className="absolute bottom-8 left-1/2 transform -translate-x-1/2 animate-bounce cursor-pointer bg-transparent border-none p-2"
-        onClick={() => {
-          const nextSection = document.querySelector("main > div:nth-child(2)");
-          nextSection?.scrollIntoView({
-            behavior: "smooth",
-          });
-        }}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter' || e.key === ' ') {
-            e.preventDefault();
-            const nextSection = document.querySelector("main > div:nth-child(2)");
-            nextSection?.scrollIntoView({
-              behavior: "smooth",
-            });
-          }
-        }}
-        aria-label="Scroll to next section"
-        tabIndex={0}
-      >
-        <ChevronDown size={24} className="text-white" />
-      </button>
       {/* Add keyframes for gradient animation */}
       <style>{`
         @keyframes pulse-gradient {

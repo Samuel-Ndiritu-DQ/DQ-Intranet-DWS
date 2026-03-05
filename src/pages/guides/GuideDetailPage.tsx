@@ -13,6 +13,7 @@ import { Footer } from '../../components/Footer'
 import { HeroSection } from '../strategy/shared/HeroSection'
 import { ChevronRightIcon, HomeIcon, CheckCircle, Share2, Download, AlertTriangle, ExternalLink, Calendar, User, Building2, Heart, MessageCircle, BookmarkIcon, FileText, ChevronDown } from 'lucide-react'
 import { supabaseClient } from '../../lib/supabaseClient'
+import { knowledgeHubSupabase } from '../../services/knowledgeHubClient'
 import { getGuideImageUrl } from '../../utils/guideImageMap'
 import { track } from '../../utils/analytics'
 import { useAuth } from '../../components/Header/context/AuthContext'
@@ -354,11 +355,11 @@ const TAB_LABELS: Record<GuideTabKey, string> = {
       try {
         // Skip API call and go directly to Supabase since we're using Vite, not Next.js
         const key = String(itemId || '')
-        const { data: row, error: err1 } = await supabaseClient.from('guides').select('*').eq('slug', key).maybeSingle()
+        const { data: row, error: err1 } = await knowledgeHubSupabase.from('guides').select('*').eq('slug', key).maybeSingle()
         if (err1) throw err1
         let finalRow = row
         if (!finalRow) {
-          const { data: row2, error: err2 } = await supabaseClient.from('guides').select('*').eq('id', key).maybeSingle()
+          const { data: row2, error: err2 } = await knowledgeHubSupabase.from('guides').select('*').eq('id', key).maybeSingle()
           if (err2) throw err2
           finalRow = row2 as any
         }
@@ -446,7 +447,7 @@ const TAB_LABELS: Record<GuideTabKey, string> = {
       let first: any[] = []
       try {
         if (guide.domain) {
-          const q = supabaseClient
+          const q = knowledgeHubSupabase
             .from('guides')
             .select(selectCols)
             .eq('domain', guide.domain)
@@ -461,7 +462,7 @@ const TAB_LABELS: Record<GuideTabKey, string> = {
         }
         let results = first
         if ((results?.length || 0) < 6 && guide.guideType) {
-          const q2 = supabaseClient
+          const q2 = knowledgeHubSupabase
             .from('guides')
             .select(selectCols)
             .eq('guide_type', guide.guideType)

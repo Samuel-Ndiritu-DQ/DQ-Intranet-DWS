@@ -3,6 +3,7 @@ import { MARKETPLACE_QUERIES } from "./graphql/queries";
 import { FilterConfig } from "../components/marketplace/FilterSidebar";
 import { MarketplaceItem } from "../components/marketplace/MarketplaceGrid";
 import { getMarketplaceConfig } from "../utils/marketplaceConfig";
+import { knowledgeHubSupabase } from "./knowledgeHubClient";
 
 /**
  * Fetches marketplace items based on marketplace type, filters, and search query
@@ -252,7 +253,7 @@ export const fetchLatestGuides = async (
     
     const excludedSlugs = ['atp-guidelines', 'agile-working-guidelines', 'client-session-guidelines', 'dbp-support-guidelines', 'dq-products'];
     
-    let query = supabaseClient
+    let query = knowledgeHubSupabase
       .from('guides')
       .select('id, slug, title, summary, image, guide_type, sub_domain, domain, strategy_type, strategy_framework, guidelines_category, created_at, updated_at')
       .order('updated_at', { ascending: false });

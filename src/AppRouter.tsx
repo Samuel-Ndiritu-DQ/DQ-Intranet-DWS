@@ -39,6 +39,7 @@ import DQAgileKPIsPage from "./pages/play/DQAgileKPIsPage";
 import DashboardRouter from "./pages/dashboard/DashboardRouter";
 import DiscoverDQ from "./pages/DiscoverDQ";
 import ComingSoonPage from "./pages/ComingSoonPage";
+import DiscoverDQComingSoon from "./pages/DiscoverDQComingSoon";
 import GrowthSectorsComingSoon from "./pages/GrowthSectorsComingSoon";
 import NotFound from "./pages/NotFound";
 import OnboardingLanding from "./pages/OnboardingLanding";
@@ -90,7 +91,7 @@ export function AppRouter() {
             <ChatBot />
             <ProtectedRoute>
               <Routes>
-                <Route path="/discover-dq" element={<DiscoverDQ />} />
+                <Route path="/discover-dq" element={<DiscoverDQComingSoon />} />
                 <Route path="/coming-soon" element={<ComingSoonPage />} />
                 <Route path="/growth-sectors-coming-soon" element={<GrowthSectorsComingSoon />} />
                 <Route path="/onboarding/welcome" element={<OnboardingLanding />} />
@@ -146,7 +147,6 @@ export function AppRouter() {
 
                 {/* Utilities */}
                 <Route path="/asset-library" element={<AssetLibraryPage />} />
-                <Route path="/discover-dq" element={<DiscoverDQ />} />
                 <Route path="/thank-you" element={<ThankYou />} />
                 <Route path="/404" element={<NotFound />} />
 

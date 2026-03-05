@@ -3,7 +3,6 @@ import { Loader, AlertCircle, Radio } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { FadeInUpOnScroll } from "./AnimationUtils";
 import { NewsCard } from "./CardComponents";
-import { knowledgeHubSupabase } from '@/services/knowledgeHubClient';
 import { createClient } from '@supabase/supabase-js';
 import type { NewsItem as MediaCenterNewsItem } from '@/data/media/news';
 

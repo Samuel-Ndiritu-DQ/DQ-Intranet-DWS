@@ -2,6 +2,10 @@ import { supabase } from '@/lib/supabaseClient'
 import type { NewsItem } from '@/data/media/news'
 import type { JobItem } from '@/data/media/jobs'
 
+// Fallback data when Supabase tables don't exist
+const FALLBACK_NEWS: NewsItem[] = [];
+const FALLBACK_JOBS: JobItem[] = [];
+
 // Temporarily exclude specific legacy announcements from UI listings
 const EXCLUDED_NEWS_IDS: string[] = [
   'dq-dxb-ksa-christmas-new-year-schedule',
@@ -39,6 +43,7 @@ function mapNewsRowToItem(row: any): NewsItem {
 /**
  * Fetch all news items from Supabase
  * Returns news sorted by date (newest first)
+ * Falls back to empty array if tables don't exist
  */
 export async function fetchAllNews(): Promise<NewsItem[]> {
   const { data, error } = await supabase
@@ -49,6 +54,13 @@ export async function fetchAllNews(): Promise<NewsItem[]> {
   if (error) {
     // eslint-disable-next-line no-console
     console.error('[fetchAllNews] Supabase error:', error)
+    
+    // If table doesn't exist (PGRST205), return fallback data
+    if (error.code === 'PGRST205') {
+      console.warn('[fetchAllNews] Table does not exist, returning fallback data')
+      return FALLBACK_NEWS
+    }
+    
     throw error
   }
 
@@ -84,6 +96,7 @@ function mapJobRowToItem(row: any): JobItem {
 /**
  * Fetch all job items from Supabase
  * Returns jobs sorted by posted date (newest first)
+ * Falls back to empty array if tables don't exist
  */
 export async function fetchAllJobs(): Promise<JobItem[]> {
   const { data, error } = await supabase
@@ -94,6 +107,13 @@ export async function fetchAllJobs(): Promise<JobItem[]> {
   if (error) {
     // eslint-disable-next-line no-console
     console.error('[fetchAllJobs] Supabase error:', error)
+    
+    // If table doesn't exist (PGRST205), return fallback data
+    if (error.code === 'PGRST205') {
+      console.warn('[fetchAllJobs] Table does not exist, returning fallback data')
+      return FALLBACK_JOBS
+    }
+    
     throw error
   }
 

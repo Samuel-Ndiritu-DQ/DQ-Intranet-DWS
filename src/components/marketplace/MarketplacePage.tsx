@@ -1428,6 +1428,44 @@ type DesignSystemTab = 'cids' | 'vds' | 'cds';
         return;
       }
 
+      // DESIGN SYSTEM: use static data
+      if (isDesignSystem) {
+        setLoading(true);
+        try {
+          const { getAllDesignSystemItems } = await import('../../utils/designSystemData');
+          let items = getAllDesignSystemItems();
+          
+          // Filter by active tab
+          items = items.filter(item => item.type === activeDesignSystemTab);
+          
+          // Apply search query if provided
+          if (searchQuery) {
+            const query = searchQuery.toLowerCase();
+            items = items.filter(item => {
+              const searchableText = [
+                item.title,
+                item.description,
+                ...(item.tags || [])
+              ].filter(Boolean).join(' ').toLowerCase();
+              return searchableText.includes(query);
+            });
+          }
+          
+          setItems(items);
+          setFilteredItems(items);
+          setTotalCount(items.length);
+          setLoading(false);
+          return;
+        } catch (error) {
+          console.error('Error loading design system items:', error);
+          setLoading(false);
+          setItems([]);
+          setFilteredItems([]);
+          setTotalCount(0);
+          return;
+        }
+      }
+
       // OTHER MARKETPLACES (financial, non-financial, onboarding)
       setLoading(true);
       setError(null);
@@ -1756,7 +1794,7 @@ type DesignSystemTab = 'cids' | 'vds' | 'cds';
 
     run();
     // Keep deps lean; no need to include functions like isGuides
-  }, [marketplaceType, filters, searchQuery, queryParams, isCourses, isKnowledgeHub, currentPage, pageSize, isServicesCenter, activeServiceTab, activeTab]);
+  }, [marketplaceType, filters, searchQuery, queryParams, isCourses, isKnowledgeHub, currentPage, pageSize, isServicesCenter, activeServiceTab, activeTab, isDesignSystem, activeDesignSystemTab]);
 
   // Handle filter changes
   const handleFilterChange = useCallback((filterType: string, value: string) => {

@@ -64,33 +64,15 @@ export const FeaturedNationalProgram: React.FC = () => {
         }
 
         // Transform Media Center news data to FeaturedProgram format
+        // Only show announcements to match the Media Center's News & Announcements tab
         const transformedPrograms: FeaturedProgram[] = newsData
           .filter((item: NewsItem) => {
-            // Include announcements, blogs, and thought leadership
+            // Only include announcements
             const itemType = (item.type || '').toLowerCase();
-            const itemFormat = (item.format || '').toLowerCase();
-            return itemType === 'announcement' || 
-                   itemType === 'thought leadership' ||
-                   itemFormat === 'blog' ||
-                   itemFormat === 'article';
+            return itemType === 'announcement';
           })
           .slice(0, 8)
           .map((item: NewsItem) => {
-            const itemType = (item.type || '').toLowerCase();
-            const itemFormat = (item.format || '').toLowerCase();
-            
-            // Determine category and CTA based on type
-            let category: 'News' | 'Insight' | 'Jobs';
-            let ctaLabel: string;
-            
-            if (itemType === 'thought leadership' || itemFormat === 'blog' || itemFormat === 'article') {
-              category = 'Insight';
-              ctaLabel = 'READ INSIGHT';
-            } else {
-              category = 'News';
-              ctaLabel = 'READ STORY';
-            }
-
             return {
               id: item.id,
               partnership: item.author || item.newsSource || 'DQ Communications',
@@ -98,8 +80,8 @@ export const FeaturedNationalProgram: React.FC = () => {
               description: item.excerpt || '',
               learnMoreHref: `/marketplace/news/${item.id}`,
               backgroundImage: item.image ? `url(${item.image})` : undefined,
-              category,
-              ctaLabel,
+              category: 'News' as const,
+              ctaLabel: 'READ STORY',
             };
           });
 

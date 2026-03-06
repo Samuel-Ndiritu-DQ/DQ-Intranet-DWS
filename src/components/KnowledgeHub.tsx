@@ -177,6 +177,7 @@ const KnowledgeHubContent = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<{ message: string } | null>(null);
   const [mediaCenterNews, setMediaCenterNews] = useState<NewsItem[]>([]);
+  const [guidelinesData, setGuidelinesData] = useState<NewsItem[]>([]);
   const [loadFallback, setLoadFallback] = useState(false);
 
   const tabs: TabItem[] = [
@@ -297,6 +298,37 @@ const KnowledgeHubContent = () => {
 
         setMediaCenterNews(allContent);
         setLoadFallback(allContent.length === 0);
+
+        // Fetch guidelines separately from Knowledge Hub
+        try {
+          if (knowledgeHubSupabase) {
+            const { data: guidelinesKH, error: guidelinesError } = await knowledgeHubSupabase
+              .from('guides')
+              .select('*')
+              .eq('guide_type', 'Guideline')
+              .neq('status', 'Archived')
+              .order('updated_at', { ascending: false })
+              .limit(9);
+
+            if (!guidelinesError && guidelinesKH && guidelinesKH.length > 0) {
+              const transformedGuidelines: NewsItem[] = guidelinesKH.map((guide: any) => ({
+                id: guide.id,
+                slug: guide.slug,
+                title: guide.title,
+                excerpt: guide.summary || '',
+                date: guide.updated_at,
+                image: guide.image,
+                tags: [guide.guide_type, guide.guidelines_category].filter(Boolean),
+                type: 'Guideline',
+                category: guide.guidelines_category || 'Guidelines',
+                source: guide.domain || 'DQ',
+              }));
+              setGuidelinesData(transformedGuidelines);
+            }
+          }
+        } catch (err) {
+          console.warn('Guidelines fetch failed:', err);
+        }
       } catch (err) {
         if (!isMounted) return;
         console.error("Error loading Media Center data:", err);
@@ -316,35 +348,15 @@ const KnowledgeHubContent = () => {
     };
   }, []);
 
-  // Get Guidelines data (only active guidelines, exclude archived)
+  // Get Guidelines data (from Knowledge Hub guides table)
   const getGuidelinesData = () => {
-    const newsSource = mediaCenterNews.length > 0 ? mediaCenterNews : newsItems;
+    console.log('🔍 getGuidelinesData - Guidelines from KH:', guidelinesData.length);
     
-    console.log('🔍 getGuidelinesData - Total items:', newsSource.length);
-    
-    const filtered = newsSource.filter((item) => {
-        // Only show items with type: 'Guideline' (case-insensitive)
-        const itemType = (item.type || '').toLowerCase();
-        const isGuideline = itemType === 'guideline' || itemType === 'guidelines';
-        
-        if (!isGuideline) return false;
-        
-        // Exclude archived guidelines (for now, exclude "DQ LEAVE GUIDELINES" by slug)
-        // TODO: Update database to set status='Archived' for leave guidelines
-        const isArchived = item.slug === 'dq-leave-guidelines';
-        
-        if (!isArchived) {
-          console.log('✅ Active guideline:', item.title);
-        }
-        
-        return !isArchived;
-      });
-    
-    console.log('🔍 Filtered guidelines:', filtered.length);
-    
-    return filtered
+    // Use guidelines fetched from Knowledge Hub
+    return guidelinesData
       .map((item) => ({
         id: item.id,
+        slug: item.slug,
         title: item.title,
         excerpt: item.excerpt,
         date: item.date,
@@ -460,10 +472,10 @@ const KnowledgeHubContent = () => {
                         }}
                         ctaLabel="Open Guideline"
                         onQuickView={() => {
-                          navigate(`/guides`);
+                          navigate(`/marketplace/guides/${item.slug || item.id}`);
                         }}
                         onReadMore={() => {
-                          navigate(`/guides`);
+                          navigate(`/marketplace/guides/${item.slug || item.id}`);
                         }}
                       />
                     </div>

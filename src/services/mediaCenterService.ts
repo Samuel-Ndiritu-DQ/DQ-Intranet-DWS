@@ -1,6 +1,9 @@
-import { supabase } from '@/lib/supabaseClient'
+import { knowledgeHubSupabase } from '@/services/knowledgeHubClient'
 import type { NewsItem } from '@/data/media/news'
 import type { JobItem } from '@/data/media/jobs'
+
+// Use Knowledge Hub Supabase instance for news and jobs tables
+const supabase = knowledgeHubSupabase
 
 // Temporarily exclude specific legacy announcements from UI listings
 const EXCLUDED_NEWS_IDS: string[] = [
@@ -41,6 +44,11 @@ function mapNewsRowToItem(row: any): NewsItem {
  * Returns news sorted by date (newest first)
  */
 export async function fetchAllNews(): Promise<NewsItem[]> {
+  if (!supabase) {
+    console.warn('[fetchAllNews] Knowledge Hub Supabase client not initialized');
+    return [];
+  }
+
   const { data, error } = await supabase
     .from('news')
     .select('*')
@@ -92,6 +100,11 @@ function mapJobRowToItem(row: any): JobItem {
  * Returns jobs sorted by posted date (newest first)
  */
 export async function fetchAllJobs(): Promise<JobItem[]> {
+  if (!supabase) {
+    console.warn('[fetchAllJobs] Knowledge Hub Supabase client not initialized');
+    return [];
+  }
+
   const { data, error } = await supabase
     .from('jobs')
     .select('*')

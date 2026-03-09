@@ -65,7 +65,7 @@ export const FeaturedNationalProgram: React.FC = () => {
         }
 
         // Transform Media Center news data to FeaturedProgram format
-        // Only show announcements to match the Media Center's News & Announcements tab
+        // Show mix of latest announcements and blogs
         const fallbackImages = [
           'https://images.unsplash.com/photo-1529333166437-7750a6dd5a70?auto=format&fit=crop&w=1200&q=80',
           'https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?auto=format&fit=crop&w=1200&q=80',
@@ -74,13 +74,28 @@ export const FeaturedNationalProgram: React.FC = () => {
         ];
         const fallbackHero = 'https://images.unsplash.com/photo-1529333166437-7750a6dd5a70?auto=format&fit=crop&w=1600&q=80';
 
-        const transformedPrograms: FeaturedProgram[] = newsData
+        // Get 3 latest announcements
+        const announcements = newsData
           .filter((item: NewsItem) => {
-            // Only include announcements
             const itemType = (item.type || '').toLowerCase();
             return itemType === 'announcement';
           })
-          .slice(0, 8)
+          .slice(0, 3);
+
+        // Get 3 latest blogs (Thought Leadership)
+        const blogs = newsData
+          .filter((item: NewsItem) => {
+            const itemType = (item.type || '').toLowerCase();
+            return itemType === 'thought leadership';
+          })
+          .slice(0, 3);
+
+        // Combine and sort by date (newest first)
+        const combinedItems = [...announcements, ...blogs].sort((a, b) => {
+          return new Date(b.date).getTime() - new Date(a.date).getTime();
+        });
+
+        const transformedPrograms: FeaturedProgram[] = combinedItems
           .map((item: NewsItem) => {
             // Use the same image resolution logic as Media Center cards
             const imageSrc = getNewsImageSrc(item, fallbackImages, fallbackHero);

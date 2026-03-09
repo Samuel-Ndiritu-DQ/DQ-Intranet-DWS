@@ -260,7 +260,7 @@ const KnowledgeHubContent = () => {
                 date: item.date || item.last_updated_at,
                 image: item.image_url || item.hero_image_url,
                 tags: item.tags || [],
-                type: item.type || item.guide_type || 'Guideline', // Use type, fall back to guide_type
+                type: item.type || item.guide_type || '', // Use type, fall back to guide_type, NO default
                 category: item.category || item.domain || 'Guidelines',
                 newsType: item.news_type,
                 focusArea: item.focus_area || item.domain,

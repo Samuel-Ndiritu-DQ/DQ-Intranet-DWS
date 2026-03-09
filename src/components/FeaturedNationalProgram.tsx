@@ -3,6 +3,7 @@ import { ArrowRight } from 'lucide-react';
 import { FadeInUpOnScroll } from './AnimationUtils';
 import { fetchAllNews } from '@/services/mediaCenterService';
 import type { NewsItem } from '@/data/media/news';
+import { getNewsImageSrc } from '@/utils/newsUtils';
 
 interface FeaturedProgram {
   id: string;
@@ -65,6 +66,14 @@ export const FeaturedNationalProgram: React.FC = () => {
 
         // Transform Media Center news data to FeaturedProgram format
         // Only show announcements to match the Media Center's News & Announcements tab
+        const fallbackImages = [
+          'https://images.unsplash.com/photo-1529333166437-7750a6dd5a70?auto=format&fit=crop&w=1200&q=80',
+          'https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?auto=format&fit=crop&w=1200&q=80',
+          'https://images.unsplash.com/photo-1500534314209-a25ddb2bd429?auto=format&fit=crop&w=1200&q=80',
+          'https://images.unsplash.com/photo-1504384308090-c894fdcc538d?auto=format&fit=crop&w=1200&q=80'
+        ];
+        const fallbackHero = 'https://images.unsplash.com/photo-1529333166437-7750a6dd5a70?auto=format&fit=crop&w=1600&q=80';
+
         const transformedPrograms: FeaturedProgram[] = newsData
           .filter((item: NewsItem) => {
             // Only include announcements
@@ -73,13 +82,16 @@ export const FeaturedNationalProgram: React.FC = () => {
           })
           .slice(0, 8)
           .map((item: NewsItem) => {
+            // Use the same image resolution logic as Media Center cards
+            const imageSrc = getNewsImageSrc(item, fallbackImages, fallbackHero);
+            
             return {
               id: item.id,
               partnership: item.author || item.newsSource || 'DQ Communications',
               title: item.title,
               description: item.excerpt || '',
               learnMoreHref: `/marketplace/news/${item.id}`,
-              backgroundImage: item.image ? `url(${item.image})` : undefined,
+              backgroundImage: `url(${imageSrc})`,
               category: 'News' as const,
               ctaLabel: 'READ STORY',
             };

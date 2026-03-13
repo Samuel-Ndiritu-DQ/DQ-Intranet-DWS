@@ -251,16 +251,6 @@ const FEATURE_CARDS_DEFAULT = [
   },
 ];
 
-const RESPONSE_TAGS = [
-  'Vision',
-  'House of Values',
-  'Persona',
-  'Agile TMS',
-  'Agile SoS',
-  'Agile Flows',
-  'Agile 6xD',
-];
-
 const ACTION_CARDS_DEFAULT: ActionCard[] = [
   {
     title: 'Storybooks',
@@ -437,6 +427,7 @@ type LandingOverrides = {
   heroHeadlineHighlightWord?: string;
   heroCTA?: string;
   heroSupporting?: string;
+  heroSingleLine?: boolean;
   heroFootnote?: string;
   heroCTALink?: string;
   foundationTitle?: string;
@@ -476,45 +467,16 @@ type GHCLandingProps = {
 
 export function GHCLanding({ badgeLabel, overrides }: GHCLandingProps) {
   const navigate = useNavigate();
-  const carouselRef = useRef<HTMLDivElement>(null);
-  const [carouselIndex, setCarouselIndex] = useState(0);
 
-  const responseCards = overrides?.responseCards ?? COMPETENCY_CARDS_DEFAULT;
-  const responseTags = overrides?.responseTags ?? [
-    'Vision',
-    'House of Values',
-    'Persona',
-    'Agile TMS',
-    'Agile SoS',
-    'Agile Flows',
-    'Agile 6xD',
-  ];
-  const featureCards = overrides?.foundationCards ?? FEATURE_CARDS_DEFAULT;
-  const actionCards = overrides?.actionCards ?? ACTION_CARDS_DEFAULT;
   const heroHeadline = overrides?.heroHeadline;
   const heroHeadlineHighlightWord = overrides?.heroHeadlineHighlightWord;
   const heroCTA = overrides?.heroCTA ?? 'Read the Storybook';
   const heroSupporting =
     overrides?.heroSupporting ??
     'DQ built an operating system of seven responses so you can see what broke in work — and how to realign it.';
+  const heroSingleLine = overrides?.heroSingleLine ?? true;
   const heroFootnote = overrides?.heroFootnote;
   const heroCTALink = overrides?.heroCTALink ?? 'https://preview.shorthand.com/Pg0KQCF1Rp904ao7';
-  const foundationSubtitle =
-    overrides?.foundationSubtitle ??
-    'Not a framework to memorise — an operating system for modern work that guides how you think, decide, adapt, and create impact.';
-  const foundationTitle = overrides?.foundationTitle ?? 'What is the Golden Honeycomb?';
-  const foundationTitleFontSize = overrides?.foundationTitleFontSize;
-  const foundationSubtitleFontSize = overrides?.foundationSubtitleFontSize;
-  const responsesTitle = overrides?.responsesTitle ?? 'Seven responses';
-  const responsesIntro =
-    overrides?.responsesIntro ??
-    'Each exists because something in traditional work stopped working. Problem → response.';
-  const responsesSequential = overrides?.responsesSequential ?? false;
-  const bottomCTA = overrides?.bottomCTA ?? 'Explore all Seven Responses together';
-  const finalHeadline = overrides?.finalHeadline ?? 'Where the Golden Honeycomb becomes real';
-  const finalSubtitle =
-    overrides?.finalSubtitle ??
-    'The Golden Honeycomb comes to life through real decisions, tools, and daily work inside the DQ Digital Workspace.';
 
   const handleReadStorybook = useCallback(() => {
     const isExternal = /^https?:\/\//i.test(heroCTALink);
@@ -529,59 +491,11 @@ export function GHCLanding({ badgeLabel, overrides }: GHCLandingProps) {
     document.getElementById('ghc-carousel')?.scrollIntoView({ behavior: 'smooth' });
   }, []);
 
-  const scrollToNext = useCallback(() => {
-    const nextIndex = Math.min(carouselIndex + 1, responseCards.length - 1);
-
-    if (responsesSequential) {
-      setCarouselIndex(nextIndex);
-      return;
-    }
-
-    if (!carouselRef.current) return;
-    const cardWidth = carouselRef.current.scrollWidth / responseCards.length;
-    carouselRef.current.scrollTo({ left: nextIndex * cardWidth, behavior: 'smooth' });
-    setCarouselIndex(nextIndex);
-  }, [carouselIndex, responseCards.length, responsesSequential]);
-
-  const scrollToPrev = useCallback(() => {
-    const nextIndex = Math.max(carouselIndex - 1, 0);
-
-    if (responsesSequential) {
-      setCarouselIndex(nextIndex);
-      return;
-    }
-
-    if (!carouselRef.current) return;
-    const cardWidth = carouselRef.current.scrollWidth / responseCards.length;
-    carouselRef.current.scrollTo({ left: nextIndex * cardWidth, behavior: 'smooth' });
-    setCarouselIndex(nextIndex);
-  }, [carouselIndex, responseCards.length, responsesSequential]);
-
-  const handleCarouselScroll = useCallback(() => {
-    if (responsesSequential) return;
-    if (!carouselRef.current) return;
-    const { scrollLeft, scrollWidth } = carouselRef.current;
-    const cardWidth = scrollWidth / responseCards.length;
-    const index = Math.round(scrollLeft / cardWidth);
-    setCarouselIndex(Math.min(index, responseCards.length - 1));
-  }, [responseCards.length, responsesSequential]);
-
-  const goToSlide = useCallback((index: number) => {
-    if (responsesSequential) {
-      setCarouselIndex(Math.min(Math.max(index, 0), responseCards.length - 1));
-      return;
-    }
-    if (!carouselRef.current) return;
-    const cardWidth = carouselRef.current.scrollWidth / responseCards.length;
-    carouselRef.current.scrollTo({ left: index * cardWidth, behavior: 'smooth' });
-    setCarouselIndex(index);
-  }, [responseCards.length, responsesSequential]);
-
   const renderHeroHeadline = () => {
     const baseStyle = {
       fontSize: 'clamp(40px, 5vw, 72px)',
       lineHeight: 1.05,
-      whiteSpace: 'nowrap' as const,
+      whiteSpace: heroSingleLine ? 'nowrap' as const : 'normal' as const,
     };
     const highlightClass = 'text-[#e1513b] underline decoration-[#e1513b] decoration-4 underline-offset-8';
 
@@ -619,7 +533,7 @@ export function GHCLanding({ badgeLabel, overrides }: GHCLandingProps) {
         style={{
           fontSize: 'clamp(40px, 5vw, 72px)',
           lineHeight: 1.05,
-          whiteSpace: 'nowrap',
+          whiteSpace: heroSingleLine ? 'nowrap' : 'normal',
         }}
       >
         The world of work is{' '}
@@ -728,13 +642,6 @@ export function GHCLanding({ badgeLabel, overrides }: GHCLandingProps) {
           3. SEVEN RESPONSES CAROUSEL
           ----------------------------------------- */}
       <SectionCarousel
-        carouselRef={carouselRef}
-        carouselIndex={carouselIndex}
-        onPrev={scrollToPrev}
-        onNext={scrollToNext}
-        onScroll={handleCarouselScroll}
-        onDotClick={goToSlide}
-        onExploreMarketplace={() => navigate('/marketplace/guides')}
         content={overrides}
       />
 
@@ -765,7 +672,7 @@ function SectionWhatIsGHC({ content }: SectionWhatIsGHCProps) {
   const ref = useRef<HTMLDivElement>(null);
   const isInView = useInView(ref, { once: true, amount: 0.2 });
   const foundationTitle = content?.foundationTitle ?? 'What is the Golden Honeycomb?';
-  const foundationSubtitle = content?.foundationSubtitle ?? 'Not a framework to memorise — an operating system for modern work.';
+  const foundationSubtitle = content?.foundationSubtitle ?? 'Not a framework to memorise, but an operating system for modern work.';
   const foundationTitleFontSize = content?.foundationTitleFontSize;
   const foundationSubtitleFontSize = content?.foundationSubtitleFontSize;
   const foundationCards = content?.foundationCards ?? FEATURE_CARDS_DEFAULT;
@@ -848,30 +755,10 @@ function SectionWhatIsGHC({ content }: SectionWhatIsGHCProps) {
    ----------------------------------------- */
 
 interface SectionCarouselProps {
-  carouselRef: React.RefObject<HTMLDivElement>;
-  carouselIndex: number;
-  onPrev: () => void;
-  onNext: () => void;
-  onScroll: () => void;
-  onDotClick: (index: number) => void;
-  onExploreMarketplace: () => void;
   content?: LandingOverrides;
 }
 
-function SectionCarousel({
-  carouselRef,
-  carouselIndex,
-  onPrev,
-  onNext,
-  onScroll,
-  onDotClick,
-  onExploreMarketplace,
-  content,
-}: SectionCarouselProps) {
-  const ref = useRef<HTMLDivElement>(null);
-  const isInView = useInView(ref, { once: true, amount: 0.1 });
-  const [activeTag, setActiveTag] = useState(0);
-
+function SectionCarousel({ content }: SectionCarouselProps) {
   const responsesTitle = content?.responsesTitle ?? 'Seven Responses in Action';
   const responsesIntro =
     content?.responsesIntro ??
@@ -883,16 +770,6 @@ function SectionCarousel({
     content?.responseTags ??
     ['Vision', 'House of Values', 'Persona', 'Agile TMS', 'Agile SoS', 'Agile Flows', 'Agile 6xD'];
   const responseCards = content?.responseCards ?? COMPETENCY_CARDS_DEFAULT;
-  const bottomCTA = content?.bottomCTA ?? 'Explore all Seven Responses together →';
-
-  useEffect(() => {
-    setActiveTag(carouselIndex);
-  }, [carouselIndex]);
-
-  const handleTagClick = (index: number) => {
-    setActiveTag(index);
-    onDotClick(index);
-  };
 
   if (responsesSequential) {
     return (

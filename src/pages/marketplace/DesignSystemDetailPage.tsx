@@ -83,9 +83,11 @@ export const DesignSystemDetailPage: React.FC = () => {
       />
       
       <main className="flex-1">
-        {/* Hero Section */}
-        <div className="bg-gradient-to-br from-blue-900 via-purple-800 to-purple-900 text-white relative overflow-hidden">
-          <div className="absolute inset-0 bg-black/20"></div>
+        {/* Hero Section - Dark Navy Blue */}
+        <div className="bg-gradient-to-r from-blue-950 to-blue-900 text-white relative overflow-hidden">
+          {/* White gradient fade at bottom */}
+          <div className="absolute bottom-0 left-0 right-0 h-20 bg-gradient-to-t from-white to-transparent z-20"></div>
+          
           <div className="relative z-10">
             {/* Breadcrumb */}
             <div className="px-4 sm:px-6 lg:px-8 pt-6">
@@ -102,9 +104,9 @@ export const DesignSystemDetailPage: React.FC = () => {
 
             {/* Hero Content - Card Container */}
             <div className="px-4 sm:px-6 lg:px-8 py-8">
-              <div className="w-full bg-black/20 backdrop-blur-md rounded-3xl border border-white/20 p-8 shadow-2xl mx-auto" style={{ maxWidth: 'calc(100vw - 4rem)' }}>
+              <div className="w-full bg-blue-900/40 backdrop-blur-sm rounded-3xl border border-white/10 p-8 shadow-2xl mx-auto" style={{ maxWidth: 'calc(100vw - 4rem)' }}>
                 {/* Course Badge */}
-                <div className="inline-flex items-center px-3 py-1 bg-white/20 rounded-full text-sm font-medium mb-6">
+                <div className="inline-flex items-center px-3 py-1 bg-white/20 rounded text-sm font-medium mb-6">
                   FRAMEWORK
                 </div>
 

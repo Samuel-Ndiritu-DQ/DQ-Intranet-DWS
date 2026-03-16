@@ -118,11 +118,14 @@ This leads to stronger brand recognition, improved lead generation, enhanced mar
     <div className="min-h-screen flex flex-col bg-gray-50">
       <Header />
       
-      {/* Hero Section */}
-      <div className="bg-gradient-to-br from-blue-900 via-purple-800 to-purple-900 text-white py-16">
-        <div className="container mx-auto px-6">
-          <div className="w-full bg-black/20 backdrop-blur-md rounded-3xl border border-white/20 p-8 shadow-2xl mx-auto" style={{ maxWidth: 'calc(100vw - 4rem)' }}>
-            <div className="inline-flex items-center px-3 py-1 bg-white/20 rounded-full text-sm font-medium mb-6">
+      {/* Hero Section - Dark Navy Blue */}
+      <div className="bg-gradient-to-r from-blue-950 to-blue-900 text-white py-16 relative overflow-hidden">
+        {/* White gradient fade at bottom */}
+        <div className="absolute bottom-0 left-0 right-0 h-20 bg-gradient-to-t from-white to-transparent z-20"></div>
+        
+        <div className="container mx-auto px-6 relative z-10">
+          <div className="w-full bg-blue-900/40 backdrop-blur-sm rounded-3xl border border-white/10 p-8 shadow-2xl mx-auto" style={{ maxWidth: 'calc(100vw - 4rem)' }}>
+            <div className="inline-flex items-center px-3 py-1 bg-white/20 rounded text-sm font-medium mb-6">
               FRAMEWORK
             </div>
             <h1 className="text-4xl md:text-5xl font-bold mb-4">
@@ -132,12 +135,6 @@ This leads to stronger brand recognition, improved lead generation, enhanced mar
               CDS is DQ's specialized framework for creating consistent, high-impact campaign and marketing materials at scale. 
               It provides unified guidelines, strategic workflows, and brand standards for professional campaign development.
             </p>
-            <div className="flex flex-wrap gap-3">
-              <span className="px-3 py-1 bg-white/10 rounded-lg text-sm">2-3hrs</span>
-              <span className="px-3 py-1 bg-white/10 rounded-lg text-sm">35+ Components</span>
-              <span className="px-3 py-1 bg-white/10 rounded-lg text-sm">Intermediate</span>
-              <span className="px-3 py-1 bg-white/10 rounded-lg text-sm">Framework</span>
-            </div>
           </div>
         </div>
       </div>
